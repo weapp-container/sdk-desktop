@@ -254,7 +254,7 @@
     },
     {
       "destinationPath": "test/native-input.test.mjs",
-      "destinationSha256": "56e3b8bf6b0eeb65c7a3ad8d76ff2296b22589e39754453cad2e56f1cb92f508",
+      "destinationSha256": "c4ff2ae8b6ce325e43943934c659f90a4b627d89d412290ae1ed7e7c0bd9aa25",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
@@ -264,7 +264,7 @@
     },
     {
       "destinationPath": "tools/native-input.mjs",
-      "destinationSha256": "34b2b22c44d02acce80e9432a77a1357439fb8edc9348a82b4b0c9825f582f8b",
+      "destinationSha256": "7e0559ccf93286edf30e844a182e230002cb0cee9cd4cc0b8feeda8273fb515a",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {

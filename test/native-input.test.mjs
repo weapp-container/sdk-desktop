@@ -16,7 +16,7 @@ function fixture(t) {
   mkdirSync(input, { recursive: true });
   writeFileSync(resolve(input, 'libfixture.a'), 'test bytes: not an executable runtime');
   cpSync(resolve(root, 'include/weapp_container_sdk.h'), resolve(input, 'weapp_container_sdk.h'));
-  const receipt = { schemaVersion: 1, sdkVersion: SDK_VERSION, target, status: 'built', artifacts: [{ file: 'libfixture.a', sha256: sha256(resolve(input, 'libfixture.a')) }] };
+  const receipt = { schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target, status: 'built', artifacts: [{ file: 'libfixture.a', sha256: sha256(resolve(input, 'libfixture.a')) }] };
   const save = () => writeFileSync(resolve(input, 'build.json'), JSON.stringify(receipt)); save();
   return { directory, native, target, input, receipt, save };
 }
@@ -30,10 +30,12 @@ test('binary tampering cannot reuse an otherwise successful receipt', t => {
   const f = fixture(t); writeFileSync(resolve(f.input, 'libfixture.a'), 'changed bytes');
   assert.throws(() => readNative(f.native, f.target, ['libfixture.a']), /hash mismatch/);
 });
-test('older version and mislabeled target are rejected before packaging', t => {
+test('older versions, incompatible ABIs and mislabeled targets are rejected before packaging', t => {
   const f = fixture(t); f.receipt.sdkVersion = '0.1.0-preview.1'; f.save();
   assert.throws(() => readNative(f.native, f.target, ['libfixture.a']), /runtime receipt/);
-  f.receipt.sdkVersion = SDK_VERSION; f.receipt.target = 'another-target'; f.save();
+  f.receipt.sdkVersion = SDK_VERSION; f.receipt.abiVersion = 2; f.save();
+  assert.throws(() => readNative(f.native, f.target, ['libfixture.a']), /runtime receipt/);
+  f.receipt.abiVersion = 1; f.receipt.target = 'another-target'; f.save();
   assert.throws(() => readNative(f.native, f.target, ['libfixture.a']), /runtime receipt/);
 });
 test('replacing the contract header or omitting a required library fails', t => {
@@ -83,10 +85,11 @@ test('an absent runtime input never invokes a compiler or searches a parent repo
   finally { if (prior !== undefined) process.env.WEAPP_CONTAINER_RUNTIME_NATIVE_ROOT = prior; }
 });
 test('packaged native identities exclude producer checkout, toolchain and command paths', () => {
-  const identity = nativeIdentity({ schemaVersion: 1, sdkVersion: SDK_VERSION, target: 'fixture-target', status: 'built',
+  const identity = nativeIdentity({ schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target: 'fixture-target', status: 'built',
     toolchain: { androidNdk: '/private/producer/ndk' }, output: '/private/producer/build', commands: ['/private/producer/cargo'],
     artifacts: [{ file: 'libfixture.a', sha256: '0'.repeat(64), bytes: 10, producerPath: '/private/producer/libfixture.a' }],
   });
   assert.equal(JSON.stringify(identity).includes('/private/producer'), false);
+  assert.equal(identity.abiVersion, 1);
   assert.deepEqual(identity.artifacts, [{ file: 'libfixture.a', bytes: 10, sha256: '0'.repeat(64) }]);
 });

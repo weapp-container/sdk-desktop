@@ -23,7 +23,7 @@ export function sourceProvenance(root) {
 
 /** Distribution receipts retain identities; command paths stay in external validation. */
 export function nativeIdentity(receipt) {
-  const keys = ['schemaVersion', 'sdkVersion', 'status', 'target', 'platform', 'profile', 'features', 'sourceCommit', 'sourceDirty'];
+  const keys = ['schemaVersion', 'sdkVersion', 'abiVersion', 'status', 'target', 'platform', 'profile', 'features', 'sourceCommit', 'sourceDirty'];
   const identity = Object.fromEntries(keys.filter(key => Object.hasOwn(receipt, key)).map(key => [key, receipt[key]]));
   identity.artifacts = receipt.artifacts.map(artifact => Object.fromEntries(['file', 'bytes', 'sha256'].filter(key => Object.hasOwn(artifact, key)).map(key => [key, artifact[key]])));
   return identity;
@@ -53,7 +53,7 @@ export function inside(root, name) {
 export function readNative(nativeRoot, target, requiredLibraries) {
   const directory = inside(nativeRoot, target);
   const receipt = JSON.parse(readFileSync(inside(directory, 'build.json'), 'utf8'));
-  if (receipt.schemaVersion !== 1 || receipt.status !== 'built' || receipt.target !== target || receipt.sdkVersion !== SDK_VERSION) {
+  if (receipt.schemaVersion !== 1 || receipt.abiVersion !== 1 || receipt.status !== 'built' || receipt.target !== target || receipt.sdkVersion !== SDK_VERSION) {
     throw new Error(`A successfully built ${SDK_VERSION} runtime receipt is required for ${target}`);
   }
   if (!Array.isArray(receipt.artifacts)) throw new Error('Native receipt is missing artifact hashes');
