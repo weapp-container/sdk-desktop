@@ -10,6 +10,9 @@ import { promisify } from 'node:util';
 
 export const RUNTIME_REPOSITORY = 'weapp-container/runtime-artifacts';
 export const SDK_VERSION = '0.1.0-preview.2';
+export const DEFAULT_ARTIFACT_TIMEOUT_MS = 15 * 60 * 1000;
+export const MAX_ARTIFACT_TIMEOUT_MS = 60 * 60 * 1000;
+export const METADATA_TIMEOUT_MS = 30 * 1000;
 const MAX_BYTES = 8 * 1024 ** 3;
 const PLATFORMS = {
   android: ['arm64-v8a', 'x86_64'],
@@ -22,6 +25,50 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 const semver = value => typeof value === 'string' && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$/.test(value);
 function fail(code, message) { const error = new Error(message); error.code = code; throw error; }
 function requireValue(condition, message) { if (!condition) fail('ERR_RUNTIME_MANIFEST', message); }
+function timeoutValue(value, text = false) {
+  if (text && (typeof value !== 'string' || !/^[1-9]\d*$/.test(value))) fail('ERR_RUNTIME_OPTIONS', 'Runtime timeout must be a positive base-10 integer in milliseconds.');
+  const number = text ? Number(value) : value;
+  if (!Number.isSafeInteger(number) || number < 1 || number > MAX_ARTIFACT_TIMEOUT_MS) fail('ERR_RUNTIME_OPTIONS', `Runtime timeout must be between 1 and ${MAX_ARTIFACT_TIMEOUT_MS} milliseconds.`);
+  return number;
+}
+function networkError() { const error = new Error('Runtime release transfer failed or timed out.'); error.code = 'ERR_RUNTIME_NETWORK'; return error; }
+function ensureNetworkActive(signal) { if (signal?.aborted) throw networkError(); }
+async function withNetworkDeadline(timeoutMs, operation) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try { return await operation(controller.signal); } finally { clearTimeout(timer); }
+}
+// A body returned by an injected fetch can ignore AbortSignal. Race its reads,
+// and dispose late responses, so the same bounded contract applies to all fetches.
+function networkOperation(promise, signal) {
+  return new Promise((resolve, reject) => {
+    const abort = () => { cleanup(); reject(networkError()); };
+    const cleanup = () => signal.removeEventListener('abort', abort);
+    signal.addEventListener('abort', abort, { once: true });
+    Promise.resolve(promise).then(value => { cleanup(); resolve(value); }, () => { cleanup(); reject(networkError()); });
+    if (signal.aborted) abort();
+  });
+}
+function discardBody(body) {
+  try { void Promise.resolve(body?.cancel()).catch(() => {}); } catch { /* cancellation cannot reveal remote text */ }
+}
+async function* networkBody(body, signal) {
+  let reader, done = false;
+  try { reader = body.getReader(); } catch { throw networkError(); }
+  try {
+    while (true) {
+      ensureNetworkActive(signal);
+      let result;
+      try { result = await networkOperation(reader.read(), signal); } catch { throw networkError(); }
+      ensureNetworkActive(signal);
+      if (result.done) { done = true; return; }
+      yield result.value;
+    }
+  } finally {
+    if (!done) { try { void Promise.resolve(reader.cancel()).catch(() => {}); } catch { /* best-effort bounded disposal */ } }
+    try { reader.releaseLock(); } catch { /* a cancelled pending read cannot block cleanup */ }
+  }
+}
 
 export function selectArtifact(manifest, expected) {
   const { version, platform, arch, abiVersion = 1, component = 'runtime' } = expected;
@@ -74,9 +121,10 @@ async function digestFile(path, entry) {
 }
 
 async function exists(path) { try { await lstat(path); return true; } catch (error) { if (error.code === 'ENOENT') return false; throw error; } }
-async function request(url, token, fetchImpl, binary = false) {
+async function request(url, token, fetchImpl, signal, binary = false) {
   let current = new URL(url);
   for (let redirects = 0; redirects <= 5; redirects++) {
+    ensureNetworkActive(signal);
     const api = current.origin === 'https://api.github.com';
     const permittedAPI = api && current.pathname.startsWith(`/repos/${RUNTIME_REPOSITORY}/`);
     if (current.protocol !== 'https:' || current.username || current.password || current.port
@@ -87,45 +135,51 @@ async function request(url, token, fetchImpl, binary = false) {
     // Signed storage URLs deliberately receive no Authorization or runtime token.
     if (permittedAPI) headers.Authorization = `Bearer ${token}`;
     let response;
-    try { response = await fetchImpl(current, { headers, redirect: 'manual', signal: AbortSignal.timeout(120_000) }); }
-    catch { fail('ERR_RUNTIME_NETWORK', 'Runtime release request failed.'); }
+    try {
+      const pending = Promise.resolve().then(() => fetchImpl(current, { headers, redirect: 'manual', signal }));
+      void pending.then(value => { if (signal.aborted) discardBody(value?.body); }, () => {});
+      response = await networkOperation(pending, signal);
+    } catch { throw networkError(); }
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location');
-      await response.body?.cancel();
+      discardBody(response.body);
       if (!location || redirects === 5) fail('ERR_RUNTIME_REDIRECT', 'Invalid or excessive runtime download redirects.');
       try { current = new URL(location, current); } catch { fail('ERR_RUNTIME_REDIRECT', 'Invalid runtime download redirect.'); }
       continue;
     }
-    if (!response.ok) { await response.body?.cancel(); fail('ERR_RUNTIME_AUTH', `Runtime release request was refused (HTTP ${response.status}); verify repository read access and the exact release.`); }
+    if (!response.ok) { discardBody(response.body); fail('ERR_RUNTIME_AUTH', `Runtime release request was refused (HTTP ${response.status}); verify repository read access and the exact release.`); }
     return response;
   }
   fail('ERR_RUNTIME_REDIRECT', 'Excessive runtime download redirects.');
 }
 async function releaseAsset(entry, token, fetchImpl) {
-  const response = await request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/tags/${entry.releaseTag}`, token, fetchImpl);
-  const chunks = []; let length = 0;
-  if (!response.body) fail('ERR_RUNTIME_RELEASE', 'Release response has no body.');
-  for await (const chunk of response.body) { length += chunk.length; if (length > 4 * 1024 ** 2) fail('ERR_RUNTIME_RELEASE', 'Release metadata exceeded its limit.'); chunks.push(chunk); }
-  let release;
-  try { release = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail('ERR_RUNTIME_RELEASE', 'Release metadata is not valid JSON.'); }
-  if (release.tag_name !== entry.releaseTag || release.draft !== false || !Array.isArray(release.assets)) fail('ERR_RUNTIME_RELEASE', 'The exact published versioned release is unavailable.');
-  const assets = release.assets.filter(value => value.name === entry.fileName);
-  if (assets.length !== 1 || !Number.isSafeInteger(assets[0].id) || assets[0].id <= 0 || assets[0].state !== 'uploaded'
-    || assets[0].size !== entry.size || assets[0].digest && assets[0].digest !== `sha256:${entry.sha256}`) {
-    fail('ERR_RUNTIME_RELEASE', 'Release asset metadata differs from the pinned distribution.');
-  }
-  return request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/assets/${assets[0].id}`, token, fetchImpl, true);
+  return withNetworkDeadline(METADATA_TIMEOUT_MS, async signal => {
+    const response = await request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/tags/${entry.releaseTag}`, token, fetchImpl, signal);
+    const chunks = []; let length = 0;
+    if (!response.body) fail('ERR_RUNTIME_RELEASE', 'Release response has no body.');
+    for await (const chunk of networkBody(response.body, signal)) { length += chunk.length; if (length > 4 * 1024 ** 2) fail('ERR_RUNTIME_RELEASE', 'Release metadata exceeded its limit.'); chunks.push(chunk); }
+    let release;
+    try { release = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { fail('ERR_RUNTIME_RELEASE', 'Release metadata is not valid JSON.'); }
+    if (release.tag_name !== entry.releaseTag || release.draft !== false || !Array.isArray(release.assets)) fail('ERR_RUNTIME_RELEASE', 'The exact published versioned release is unavailable.');
+    const assets = release.assets.filter(value => value.name === entry.fileName);
+    if (assets.length !== 1 || !Number.isSafeInteger(assets[0].id) || assets[0].id <= 0 || assets[0].state !== 'uploaded'
+      || assets[0].size !== entry.size || assets[0].digest && assets[0].digest !== `sha256:${entry.sha256}`) {
+      fail('ERR_RUNTIME_RELEASE', 'Release asset metadata differs from the pinned distribution.');
+    }
+    return assets[0].id;
+  });
 }
-async function writeVerified(path, stream, entry) {
+async function writeVerified(path, stream, entry, signal) {
   if (!stream) fail('ERR_RUNTIME_INTEGRITY', 'Artifact download has no body.');
   const temporary = join(dirname(path), `.${entry.fileName}.${randomUUID()}.part`);
   let handle;
   try {
     handle = await open(temporary, 'wx', 0o600);
     const hash = createHash('sha256'); let size = 0;
-    for await (const chunk of stream) { size += chunk.length; if (size > entry.size) fail('ERR_RUNTIME_INTEGRITY', 'Artifact exceeded its pinned size.'); hash.update(chunk); await handle.writeFile(chunk); }
+    for await (const chunk of stream) { ensureNetworkActive(signal); size += chunk.length; if (size > entry.size) fail('ERR_RUNTIME_INTEGRITY', 'Artifact exceeded its pinned size.'); hash.update(chunk); await handle.writeFile(chunk); }
     if (size !== entry.size || hash.digest('hex') !== entry.sha256) fail('ERR_RUNTIME_INTEGRITY', 'Downloaded SHA-256 or size does not match its pin.');
     await handle.sync(); await handle.close(); handle = undefined;
+    ensureNetworkActive(signal);
     await rename(temporary, path);
   } finally { await handle?.close(); await rm(temporary, { force: true }); }
 }
@@ -136,6 +190,9 @@ export async function downloadRuntimeArtifact(options) {
     outDirectory, installDirectory, artifactDirectory = process.env.WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR,
     token = process.env.WEAPP_CONTAINER_RUNTIME_TOKEN, fetchImpl = globalThis.fetch,
     python = process.env.PYTHON ?? 'python3' } = options;
+  const timeoutMs = options.timeoutMs !== undefined ? timeoutValue(options.timeoutMs)
+    : process.env.WEAPP_CONTAINER_RUNTIME_TIMEOUT_MS !== undefined ? timeoutValue(process.env.WEAPP_CONTAINER_RUNTIME_TIMEOUT_MS, true)
+      : DEFAULT_ARTIFACT_TIMEOUT_MS;
   if (!manifestPath || !outDirectory) fail('ERR_RUNTIME_OPTIONS', 'Explicit manifestPath and outDirectory are required.');
   if ((await lstat(manifestPath)).size > 1024 ** 2) fail('ERR_RUNTIME_MANIFEST', 'Artifact manifest exceeded its size limit.');
   let manifest;
@@ -153,10 +210,15 @@ export async function downloadRuntimeArtifact(options) {
     await writeVerified(path, createReadStream(local), entry); source = 'offline';
   } else {
     if (typeof token !== 'string' || !token.trim() || /[\r\n]/.test(token)) fail('ERR_RUNTIME_CREDENTIALS', 'WEAPP_CONTAINER_RUNTIME_TOKEN with read access to private weapp-container/runtime-artifacts is required; or supply an explicit offline artifact directory.');
-    const response = await releaseAsset(entry, token, fetchImpl);
-    const declared = response.headers.get('content-length');
-    if (declared !== null && Number(declared) !== entry.size) { await response.body?.cancel(); fail('ERR_RUNTIME_INTEGRITY', 'Download Content-Length differs from the artifact pin.'); }
-    await writeVerified(path, response.body, entry); source = 'github';
+    const assetId = await releaseAsset(entry, token, fetchImpl);
+    await withNetworkDeadline(timeoutMs, async signal => {
+      const response = await request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/assets/${assetId}`, token, fetchImpl, signal, true);
+      const declared = response.headers.get('content-length');
+      if (declared !== null && Number(declared) !== entry.size) { discardBody(response.body); fail('ERR_RUNTIME_INTEGRITY', 'Download Content-Length differs from the artifact pin.'); }
+      if (!response.body) fail('ERR_RUNTIME_INTEGRITY', 'Artifact download has no body.');
+      try { await writeVerified(path, networkBody(response.body, signal), entry, signal); source = 'github'; }
+      finally { discardBody(response.body); }
+    });
   }
   const receipt = { schemaVersion: 1, repository: RUNTIME_REPOSITORY, runtimeVersion: version, abiVersion,
     component, platform, arch, ...(entry.architectures ? { architectures: entry.architectures } : {}),
@@ -178,7 +240,7 @@ export async function downloadRuntimeArtifact(options) {
 }
 
 function parseArguments(args) {
-  const values = {}; const allowed = ['manifest', 'version', 'platform', 'arch', 'component', 'abi', 'out-dir', 'artifact-dir', 'install-dir'];
+  const values = {}; const allowed = ['manifest', 'version', 'platform', 'arch', 'component', 'abi', 'out-dir', 'artifact-dir', 'install-dir', 'timeout-ms'];
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index]?.slice(2);
     if (!args[index]?.startsWith('--') || !allowed.includes(key) || values[key] !== undefined || !args[index + 1] || args[index + 1].startsWith('--')) fail('ERR_RUNTIME_OPTIONS', 'Unknown, duplicated or missing runtime artifact argument.');
@@ -188,7 +250,7 @@ function parseArguments(args) {
   return { manifestPath: values.manifest, version: values.version ?? SDK_VERSION, platform: values.platform, arch: values.arch,
     component: values.component ?? 'runtime', abiVersion: values.abi === undefined ? 1 : Number(values.abi),
     outDirectory: values['out-dir'], artifactDirectory: values['artifact-dir'] ?? process.env.WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR,
-    installDirectory: values['install-dir'] };
+    installDirectory: values['install-dir'], ...(values['timeout-ms'] === undefined ? {} : { timeoutMs: timeoutValue(values['timeout-ms'], true) }) };
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try { process.stdout.write(JSON.stringify(await downloadRuntimeArtifact(parseArguments(process.argv.slice(2))), null, 2) + '\n'); }
