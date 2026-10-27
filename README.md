@@ -1,0 +1,57 @@
+# Weapp Container Desktop SDK
+
+Version **0.1.0-preview.2** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+
+This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
+
+A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
+
+## Obtain the native runtime
+
+Use the reviewed `runtime-artifacts.lock.json` shipped with the matching SDK release. It locks the exact runtime version, platform, architecture, ABI **1**, artifact size and SHA-256. An absent pin, missing architecture, hash/version mismatch or unavailable engine is an error; there is no download of `latest`, software substitution or silent fallback.
+
+Set `WEAPP_CONTAINER_RUNTIME_TOKEN` in your credential environment with read access to the private artifact repository. Do not place credentials in source files or CLI arguments. Then run:
+
+```sh
+node tools/prepare-runtime.mjs
+```
+
+For an authorized offline copy use `--artifact-dir /absolute/runtime-archives`, or `WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR`. Files still undergo the same committed pin, hash, version and ABI checks. `--manifest /absolute/reviewed-lock.json` explicitly selects another reviewed lock; `--version` overrides are intentionally unavailable in this wrapper.
+
+Preparation atomically installs verified inputs under `.runtime/install/native` and `.runtime/install/licenses`. It preserves the prior installation on failure. Generated archives, binaries, caches and credentials are excluded from Git. `--native-root` below also accepts an explicitly supplied local distribution with matching per-target `build.json`, SHA-256, the reviewed C header and runtime license; local input does not imply private-release authentication.
+
+## Build and embed
+
+Requirements: CMake 3.21+, a C++17 compiler and the target UI SDK. macOS 12+ uses NSView/Metal; Windows 10 x64 uses a child HWND/raster presenter; Linux uses GTK3.24/Cairo with Ubuntu22.04/glibc2.35 as the intended baseline. CPU presenters are reported separately from GPU.
+
+```sh
+node tools/prepare-runtime.mjs --target macos-universal
+node tools/build.mjs --target macos-universal --native-root .runtime/install/native --licenses-root .runtime/install/licenses --pack /absolute/verified-portable-pack --verify
+```
+
+Other targets are `macos-arm64`, `macos-x64`, `windows-x64` and `linux-x64`; build on the corresponding OS. `--skip-consumer` only packages. `--verify` requires a running display and exercises the installed native consumer. No successful build is counted as a GUI test.
+
+Installations under `artifacts/desktop/TARGET` include public C/C++ headers, native and wrapper static archives, relative CMake exports, notices and an independent consumer. Consumers use:
+
+```cmake
+find_package(WeappContainerDesktop CONFIG REQUIRED)
+target_link_libraries(my_app PRIVATE WeappContainer::Desktop)
+```
+
+Pass the install prefix as `CMAKE_PREFIX_PATH`. The host owns its existing event loop and window. [C/C++ embedding, threads and lifecycle](docs/EMBEDDING.md).
+
+```sh
+node tools/consumer-smoke.mjs --sdk /absolute/installed-sdk --pack /absolute/verified-portable-pack --arch arm64
+```
+
+The relocation check copies the installation before compiling/linking without Rust. Rosetta x64 is explicitly an emulated result. Linux X11/Wayland and Windows GUI execution require their own environments; source availability is not an acceptance claim.
+
+## Validation and provenance
+
+```sh
+npm test
+```
+
+These are wrapper input-contract tests, not runtime, GPU, device, performance or WeChat parity results. This split starts with a new version: historical preview.1 results are not attributed to preview.2. Platform build/UI reports must be regenerated against the exact pinned runtime before claiming that scope passed. Native IME, complete accessibility and advanced gestures remain separate limitations.
+
+`ORIGIN.json` lists the allowlisted source paths, original source SHA-256, transformed destination SHA-256 and reviewed C-header contract hash. This repository includes no core implementation, Git history from the original repository, binary runtime, cache or credentials.

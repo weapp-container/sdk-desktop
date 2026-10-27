@@ -1,0 +1,2 @@
+# Preserve the upstream license byte-for-byte, including its title whitespace.
+nlohmann/LICENSE.MIT -whitespace

@@ -1,0 +1,18 @@
+name: SDK source checks
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify reviewed source and public ABI copy
+        run: node tools/check-origin.mjs
+      - name: Test standalone wrapper input contracts
+        run: npm test

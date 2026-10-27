@@ -1,0 +1,18 @@
+{
+  "name": "@weapp-container/sdk-desktop-tools",
+  "version": "0.1.0-preview.2",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/weapp-container/sdk-desktop",
+  "engines": {
+    "node": ">=24"
+  },
+  "weappContainerPlatform": "desktop",
+  "scripts": {
+    "runtime:prepare": "node tools/prepare-runtime.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check:origin": "node tools/check-origin.mjs"
+  }
+}
