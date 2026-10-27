@@ -20,6 +20,8 @@ For an authorized offline copy use `--artifact-dir /absolute/runtime-archives`, 
 
 Preparation atomically installs verified inputs under `.runtime/install/native` and `.runtime/install/licenses`. It preserves the prior installation on failure. Generated archives, binaries, caches and credentials are excluded from Git. `--native-root` below also accepts an explicitly supplied local distribution with matching per-target `build.json`, SHA-256, the reviewed C header and runtime license; local input does not imply private-release authentication.
 
+Exact runtime distributions retain the producer's original `build.json` and bind its bytes with `runtime-distribution.json`. The selection accounts for every producer artifact and can omit only the unused iOS dynamic library or Android static archive. Required libraries, the reviewed header and platform notices remain mandatory. Inputs without this selection receipt continue to verify the full producer inventory.
+
 ## Build and embed
 
 Requirements: CMake 3.21+, a C++17 compiler and the target UI SDK. macOS 12+ uses NSView/Metal; Windows 10 x64 uses a child HWND/raster presenter; Linux uses GTK3.24/Cairo with Ubuntu22.04/glibc2.35 as the intended baseline. CPU presenters are reported separately from GPU.
@@ -53,5 +55,7 @@ npm test
 ```
 
 These are wrapper input-contract tests, not runtime, GPU, device, performance or WeChat parity results. This split starts with a new version: historical preview.1 results are not attributed to preview.2. Platform build/UI reports must be regenerated against the exact pinned runtime before claiming that scope passed. Native IME, complete accessibility and advanced gestures remain separate limitations.
+
+The 2026-10-27 preview.2 report for wrapper source `360e789` records a universal macOS package, independent C/C++ build/link and arm64 native execution with actual Metal presentation. The consumer uses synthetic Cocoa event dispatch to exercise two views, input/scrolling, navigation, resize, hidden completion pumping, window visibility, owner-thread enforcement and durable reopening. It does not establish physical OS input. macOS x86_64 execution, Windows/Linux execution, performance and WeChat parity remain unmeasured; their unavailable runtime pins fail explicitly.
 
 `ORIGIN.json` lists the allowlisted source paths, original source SHA-256, transformed destination SHA-256 and reviewed C-header contract hash. This repository includes no core implementation, Git history from the original repository, binary runtime, cache or credentials.
