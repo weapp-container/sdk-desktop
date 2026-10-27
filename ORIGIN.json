@@ -72,7 +72,7 @@
       "sourcePath": "sdk/desktop/consumer/smoke.hpp",
       "destinationPath": "consumer/smoke.hpp",
       "sourceSha256": "5048199970780ef449b4aefd81c671c4f9c42a34db1d96a86fec204f8c740b3d",
-      "destinationSha256": "5ee91ed4b41c11ddac703d91ae25462ad4b4650f1ca4700263991b0113e40ddf",
+      "destinationSha256": "c7506560a59c3427ece8b04c4f0139a7e83c95b65192d7926324e79429fa8ab5",
       "transformed": true
     },
     {
@@ -128,7 +128,7 @@
       "sourcePath": "sdk/desktop/src/macos.mm",
       "destinationPath": "src/macos.mm",
       "sourceSha256": "38c626959af60d57a801849b66cf2457410a776c7bce3df6ee998606e25d207f",
-      "destinationSha256": "71109f9ebaf1839812647b35a956a7d7b74e4bdc9aabdeec58a14d2f6a7fc13e",
+      "destinationSha256": "81dc51fa1d24f23d074ceadfe3098aa6c591858631b6cf138f280caafdb9ee33",
       "transformed": true
     },
     {

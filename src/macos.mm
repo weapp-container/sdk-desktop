@@ -138,7 +138,9 @@ class MacPresenter final : public Presenter {
       // owner thread consumes receipts and calls back into the runtime.
       auto completions = completions_;
       [command addCompletedHandler:^(id<MTLCommandBuffer> buffer) {
-        (void)drawable.texture;
+        // Retain the drawable itself; querying its texture after presentation
+        // violates CAMetalLayer's drawable contract.
+        (void)drawable;
         const bool success = buffer.status == MTLCommandBufferStatusCompleted;
         std::string message = success ? "" :
             (buffer.error.localizedDescription.UTF8String ?: "Metal presentation failed");

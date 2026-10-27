@@ -44,6 +44,16 @@ inline int smoke(const std::string& pack, Host host,
     std::vector<EventType> first_events, second_events;
     std::map<std::string, Value::Object> messages;
     std::vector<std::string> errors;
+    auto required_message = [&](const std::string& kind) -> const Value::Object& {
+      auto found = messages.find(kind);
+      if (found == messages.end()) {
+        std::string seen;
+        for (const auto& entry : messages) seen += " " + entry.first;
+        throw std::runtime_error("missing consumer message " + kind + "; received:" + seen +
+                                 "; SDK errors: " + std::to_string(errors.size()));
+      }
+      return found->second;
+    };
     first->on_event([&](const Event& e) {
       first_events.push_back(e.type);
       if (e.type == EventType::Message) {
@@ -77,12 +87,12 @@ inline int smoke(const std::string& pack, Host host,
     const auto before = first->state().revision;
     ok(first->send_message(Value::Object{{"op", "inspect"}}));
     host.spin(.05);
-    const auto geometry = messages.at("geometry");
+    const auto geometry = required_message("geometry");
     const auto tap = std::get<Value::Object>(geometry.at("tap").data);
     host.click(*left, std::get<double>(tap.at("x").data), std::get<double>(tap.at("y").data));
     host.spin(.15);
     require(first->state().revision > before &&
-                std::get<double>(messages.at("tap").at("count").data) == 1 &&
+                std::get<double>(required_message("tap").at("count").data) == 1 &&
                 messages.count("timer") == 1,
             "native pointer input did not reach JavaScript and its timer");
     require(second->state().revision == second_revision,
@@ -92,7 +102,7 @@ inline int smoke(const std::string& pack, Host host,
     const double top = std::get<double>(scroll.at("top").data), height = std::get<double>(scroll.at("height").data);
     host.drag(*left, x, top + height * .8, top + height * .2);
     host.spin(.05);
-    require(std::get<double>(messages.at("scroll").at("scrollTop").data) > 0,
+    require(std::get<double>(required_message("scroll").at("scrollTop").data) > 0,
             "native drag input did not scroll the shared fixture");
     ok(first->navigate("pages/detail/index", {{"source", "native-consumer"}}));
     host.spin(.05);
