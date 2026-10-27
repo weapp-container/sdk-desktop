@@ -23,7 +23,15 @@ int main(int argc, char** argv) {
       while (end.timeIntervalSinceNow > 0)
         [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:end];
     };
-    host.click = [](View& view, double x, double y) {
+    auto wait_for_input = [spin = host.spin](View& view) {
+      const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+      while (!view.input_enabled()) {
+        require(std::chrono::steady_clock::now() < deadline,
+                "current native frame did not become input-enabled after presentation");
+        spin(.005);
+      }
+    };
+    host.click = [wait_for_input](View& view, double x, double y) {
       NSView* native = (__bridge NSView*)view.native_handle();
       NSPoint p = [native convertPoint:NSMakePoint(x, y) toView:nil];
       NSEvent* down = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown
@@ -44,10 +52,10 @@ int main(int argc, char** argv) {
                                     eventNumber:2
                                      clickCount:1
                                        pressure:0];
-      [native mouseDown:down];
-      [native mouseUp:up];
+      wait_for_input(view); [native mouseDown:down];
+      wait_for_input(view); [native mouseUp:up];
     };
-    host.drag = [](View& view, double x, double from, double to) {
+    host.drag = [wait_for_input](View& view, double x, double from, double to) {
       NSView* native = (__bridge NSView*)view.native_handle();
       for (int step = 0; step <= 7; ++step) {
         const double y = step == 7 ? to : from + (to - from) * step / 6;
@@ -55,6 +63,7 @@ int main(int argc, char** argv) {
         NSEvent* event = [NSEvent mouseEventWithType:type location:[native convertPoint:NSMakePoint(x,y) toView:nil]
                                     modifierFlags:0 timestamp:step * .02 windowNumber:native.window.windowNumber context:nil
                                       eventNumber:step clickCount:1 pressure:1];
+        wait_for_input(view);
         if (step == 0) [native mouseDown:event];
         else if (step == 7) [native mouseUp:event];
         else [native mouseDragged:event];

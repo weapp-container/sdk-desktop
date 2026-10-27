@@ -143,6 +143,7 @@ Status Core::call(const char* op, const Json& payload, Json* result) {
       state.revision = value.value("frameRevision", uint64_t(0));
       state.generation = value.value("generation", uint64_t(0));
       presentation_required = value.value("presentationRequired", false);
+      input_enabled = value.value("inputEnabled", false);
       state.foreground = value.value("foreground", false);
       state.route = value.contains("page") && value["page"].is_object()
                         ? value["page"].value("route", "")
@@ -642,6 +643,11 @@ View::~View() {
   session_->core_->report(session_->core_->foreground());
 }
 void* View::native_handle() const { return presenter_->native_handle(); }
+bool View::input_enabled() const {
+  const auto& core = *session_->core_;
+  return bool(core.check()) && core.state.status == SessionState::Ready &&
+         core.state.foreground && core.surface_visible && core.input_enabled;
+}
 Status View::set_bounds(const Rect& r) {
   if (!valid_rect(r))
     return Status::error("ERR_INVALID_ARGUMENT", "invalid native view bounds");

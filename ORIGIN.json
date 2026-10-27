@@ -65,14 +65,14 @@
       "sourcePath": "sdk/desktop/consumer/macos.mm",
       "destinationPath": "consumer/macos.mm",
       "sourceSha256": "c6ca1d01339b1661d9cc79831a4eda72baa5de2448085af52214598dfafdbe35",
-      "destinationSha256": "c6ca1d01339b1661d9cc79831a4eda72baa5de2448085af52214598dfafdbe35",
-      "transformed": false
+      "destinationSha256": "b8681207c4c53cba3265b7ce986f3d91654001b1055604075b50db2009c3541c",
+      "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/consumer/smoke.hpp",
       "destinationPath": "consumer/smoke.hpp",
       "sourceSha256": "5048199970780ef449b4aefd81c671c4f9c42a34db1d96a86fec204f8c740b3d",
-      "destinationSha256": "c7506560a59c3427ece8b04c4f0139a7e83c95b65192d7926324e79429fa8ab5",
+      "destinationSha256": "13e12949736814f4b433013c371c1e142240590925094d7dd97c3507dcc6b4d9",
       "transformed": true
     },
     {
@@ -93,8 +93,8 @@
       "sourcePath": "sdk/desktop/include/weapp/desktop.hpp",
       "destinationPath": "include/weapp/desktop.hpp",
       "sourceSha256": "c677617b086077c194ee74eb10cbf737839951b10c8a48f39b483d3c346fbff8",
-      "destinationSha256": "c677617b086077c194ee74eb10cbf737839951b10c8a48f39b483d3c346fbff8",
-      "transformed": false
+      "destinationSha256": "2bdb90b74addccbcc60f5ead86cdb475e096010a5302afc3dae79baef26df218",
+      "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/src/c_api.cpp",
@@ -107,14 +107,14 @@
       "sourcePath": "sdk/desktop/src/desktop.cpp",
       "destinationPath": "src/desktop.cpp",
       "sourceSha256": "ea550d9fb5d88614ce822fd3c46884fa9c2ec92ea58d9e1d7e658b715869857c",
-      "destinationSha256": "88be2d06134435b02e98235463068a653f0a4a6f000407342b6e1042afbff779",
+      "destinationSha256": "a693fb95cc8459b6cc0add9c69c1c27e26be66522ea9fc93f0dce383133659ca",
       "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/src/internal.hpp",
       "destinationPath": "src/internal.hpp",
       "sourceSha256": "1533a204ce380aedcae3be36e61d87474d8344515a2235ceac64be061f6f1bfd",
-      "destinationSha256": "e8a268394fa9104ee2da6e6b43f8347fba81254950cf75823895cda2586c1562",
+      "destinationSha256": "725f832800433d50463df3f08a60c169412cfee2f5629fbedd0567213cc0313b",
       "transformed": true
     },
     {

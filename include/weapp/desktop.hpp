@@ -160,6 +160,8 @@ struct Rect {
 };
 class View final {
  public:
+  // Observe the runtime input gate without changing the accepted frame.
+  bool input_enabled() const;
   // parent: NSView*, HWND, or GtkContainer*. SDK creates only a child view.
   // Windows requires a parent; macOS/GTK permit null for subsequent host
   // insertion.

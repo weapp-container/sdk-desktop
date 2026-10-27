@@ -32,6 +32,7 @@ struct Core {
   State state;
   bool requested_foreground = true, surface_visible = true, delivering = false;
   bool presentation_required = false;
+  bool input_enabled = false;
   std::set<std::string> methods;
   std::function<void(const Event&)> listener;
   std::vector<Event> pending;

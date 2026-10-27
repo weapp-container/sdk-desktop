@@ -44,13 +44,25 @@ inline int smoke(const std::string& pack, Host host,
     std::vector<EventType> first_events, second_events;
     std::map<std::string, Value::Object> messages;
     std::vector<std::string> errors;
+    auto record_error = [&](const Event& event) {
+      auto item = event.fields.find("error");
+      const auto* detail = item == event.fields.end() ? nullptr : std::get_if<Value::Object>(&item->second.data);
+      std::string text = "SDK error event";
+      if (detail) for (const auto& key : {"code", "message"}) {
+        auto field = detail->find(key);
+        if (field != detail->end()) if (const auto* value = std::get_if<std::string>(&field->second.data)) text += " " + *value;
+      }
+      errors.push_back(text);
+    };
     auto required_message = [&](const std::string& kind) -> const Value::Object& {
       auto found = messages.find(kind);
       if (found == messages.end()) {
         std::string seen;
         for (const auto& entry : messages) seen += " " + entry.first;
+        std::string diagnostics;
+        for (const auto& entry : errors) diagnostics += " [" + entry + "]";
         throw std::runtime_error("missing consumer message " + kind + "; received:" + seen +
-                                 "; SDK errors: " + std::to_string(errors.size()));
+                                 "; SDK errors:" + diagnostics);
       }
       return found->second;
     };
@@ -60,11 +72,11 @@ inline int smoke(const std::string& pack, Host host,
         const auto& message = std::get<Value::Object>(e.fields.at("message").data);
         messages[std::get<std::string>(message.at("kind").data)] = message;
       }
-      if (e.type == EventType::Error) errors.push_back("first error event");
+      if (e.type == EventType::Error) record_error(e);
     });
     second->on_event([&](const Event& e) {
       second_events.push_back(e.type);
-      if (e.type == EventType::Error) errors.push_back("second error event");
+      if (e.type == EventType::Error) record_error(e);
     });
     auto left = View::create(first, host.parent, {0, 0, 360, 420}, status);
     ok(status);
