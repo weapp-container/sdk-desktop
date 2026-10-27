@@ -93,3 +93,87 @@ test('packaged native identities exclude producer checkout, toolchain and comman
   assert.equal(identity.abiVersion, 1);
   assert.deepEqual(identity.artifacts, [{ file: 'libfixture.a', bytes: 10, sha256: '0'.repeat(64) }]);
 });
+
+function distributionFixture(t, platform = 'ios') {
+  const f = fixture(t);
+  f.target = platform === 'android' ? 'aarch64-linux-android' : 'aarch64-apple-ios-sim';
+  f.input = resolve(f.native, f.target); mkdirSync(f.input, { recursive: true });
+  const omitted = platform === 'android' ? 'libweapp_container_sdk.a' : 'libweapp_container_sdk.dylib';
+  const library = platform === 'android' ? 'libweapp_container_sdk.so' : 'libweapp_container_sdk.a';
+  const files = [library, omitted, 'weapp_container_sdk.h', ...(platform === 'android' ? ['libc++_shared.so', 'platform-notices/NOTICE'] : [])];
+  for (const name of files) {
+    mkdirSync(resolve(f.input, name, '..'), { recursive: true });
+    if (name === 'weapp_container_sdk.h') cpSync(resolve(root, 'include', name), resolve(f.input, name));
+    else writeFileSync(resolve(f.input, name), `test-only ${name}`);
+  }
+  const metadata = file => ({ file, bytes: readFileSync(resolve(f.input, file)).length, sha256: sha256(resolve(f.input, file)) });
+  f.receipt = { schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target: f.target, status: 'built', sourceCommit: 'a'.repeat(40), sourceDirty: false, artifacts: files.map(metadata) };
+  f.save = () => writeFileSync(resolve(f.input, 'build.json'), JSON.stringify(f.receipt)); f.save();
+  f.selection = { schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target: f.target, sourceCommit: f.receipt.sourceCommit, sourceDirty: false,
+    producerReceipt: { file: 'build.json', sha256: sha256(resolve(f.input, 'build.json')) },
+    selectedArtifacts: f.receipt.artifacts.filter(item => item.file !== omitted), omittedArtifacts: f.receipt.artifacts.filter(item => item.file === omitted),
+  };
+  f.saveSelection = () => writeFileSync(resolve(f.input, 'runtime-distribution.json'), JSON.stringify(f.selection)); f.saveSelection();
+  rmSync(resolve(f.input, omitted));
+  return Object.assign(f, { library, omitted });
+}
+
+for (const platform of ['ios', 'android']) test(`a ${platform} exact distribution validates selected bytes while preserving its full producer receipt`, t => {
+  const f = distributionFixture(t, platform), original = readFileSync(resolve(f.input, 'build.json'));
+  const input = readNative(f.native, f.target, [f.library]);
+  assert.equal(input.distribution.omittedArtifacts[0].file, f.omitted);
+  assert.deepEqual(readFileSync(resolve(f.input, 'build.json')), original);
+  rmSync(resolve(f.input, 'runtime-distribution.json'));
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /ENOENT/);
+});
+test('distribution source, version, ABI and target must match the original receipt', t => {
+  const f = distributionFixture(t);
+  for (const [field, value] of [['sourceCommit', 'b'.repeat(40)], ['sourceDirty', true], ['sdkVersion', '0.1.0-preview.1'], ['abiVersion', 2], ['target', 'aarch64-apple-ios']]) {
+    const original = f.selection[field]; f.selection[field] = value; f.saveSelection();
+    assert.throws(() => readNative(f.native, f.target, [f.library]), /identity mismatch/);
+    f.selection[field] = original;
+  }
+});
+test('a distribution binds the exact original producer receipt bytes', t => {
+  const f = distributionFixture(t); writeFileSync(resolve(f.input, 'build.json'), JSON.stringify(f.receipt, null, 2));
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /producer receipt mismatch/);
+});
+test('distribution partitions reject duplicate, missing and foreign inventory entries', t => {
+  const f = distributionFixture(t), original = structuredClone(f.selection);
+  f.selection.selectedArtifacts.push(f.selection.selectedArtifacts[0]); f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /duplicate/);
+  f.selection = structuredClone(original); f.selection.omittedArtifacts = []; f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /complete producer inventory/);
+  f.selection = structuredClone(original); f.selection.omittedArtifacts[0].file = 'another-library.a'; f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /differs from producer/);
+});
+test('distribution metadata and selected content cannot be altered independently', t => {
+  const f = distributionFixture(t), original = structuredClone(f.selection);
+  f.selection.selectedArtifacts[0].bytes++; f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /differs from producer/);
+  f.selection = structuredClone(original); f.selection.selectedArtifacts[0].sha256 = '0'.repeat(64); f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /differs from producer/);
+  f.selection = structuredClone(original); f.saveSelection(); writeFileSync(resolve(f.input, f.library), 'corrupted');
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /hash mismatch/);
+});
+test('required libraries, ABI headers and platform notices cannot be omitted', t => {
+  const f = distributionFixture(t, 'android'), original = structuredClone(f.selection);
+  for (const file of [f.library, 'weapp_container_sdk.h', 'platform-notices/NOTICE']) {
+    f.selection = structuredClone(original);
+    const index = f.selection.selectedArtifacts.findIndex(item => item.file === file);
+    f.selection.omittedArtifacts.push(f.selection.selectedArtifacts.splice(index, 1)[0]); f.saveSelection();
+    assert.throws(() => readNative(f.native, f.target, [f.library]), /cannot omit required platform artifact/);
+  }
+  f.selection = structuredClone(original); f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.omitted]), /Missing hashed native library/);
+});
+test('distribution selection cannot relax native path and symlink rules', t => {
+  const f = distributionFixture(t);
+  f.receipt.artifacts[1].file = '../libweapp_container_sdk.dylib'; f.save();
+  f.selection.omittedArtifacts[0].file = '../libweapp_container_sdk.dylib'; f.selection.producerReceipt.sha256 = sha256(resolve(f.input, 'build.json')); f.saveSelection();
+  assert.throws(() => readNative(f.native, f.target, [f.library]), /Invalid or duplicate native artifact/);
+  if (process.platform !== 'win32') {
+    const g = distributionFixture(t); rmSync(resolve(g.input, g.library)); symlinkSync(resolve(root, 'LICENSE'), resolve(g.input, g.library));
+    assert.throws(() => readNative(g.native, g.target, [g.library]), /symlink/);
+  }
+});

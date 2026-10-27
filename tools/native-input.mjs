@@ -52,20 +52,51 @@ export function inside(root, name) {
 /** Inputs are versioned private runtime distributions, never a parent source tree. */
 export function readNative(nativeRoot, target, requiredLibraries) {
   const directory = inside(nativeRoot, target);
-  const receipt = JSON.parse(readFileSync(inside(directory, 'build.json'), 'utf8'));
+  const producerPath = inside(directory, 'build.json');
+  const receipt = JSON.parse(readFileSync(producerPath, 'utf8'));
   if (receipt.schemaVersion !== 1 || receipt.abiVersion !== 1 || receipt.status !== 'built' || receipt.target !== target || receipt.sdkVersion !== SDK_VERSION) {
     throw new Error(`A successfully built ${SDK_VERSION} runtime receipt is required for ${target}`);
   }
   if (!Array.isArray(receipt.artifacts)) throw new Error('Native receipt is missing artifact hashes');
   const names = new Set();
   for (const artifact of receipt.artifacts) {
-    if (names.has(artifact.file) || !/^[a-f0-9]{64}$/.test(artifact.sha256)) throw new Error('Invalid or duplicate native artifact');
+    if (typeof artifact.file !== 'string' || !artifact.file || isAbsolute(artifact.file) || artifact.file.includes('\\') || artifact.file.split('/').some(part => !part || part === '.' || part === '..') || names.has(artifact.file) || !/^[a-f0-9]{64}$/.test(artifact.sha256)) throw new Error('Invalid or duplicate native artifact');
     names.add(artifact.file);
+  }
+  let artifacts = receipt.artifacts, distribution;
+  if (existsSync(resolve(directory, 'runtime-distribution.json'))) {
+    distribution = JSON.parse(readFileSync(inside(directory, 'runtime-distribution.json'), 'utf8'));
+    if (!/^[a-f0-9]{40}$/.test(receipt.sourceCommit) || typeof receipt.sourceDirty !== 'boolean') throw new Error('Native distribution requires a concrete producer source identity');
+    for (const key of ['schemaVersion', 'sdkVersion', 'abiVersion', 'target', 'sourceCommit', 'sourceDirty']) {
+      if (!Object.hasOwn(receipt, key) || distribution[key] !== receipt[key]) throw new Error(`Native distribution identity mismatch: ${key}`);
+    }
+    if (distribution.producerReceipt?.file !== 'build.json' || distribution.producerReceipt.sha256 !== sha256(producerPath)) throw new Error('Native distribution producer receipt mismatch');
+    if (!Array.isArray(distribution.selectedArtifacts) || !distribution.selectedArtifacts.length || !Array.isArray(distribution.omittedArtifacts)) throw new Error('Native distribution must declare selected and omitted artifacts');
+    const inventory = new Map(receipt.artifacts.map(item => [item.file, item]));
+    const covered = new Set();
+    const omittedLibrary = target.endsWith('-linux-android') ? 'libweapp_container_sdk.a' : /-apple-ios(?:-sim)?$/.test(target) ? 'libweapp_container_sdk.dylib' : undefined;
+    for (const [group, items] of [['selected', distribution.selectedArtifacts], ['omitted', distribution.omittedArtifacts]]) {
+      for (const item of items) {
+        if (!item || typeof item !== 'object' || Object.keys(item).sort().join(',') !== 'bytes,file,sha256' || !Number.isSafeInteger(item.bytes) || item.bytes < 0 || covered.has(item.file)) throw new Error('Invalid or duplicate native distribution artifact');
+        const original = inventory.get(item.file);
+        if (!original || original.bytes !== item.bytes || original.sha256 !== item.sha256) throw new Error(`Native distribution artifact differs from producer: ${item.file}`);
+        if (group === 'omitted' && item.file !== omittedLibrary) throw new Error(`Native distribution cannot omit required platform artifact: ${item.file}`);
+        covered.add(item.file);
+      }
+    }
+    if (covered.size !== inventory.size) throw new Error('Native distribution does not cover the complete producer inventory');
+    artifacts = distribution.selectedArtifacts;
+    names.clear();
+    for (const item of artifacts) names.add(item.file);
+    if (!names.has('weapp_container_sdk.h')) throw new Error('Native distribution must select the reviewed C header');
+  }
+  for (const artifact of artifacts) {
     if (sha256(inside(directory, artifact.file)) !== artifact.sha256) throw new Error(`Native hash mismatch: ${artifact.file}`);
+    if (distribution && lstatSync(inside(directory, artifact.file)).size !== artifact.bytes) throw new Error(`Native size mismatch: ${artifact.file}`);
   }
   for (const name of requiredLibraries) if (!names.has(name)) throw new Error(`Missing hashed native library: ${name}`);
   if (sha256(inside(directory, 'weapp_container_sdk.h')) !== HEADER_SHA256) throw new Error('Native C header does not match reviewed SDK contract');
-  return { directory, receipt };
+  return { directory, receipt, distribution };
 }
 
 export function readNotices(nativeRoot, licensesRoot, target) {
