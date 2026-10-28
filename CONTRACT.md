@@ -1,6 +1,6 @@
 # SDK contract v1
 
-SDK version: `0.1.0-preview.2`; C ABI version: `1`.
+SDK version: `0.1.0-preview.3`; C ABI version: `1`.
 
 Platform adapters call the separately licensed runtime through `weapp_container_sdk.h`. Application
 code uses the platform's typed session and view API. The JSON below is an internal
@@ -35,6 +35,10 @@ returns no application value.
 | Command | Payload / result |
 | --- | --- |
 | `load` | `{packPath, route?, options?}`; a verified local pack directory |
+| `classifyDevPack` | `{packPath}`; fully verifies without changing the session, returns `{reloadKind:"inPlace"|"restart"}` |
+| `applyDevPack` | `{packPath,route?,options?}`; returns `{reloadKind,state}` after candidate acceptance, not GPU presentation |
+| `devState` | Read-only `{state,pages:[{id,route,data}]}` inspection |
+| `clearDevStorage` | Clears current wx storage; adapter must await `flushStorage` for durable completion |
 | `registerHostMethod` | `{name}` before the first load |
 | `completeHostCall` | `{callId,result}` or `{callId,error:{code,message,retryable}}` |
 | `sendMessage` | `{message}` containing JSON data |
@@ -63,6 +67,39 @@ Host-call identifiers already contain generation identity. They are opaque. Comp
 at most once; release host jobs on cancellation. Late/duplicate native completions
 cannot run JavaScript in a replacement runtime. Never call FFI inside its own event
 dispatch; marshal completion back to the session queue.
+
+## Development reload (preview.3)
+
+Require `capabilities.pack.devReload.protocolVersion == "1.0"` and the selected
+reload kind before sending a development command. Older runtimes reject unknown
+commands with `ERR_UNSUPPORTED_CAPABILITY`; do not emulate success. Dev Player
+creates a session with `gpuRequired:true`: a runtime without the compiled native
+GPU provider rejects creation. Omitted `gpuRequired` preserves existing SDK
+behavior. This setting never proves that a frame has been presented.
+
+`devDiagnostics:true` explicitly enables bounded development console diagnostics.
+It defaults to false and does not change ordinary production session traces.
+Adapters forward diagnostic events through their existing owner-thread event stream.
+
+Classification is shared with the simulator. A fully validated WXML/WXSS/static
+asset edit can preserve the live session, page data, page stack, storage and
+timers. Candidate view/layout preparation runs before acceptance. JS/module,
+configuration, dependency, component graph, or unsafe component/WXS changes
+restart the session. A restart preserves persistent storage and attempts the
+current route if still available. Detach the GPU surface for a restart; do not
+detach it for an in-place edit. The adapter serializes classify/apply on the
+runtime owner thread and reattaches after either restart success or failure.
+
+Pack validation and pre-acceptance startup failure leave the accepted pack
+available. Once a new runtime/frame has been accepted, subsequent GPU failure
+is a presentation failure: pause input and retry or explicitly reload the
+previous pack. Reloading the previous pack cannot restore its old JS heap.
+`clearDevStorage` clears wx storage, not downloaded packs or current page data.
+
+The optional `weapp_container_sdk_gl.h` extension supplies a host-owned GL
+function resolver for desktop OpenGL 3.3. The original GLES ABI header is
+unchanged. Resolve functions on the current owning context; never share that
+context or invoke FFI from fence/completion callbacks.
 
 ## Presentation
 

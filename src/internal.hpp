@@ -27,6 +27,8 @@ struct Core {
   Config config;
   std::thread::id owner = std::this_thread::get_id();
   weapp_container_sdk_session* handle = nullptr;
+  bool owns_handle = true;
+  std::function<void(const Status&)> error_sink;
   std::unique_ptr<Loop> loop;
   Presenter* presenter = nullptr;
   State state;

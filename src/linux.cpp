@@ -1,9 +1,14 @@
 #include <gtk/gtk.h>
+#include <epoxy/gl.h>
+#include <dlfcn.h>
+#include <algorithm>
+#include <cctype>
 
 #include <cmath>
 #include <unordered_map>
 
 #include "internal.hpp"
+#include "weapp_container_sdk_gl.h"
 
 namespace weapp::desktop::detail {
 const char* platform_name() { return "linux"; }
@@ -46,7 +51,10 @@ class GtkPresenter final : public Presenter {
  public:
   explicit GtkPresenter(Core& c) : Presenter(c) {}
   ~GtkPresenter() override {
-    detach();
+    core_.report(detach());
+    release_clock();
+    if (lib_gl_) dlclose(lib_gl_);
+    if (lib_egl_) dlclose(lib_egl_);
     if (widget_) {
       g_signal_handlers_disconnect_by_data(widget_, this);
       gtk_widget_destroy(widget_);
@@ -57,7 +65,14 @@ class GtkPresenter final : public Presenter {
     if (parent && !GTK_IS_CONTAINER(parent))
       return Status::error("ERR_INVALID_ARGUMENT",
                            "GTK parent must be a GtkContainer");
-    widget_ = gtk_drawing_area_new();
+    widget_ = core_.config.require_gpu ? gtk_gl_area_new() : gtk_drawing_area_new();
+    if (core_.config.require_gpu) {
+      gtk_gl_area_set_required_version(GTK_GL_AREA(widget_), 3, 3);
+      gtk_gl_area_set_use_es(GTK_GL_AREA(widget_), FALSE);
+      gtk_gl_area_set_auto_render(GTK_GL_AREA(widget_), FALSE);
+      gtk_gl_area_set_has_depth_buffer(GTK_GL_AREA(widget_), FALSE);
+      gtk_gl_area_set_has_stencil_buffer(GTK_GL_AREA(widget_), FALSE);
+    }
     g_object_ref_sink(widget_);
     retained_ = widget_;
     gtk_widget_set_can_focus(widget_, TRUE);
@@ -67,7 +82,12 @@ class GtkPresenter final : public Presenter {
                               GDK_SMOOTH_SCROLL_MASK | GDK_TOUCH_MASK |
                               GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK |
                               GDK_FOCUS_CHANGE_MASK);
-    g_signal_connect(widget_, "draw", G_CALLBACK(draw_cb), this);
+    if (core_.config.require_gpu) {
+      g_signal_connect(widget_, "render", G_CALLBACK(render_cb), this);
+      g_signal_connect(widget_, "unrealize", G_CALLBACK(unrealize_cb), this);
+    } else {
+      g_signal_connect(widget_, "draw", G_CALLBACK(draw_cb), this);
+    }
     g_signal_connect(widget_, "size-allocate", G_CALLBACK(size_cb), this);
     g_signal_connect(widget_, "map", G_CALLBACK(visibility_cb), this);
     g_signal_connect(widget_, "unmap", G_CALLBACK(visibility_cb), this);
@@ -88,7 +108,13 @@ class GtkPresenter final : public Presenter {
     auto s = set_bounds(bounds);
     if (!s) return s;
     if (parent) {
-      if (GTK_IS_FIXED(parent))
+      if (GTK_IS_OVERLAY(parent)) {
+        gtk_widget_set_halign(widget_, GTK_ALIGN_START);
+        gtk_widget_set_valign(widget_, GTK_ALIGN_START);
+        gtk_widget_set_margin_start(widget_, std::max(0, int(std::lround(bounds.x))));
+        gtk_widget_set_margin_top(widget_, std::max(0, int(std::lround(bounds.y))));
+        gtk_overlay_add_overlay(GTK_OVERLAY(parent), widget_);
+      } else if (GTK_IS_FIXED(parent))
         gtk_fixed_put(GTK_FIXED(parent), widget_, gint(bounds.x),
                       gint(bounds.y));
       else
@@ -113,6 +139,10 @@ class GtkPresenter final : public Presenter {
     auto* parent = gtk_widget_get_parent(widget_);
     if (parent && GTK_IS_FIXED(parent))
       gtk_fixed_move(GTK_FIXED(parent), widget_, int(r.x), int(r.y));
+    else if (parent && GTK_IS_OVERLAY(parent)) {
+      gtk_widget_set_margin_start(widget_, std::max(0, int(std::lround(r.x))));
+      gtk_widget_set_margin_top(widget_, std::max(0, int(std::lround(r.y))));
+    }
     initial_width_ = std::max(1, int(std::lround(r.width)));
     initial_height_ = std::max(1, int(std::lround(r.height)));
     update();
@@ -135,6 +165,10 @@ class GtkPresenter final : public Presenter {
   }
   Status detach() override {
     attached_ = false;
+    if (core_.config.require_gpu) {
+      auto result = detach_gpu();
+      if (!result) return result;
+    }
     has_presented_ = false;
     raster_.clear();
     return {};
@@ -142,6 +176,14 @@ class GtkPresenter final : public Presenter {
   Status present() override {
     update();
     if (!widget_ || !attached_ || !core_.surface_visible) return {};
+    if (core_.config.require_gpu) {
+      // GTK owns the GL context. Rendering is confined to its render callback;
+      // timers only schedule work and poll already-submitted completion.
+      if (pending_ || !has_presented_ || presented_generation_ != core_.state.generation ||
+          presented_revision_ != core_.state.revision)
+        gtk_gl_area_queue_render(GTK_GL_AREA(widget_));
+      return {};
+    }
     bool changed = false;
     auto s = raster_.update(core_, changed);
     if (changed) gtk_widget_queue_draw(widget_);
@@ -187,6 +229,171 @@ class GtkPresenter final : public Presenter {
  private:
   static GtkPresenter& self(gpointer p) {
     return *static_cast<GtkPresenter*>(p);
+  }
+  struct Current {
+    GdkGLContext* previous = gdk_gl_context_get_current();
+    GtkGLArea* area;
+    bool active;
+    explicit Current(GtkWidget* widget) : area(GTK_GL_AREA(widget)), active(false) {
+      if (previous) g_object_ref(previous);
+      if (widget && gtk_widget_get_realized(widget)) {
+        gtk_gl_area_make_current(area);
+        active = gtk_gl_area_get_error(area) == nullptr;
+      }
+    }
+    ~Current() {
+      if (previous) {
+        gdk_gl_context_make_current(previous);
+        g_object_unref(previous);
+      } else gdk_gl_context_clear_current();
+    }
+    explicit operator bool() const { return active; }
+  };
+  static const void* resolve_gl(void* data, const char* name) {
+    auto& s = self(data);
+    void* address = dlsym(RTLD_DEFAULT, name);
+    if (address) return address;
+    if (!s.lib_gl_) s.lib_gl_ = dlopen("libGL.so.1", RTLD_NOW | RTLD_LOCAL);
+    if (!s.lib_egl_) s.lib_egl_ = dlopen("libEGL.so.1", RTLD_NOW | RTLD_LOCAL);
+    if (s.lib_gl_) {
+      address = dlsym(s.lib_gl_, name);
+      if (address) return address;
+      using Resolver = void*(*)(const unsigned char*);
+      auto resolve = reinterpret_cast<Resolver>(dlsym(s.lib_gl_, "glXGetProcAddressARB"));
+      if (resolve) address = resolve(reinterpret_cast<const unsigned char*>(name));
+      if (address) return address;
+    }
+    if (s.lib_egl_) {
+      using Resolver = void*(*)(const char*);
+      auto resolve = reinterpret_cast<Resolver>(dlsym(s.lib_egl_, "eglGetProcAddress"));
+      if (resolve) address = resolve(name);
+    }
+    return address;
+  }
+  Status attach_gpu() {
+    const auto* bytes = glGetString(GL_RENDERER);
+    std::string renderer = bytes ? reinterpret_cast<const char*>(bytes) : "";
+    std::transform(renderer.begin(), renderer.end(), renderer.begin(),
+                   [](unsigned char c) { return char(std::tolower(c)); });
+    if (renderer.empty() || renderer.find("llvmpipe") != std::string::npos ||
+        renderer.find("softpipe") != std::string::npos ||
+        renderer.find("swiftshader") != std::string::npos ||
+        renderer.find("software") != std::string::npos)
+      return Status::error("ERR_RENDER", "hardware OpenGL 3.3 is required; software preview is disabled");
+    GLint major = 0, minor = 0;
+    glGetIntegerv(GL_MAJOR_VERSION, &major);
+    glGetIntegerv(GL_MINOR_VERSION, &minor);
+    if (major < 3 || (major == 3 && minor < 3))
+      return Status::error("ERR_RENDER", "OpenGL 3.3 or newer is required");
+    Buffer result;
+    auto status = result.read(weapp_container_sdk_gl_attach_with_resolver(
+        core_.handle, resolve_gl, this, &result.value));
+    if (status) gpu_attached_ = true;
+    return status;
+  }
+  Status detach_gpu() {
+    Current current(widget_);
+    if (pending_) {
+      if (current) glDeleteSync(pending_);
+      pending_ = nullptr;
+    }
+    painted_ = false;
+    if (!gpu_attached_) return {};
+    Buffer result;
+    auto status = result.read(current
+        ? weapp_container_sdk_gles_detach(core_.handle, &result.value)
+        : weapp_container_sdk_gles_abandon(core_.handle, &result.value));
+    if (status) gpu_attached_ = false;
+    return status;
+  }
+  void release_clock() {
+    if (!clock_) return;
+    g_signal_handlers_disconnect_by_data(clock_, this);
+    g_object_unref(clock_);
+    clock_ = nullptr;
+  }
+  Status poll_gpu() {
+    if (!pending_ || !painted_) return {};
+    const auto result = glClientWaitSync(pending_, 0, 0);
+    if (result == GL_TIMEOUT_EXPIRED) return {};
+    glDeleteSync(pending_);
+    pending_ = nullptr;
+    painted_ = false;
+    if (result == GL_WAIT_FAILED)
+      return Status::error("ERR_RENDER", "OpenGL completion fence failed");
+    if (result != GL_ALREADY_SIGNALED && result != GL_CONDITION_SATISFIED)
+      return Status::error("ERR_RENDER", "invalid OpenGL fence result");
+    if (!attached_ || !core_.surface_visible) return {};
+    auto status = core_.acknowledge_presentation(pending_generation_, pending_revision_);
+    if (status) {
+      presented_generation_ = pending_generation_;
+      presented_revision_ = pending_revision_;
+      has_presented_ = true;
+    }
+    return status.code == "ERR_CANCELLED" ? Status{} : status;
+  }
+  static void after_paint_cb(GdkFrameClock*, gpointer data) {
+    auto& s = self(data);
+    if (!s.widget_ || !s.pending_) return;
+    Current current(s.widget_);
+    if (!current) return;
+    s.painted_ = true;
+    s.core_.report(s.poll_gpu());
+    if (s.pending_ && s.attached_ && s.core_.surface_visible)
+      gtk_gl_area_queue_render(GTK_GL_AREA(s.widget_));
+  }
+  static gboolean render_cb(GtkGLArea* area, GdkGLContext*, gpointer data) {
+    auto& s = self(data);
+    if (!s.attached_ || !s.core_.surface_visible || !s.core_.handle) return TRUE;
+    auto* error = gtk_gl_area_get_error(area);
+    if (error) {
+      s.core_.report(Status::error("ERR_RENDER", error->message));
+      return TRUE;
+    }
+    auto polled = s.poll_gpu();
+    if (!polled) { s.core_.report(polled); return TRUE; }
+    if (s.pending_) return TRUE;
+    if (!s.gpu_attached_) {
+      auto status = s.attach_gpu();
+      if (!status) { s.core_.report(status); return TRUE; }
+    }
+    if (!s.clock_) {
+      s.clock_ = gtk_widget_get_frame_clock(GTK_WIDGET(area));
+      if (!s.clock_) {
+        s.core_.report(Status::error("ERR_RENDER", "GTK frame clock unavailable"));
+        return TRUE;
+      }
+      g_object_ref(s.clock_);
+      g_signal_connect(s.clock_, "after-paint", G_CALLBACK(after_paint_cb), &s);
+    }
+    gtk_gl_area_attach_buffers(area);
+    GLint framebuffer = 0;
+    glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &framebuffer);
+    auto ratio = gtk_widget_get_scale_factor(GTK_WIDGET(area));
+    const auto width = uint32_t(gtk_widget_get_allocated_width(GTK_WIDGET(area)) * ratio);
+    const auto height = uint32_t(gtk_widget_get_allocated_height(GTK_WIDGET(area)) * ratio);
+    if (!width || !height) return TRUE;
+    Buffer result;
+    auto status = result.read(weapp_container_sdk_gles_present(
+        s.core_.handle, uint32_t(framebuffer), width, height, &result.value));
+    if (!status) { s.core_.report(status); return TRUE; }
+    s.pending_ = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+    if (!s.pending_) {
+      s.core_.report(Status::error("ERR_RENDER", "OpenGL fence allocation failed"));
+      return TRUE;
+    }
+    s.pending_generation_ = s.core_.state.generation;
+    s.pending_revision_ = s.core_.state.revision;
+    s.painted_ = false;
+    glFlush();
+    return TRUE;
+  }
+  static void unrealize_cb(GtkWidget*, gpointer data) {
+    auto& s = self(data);
+    s.core_.cancel_touches();
+    s.core_.report(s.detach_gpu());
+    s.has_presented_ = false;
+    s.release_clock();
   }
   static gboolean draw_cb(GtkWidget*, cairo_t* cr, gpointer p) {
     auto& s = self(p);
@@ -302,13 +509,20 @@ class GtkPresenter final : public Presenter {
   }
   static void destroy_cb(GtkWidget* w, gpointer p) {
     auto& s = self(p);
-    s.detach();
+    s.core_.report(s.detach());
+    s.release_clock();
     s.visibility(false);
     g_signal_handlers_disconnect_by_data(w, p);
     s.widget_ = nullptr;
   }
   GtkWidget* widget_ = nullptr;
   GtkWidget* retained_ = nullptr;
+  GdkFrameClock* clock_ = nullptr;
+  void* lib_gl_ = nullptr;
+  void* lib_egl_ = nullptr;
+  GLsync pending_ = nullptr;
+  uint64_t pending_generation_ = 0, pending_revision_ = 0;
+  bool gpu_attached_ = false, painted_ = false;
   Raster raster_;
   bool attached_ = false, positive_ = true, has_allocation_ = false;
   bool has_presented_ = false;

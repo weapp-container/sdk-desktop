@@ -2,11 +2,15 @@
 #define NOMINMAX
 #include <windows.h>
 #include <windowsx.h>
+#include <GL/gl.h>
+#include <algorithm>
+#include <cctype>
 
 #include <cmath>
 #include <cstring>
 
 #include "internal.hpp"
+#include "weapp_container_sdk_gl.h"
 
 namespace weapp::desktop::detail {
 const char* platform_name() { return "windows"; }
@@ -66,7 +70,13 @@ class WinPresenter final : public Presenter {
  public:
   explicit WinPresenter(Core& c) : Presenter(c) {}
   ~WinPresenter() override {
-    detach();
+    core_.report(detach());
+    if (context_) {
+      wglDeleteContext(context_);
+      context_ = nullptr;
+    }
+    if (dc_ && window_) ReleaseDC(window_, dc_);
+    dc_ = nullptr;
     if (window_) DestroyWindow(window_);
   }
   Status initialize(void* parent, const Rect& r) override {
@@ -77,6 +87,7 @@ class WinPresenter final : public Presenter {
     wc.lpfnWndProc = proc;
     wc.hInstance = GetModuleHandleW(nullptr);
     wc.lpszClassName = L"WeappDesktopViewV1";
+    wc.style = CS_OWNDC;
     wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     if (!RegisterClassW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
       return win_error("RegisterClassW");
@@ -89,6 +100,10 @@ class WinPresenter final : public Presenter {
         std::max(0, int(std::lround(r.height * scale))),
         static_cast<HWND>(parent), nullptr, wc.hInstance, this);
     if (!window_) return win_error("Create child HWND");
+    if (core_.config.require_gpu) {
+      auto gpu = initialize_gpu();
+      if (!gpu) return gpu;
+    }
     update();
     return {};
   }
@@ -118,11 +133,37 @@ class WinPresenter final : public Presenter {
     return {};
   }
   Status attach() override {
+    if (core_.config.require_gpu) {
+      if (!context_ || !dc_)
+        return Status::error("ERR_RENDER", "hardware OpenGL context unavailable");
+      Current current(dc_, context_);
+      if (!current) return win_error("Make OpenGL context current");
+      Buffer result;
+      auto status = result.read(weapp_container_sdk_gl_attach_with_resolver(
+          core_.handle, resolve_gl, nullptr, &result.value));
+      if (!status) return status;
+      gpu_attached_ = true;
+    }
     attached_ = true;
     return {};
   }
   Status detach() override {
     attached_ = false;
+    if (context_ && gpu_attached_) {
+      Current current(dc_, context_);
+      Buffer result;
+      auto status = result.read(current
+          ? weapp_container_sdk_gles_detach(core_.handle, &result.value)
+          : weapp_container_sdk_gles_abandon(core_.handle, &result.value));
+      if (!status) return status;
+      gpu_attached_ = false;
+    }
+    if (context_ && pending_) {
+      Current current(dc_, context_);
+      if (current) delete_sync_(pending_);
+      pending_ = nullptr;
+    }
+    gpu_presented_ = false;
     has_presented_ = false;
     raster_.clear();
     if (bitmap_) {
@@ -134,6 +175,7 @@ class WinPresenter final : public Presenter {
   Status present() override {
     update();
     if (!window_ || !attached_ || !core_.surface_visible) return {};
+    if (core_.config.require_gpu) return present_gpu();
     bool changed = false;
     auto s = raster_.update(core_, changed);
     if (!s || (!changed && bitmap_)) return s;
@@ -187,11 +229,131 @@ class WinPresenter final : public Presenter {
   }
 
  private:
+  // No shared client memory is referenced by GPU commands. Normal detach
+  // deletes GL objects while their context is current; the driver retains
+  // queued references until completion. Pending receipts are always revoked.
+  struct Current {
+    HDC old_dc = wglGetCurrentDC();
+    HGLRC old_context = wglGetCurrentContext();
+    bool active;
+    Current(HDC dc, HGLRC context) : active(wglMakeCurrent(dc, context) != FALSE) {}
+    ~Current() { if (active) wglMakeCurrent(old_dc, old_context); }
+    explicit operator bool() const { return active; }
+  };
+  using Sync = void*;
+  using Fence = Sync(APIENTRY*)(GLenum, GLbitfield);
+  using Wait = GLenum(APIENTRY*)(Sync, GLbitfield, uint64_t);
+  using DeleteSync = void(APIENTRY*)(Sync);
+  static const void* resolve_gl(void*, const char* name) {
+    auto pointer = wglGetProcAddress(name);
+    auto value = reinterpret_cast<uintptr_t>(pointer);
+    if (!pointer || value <= 3 || value == uintptr_t(-1))
+      pointer = GetProcAddress(GetModuleHandleW(L"opengl32.dll"), name);
+    return reinterpret_cast<const void*>(pointer);
+  }
+  Status initialize_gpu() {
+    dc_ = GetDC(window_);
+    if (!dc_) return win_error("Get OpenGL DC");
+    PIXELFORMATDESCRIPTOR format{};
+    format.nSize = static_cast<WORD>(sizeof(format));
+    format.nVersion = 1;
+    format.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    format.iPixelType = PFD_TYPE_RGBA;
+    format.cColorBits = 32;
+    format.cAlphaBits = 8;
+    auto index = ChoosePixelFormat(dc_, &format);
+    if (!index || !SetPixelFormat(dc_, index, &format))
+      return win_error("Set OpenGL pixel format");
+    auto bootstrap = wglCreateContext(dc_);
+    if (!bootstrap) return win_error("Create bootstrap OpenGL context");
+    using Create = HGLRC(WINAPI*)(HDC, HGLRC, const int*);
+    HGLRC next = nullptr;
+    {
+      Current current(dc_, bootstrap);
+      if (current) {
+        auto create = reinterpret_cast<Create>(
+            const_cast<void*>(resolve_gl(nullptr, "wglCreateContextAttribsARB")));
+        const int attributes[] = {0x2091, 3, 0x2092, 3, 0x9126, 1, 0};
+        if (create) next = create(dc_, nullptr, attributes);
+      }
+    }
+    wglDeleteContext(bootstrap);
+    if (!next)
+      return Status::error("ERR_RENDER", "hardware OpenGL 3.3 core is required");
+    context_ = next;
+    Current current(dc_, context_);
+    if (!current) return win_error("Make OpenGL 3.3 context current");
+    const auto* bytes = glGetString(GL_RENDERER);
+    std::string renderer = bytes ? reinterpret_cast<const char*>(bytes) : "";
+    std::transform(renderer.begin(), renderer.end(), renderer.begin(),
+                   [](unsigned char c) { return char(std::tolower(c)); });
+    if (renderer.empty() || renderer.find("gdi generic") != std::string::npos ||
+        renderer.find("llvmpipe") != std::string::npos ||
+        renderer.find("softpipe") != std::string::npos ||
+        renderer.find("swiftshader") != std::string::npos ||
+        renderer.find("software") != std::string::npos)
+      return Status::error("ERR_RENDER", "software OpenGL does not satisfy GPU-only preview");
+    fence_ = reinterpret_cast<Fence>(const_cast<void*>(resolve_gl(nullptr, "glFenceSync")));
+    wait_ = reinterpret_cast<Wait>(const_cast<void*>(resolve_gl(nullptr, "glClientWaitSync")));
+    delete_sync_ = reinterpret_cast<DeleteSync>(const_cast<void*>(resolve_gl(nullptr, "glDeleteSync")));
+    if (!fence_ || !wait_ || !delete_sync_)
+      return Status::error("ERR_RENDER", "OpenGL fence functions are unavailable");
+    return {};
+  }
+  Status present_gpu() {
+    Current current(dc_, context_);
+    if (!current) return win_error("Make OpenGL context current");
+    if (pending_) {
+      auto result = wait_(pending_, 0, 0);  // Poll only; never wait on the UI thread.
+      if (result == 0x911B) return {};       // GL_TIMEOUT_EXPIRED
+      delete_sync_(pending_);
+      pending_ = nullptr;
+      if (result == 0x911D)
+        return Status::error("ERR_RENDER", "OpenGL completion fence failed");
+      if (result != 0x911A && result != 0x911C)
+        return Status::error("ERR_RENDER", "invalid OpenGL fence result");
+      auto receipt = core_.acknowledge_presentation(pending_generation_, pending_revision_);
+      if (!receipt && receipt.code != "ERR_CANCELLED") return receipt;
+      gpu_presented_ = bool(receipt);
+      presented_generation_ = pending_generation_;
+      presented_revision_ = pending_revision_;
+    }
+    RECT bounds{};
+    if (!GetClientRect(window_, &bounds)) return win_error("Read OpenGL drawable bounds");
+    const auto width = uint32_t(std::max(0L, bounds.right));
+    const auto height = uint32_t(std::max(0L, bounds.bottom));
+    if (!width || !height) return {};
+    if (gpu_presented_ && presented_generation_ == core_.state.generation &&
+        presented_revision_ == core_.state.revision && gpu_width_ == width && gpu_height_ == height)
+      return {};
+    Buffer buffer;
+    auto status = buffer.read(weapp_container_sdk_gles_present(
+        core_.handle, 0, width, height, &buffer.value));
+    if (!status) return status;
+    pending_ = fence_(0x9117, 0);  // GL_SYNC_GPU_COMMANDS_COMPLETE
+    if (!pending_) return Status::error("ERR_RENDER", "OpenGL fence allocation failed");
+    glFlush();
+    if (!SwapBuffers(dc_)) {
+      delete_sync_(pending_);
+      pending_ = nullptr;
+      return win_error("Swap OpenGL buffers");
+    }
+    pending_generation_ = core_.state.generation;
+    pending_revision_ = core_.state.revision;
+    gpu_width_ = width;
+    gpu_height_ = height;
+    return {};
+  }
   void pointer(PointerAction action, UINT32 id, POINT p) {
     double d = GetDpiForWindow(window_) / 96.0;
     core_.report(core_.pointer({action, id, p.x / d, p.y / d}));
   }
   void paint() {
+    if (core_.config.require_gpu) {
+      ValidateRect(window_, nullptr);
+      core_.report(present());
+      return;
+    }
     PAINTSTRUCT ps{};
     HDC dc = BeginPaint(window_, &ps);
     RECT r{};
@@ -349,6 +511,15 @@ class WinPresenter final : public Presenter {
     return DefWindowProcW(w, msg, wp, lp);
   }
   HWND window_ = nullptr;
+  HDC dc_ = nullptr;
+  HGLRC context_ = nullptr;
+  Fence fence_ = nullptr;
+  Wait wait_ = nullptr;
+  DeleteSync delete_sync_ = nullptr;
+  Sync pending_ = nullptr;
+  bool gpu_attached_ = false, gpu_presented_ = false;
+  uint64_t pending_generation_ = 0, pending_revision_ = 0;
+  uint32_t gpu_width_ = 0, gpu_height_ = 0;
   HBITMAP bitmap_ = nullptr;
   Raster raster_;
   bool attached_ = false;

@@ -62,7 +62,7 @@ Status Buffer::read(int32_t rc, Json* out) {
 Core::~Core() {
   if (owner != std::this_thread::get_id()) std::terminate();
   loop.reset();
-  if (handle) {
+  if (handle && owns_handle) {
     Buffer b;
     b.read(weapp_container_sdk_session_destroy(&handle, &b.value));
     // A Session cannot die while its View owns a shared reference. The fallback
@@ -105,6 +105,10 @@ Status Core::create_native() {
               {"windowWidth", m.width},
               {"windowHeight", m.height},
               {"displayMetrics", display(m)}}}};
+  // Existing Windows/Linux consumers retain their explicit raster contract.
+  // macOS keeps its historical Metal default unless GPU is required explicitly.
+  if (config.require_gpu || std::string(platform_name()) != "macos")
+    j["gpuRequired"] = config.require_gpu;
   if (!config.session_id.empty()) j["sessionId"] = config.session_id;
   if (!config.storage_key.empty() || !config.storage_root.empty()) {
     j["storageKey"] = config.storage_key;
@@ -163,6 +167,10 @@ Status Core::acknowledge_presentation(uint64_t generation, uint64_t revision) {
   return call("presented", {{"generation", generation}, {"revision", revision}});
 }
 void Core::report(const Status& s) {
+  if (!s && error_sink) {
+    error_sink(s);
+    return;
+  }
   if (!s)
     pending.push_back(
         {EventType::Error,

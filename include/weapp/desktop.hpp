@@ -45,6 +45,8 @@ struct Config {
   // Optional when a View supplies actual metrics before load().
   Metrics metrics;
   std::string storage_key, storage_root, session_id;
+  // Explicit GPU-only native preview. Failure never selects a CPU presenter.
+  bool require_gpu = false;
 };
 struct LoadOptions {
   std::string route;
