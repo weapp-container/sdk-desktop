@@ -23,7 +23,7 @@
       "sourcePath": "sdk/desktop/CMakeLists.txt",
       "destinationPath": "CMakeLists.txt",
       "sourceSha256": "7693ed2f6542d4cb054c52d97a2b159c253119a470adfaa12d96806639a494ba",
-      "destinationSha256": "412b11e1322da1b336011161eb43f46bb8d031162dd5c0f9cb9eb5999c20ffaf",
+      "destinationSha256": "034bb21ae3abf5a8abd0c70dc1a526d696454897554818bfe1418d3a0ced7e8b",
       "transformed": true
     },
     {
@@ -86,14 +86,14 @@
       "sourcePath": "sdk/desktop/include/weapp/desktop.h",
       "destinationPath": "include/weapp/desktop.h",
       "sourceSha256": "b1371285a7d04d68b109db95011fb4ffc5977a41d112d3664d8377da34990291",
-      "destinationSha256": "3430d325ec90444bd6b6ae0695a03140448145cbfcd237843656e7180bd2f564",
+      "destinationSha256": "3248313fd6972c3e70863fdaf79d73a947b96f1811df990deb49bd1d74170f86",
       "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/include/weapp/desktop.hpp",
       "destinationPath": "include/weapp/desktop.hpp",
       "sourceSha256": "c677617b086077c194ee74eb10cbf737839951b10c8a48f39b483d3c346fbff8",
-      "destinationSha256": "2bdb90b74addccbcc60f5ead86cdb475e096010a5302afc3dae79baef26df218",
+      "destinationSha256": "5a0871ccc105a2605eafcb90409ebd31d30e4f11c26255b6c0536f3d3652470a",
       "transformed": true
     },
     {
@@ -107,21 +107,21 @@
       "sourcePath": "sdk/desktop/src/desktop.cpp",
       "destinationPath": "src/desktop.cpp",
       "sourceSha256": "ea550d9fb5d88614ce822fd3c46884fa9c2ec92ea58d9e1d7e658b715869857c",
-      "destinationSha256": "a693fb95cc8459b6cc0add9c69c1c27e26be66522ea9fc93f0dce383133659ca",
+      "destinationSha256": "a0c43d9a7245040c764b1631f135f34fc5f4492503494fad38ef2bd1547019e2",
       "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/src/internal.hpp",
       "destinationPath": "src/internal.hpp",
       "sourceSha256": "1533a204ce380aedcae3be36e61d87474d8344515a2235ceac64be061f6f1bfd",
-      "destinationSha256": "725f832800433d50463df3f08a60c169412cfee2f5629fbedd0567213cc0313b",
+      "destinationSha256": "c481f811a38b838c83dccc742196f265c6300c0fda4e2b46a237f43275cd0dbb",
       "transformed": true
     },
     {
       "sourcePath": "sdk/desktop/src/linux.cpp",
       "destinationPath": "src/linux.cpp",
       "sourceSha256": "eb742760f1f480da8918aa57cf742d989a3a05fb4c7ae7f7d7368ce350f55cad",
-      "destinationSha256": "5bf6496b91da18d571840e843dfca0bd9987d47d7f74085c65b6322e1f1deb62",
+      "destinationSha256": "b674cd6938854d5b417520ee6a48cf6a70dc05443cfc00338b306e041d022ae8",
       "transformed": true
     },
     {
@@ -135,7 +135,7 @@
       "sourcePath": "sdk/desktop/src/windows.cpp",
       "destinationPath": "src/windows.cpp",
       "sourceSha256": "3da555873494b154d0d5574f8c5399dcd0728737915510e27accb48ae88d54d9",
-      "destinationSha256": "28f0bfaaf7bd9fb6ce7b3984766f19e28ba98711d6437388d5912a25d419d69f",
+      "destinationSha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
       "transformed": true
     },
     {
@@ -177,7 +177,7 @@
       "sourcePath": "sdk/CONTRACT.md",
       "destinationPath": "CONTRACT.md",
       "sourceSha256": "be8e15cde918c30569640b60c4cff9fe29f2c9bc1054fcb4d516882b15019402",
-      "destinationSha256": "8196aa203908de36d50ff7adf002ea07752a52c0b3a1723fb1f090f6a20d2af9",
+      "destinationSha256": "d1b8beab03f73c3e2a2ce8d5e838775ec34ed5218eb6e61c0339a15522e29774",
       "transformed": true
     },
     {
@@ -191,14 +191,14 @@
       "sourcePath": "scripts/sdk-desktop-package.mjs",
       "destinationPath": "tools/build.mjs",
       "sourceSha256": "6f8a00c3d42445bc4f0c9d147157f6a0857c848b3f4b624a443525795420f51e",
-      "destinationSha256": "1e45d893f60d878bec0fb1247f5d24b0db27c78e71df59fa542e0a331f7441ab",
+      "destinationSha256": "e2dab8524cf13b400feb95521dd3c5e9837c374e3412b371e41e288f14bc78a9",
       "transformed": true
     },
     {
       "sourcePath": "scripts/sdk-desktop-consumer.mjs",
       "destinationPath": "tools/consumer-smoke.mjs",
       "sourceSha256": "d5ed6c7e52a78a2ab041ccec539b5dc1208d8603f161f167fc0b1030d8051bf6",
-      "destinationSha256": "151c4ee767d6c7085c11dae91ce7ca3e966875f37070cad17979831f1a1f79c2",
+      "destinationSha256": "caae18721dc772cca899c13cb430abd743ae465b992689d9fd02659a2f6af962",
       "transformed": true
     },
     {
@@ -211,11 +211,11 @@
   ],
   "runtime": {
     "repository": "weapp-container/runtime-artifacts",
-    "version": "0.1.0-preview.2",
+    "version": "0.1.0-preview.3",
     "abiVersion": 1,
     "license": "Separate private binary license; no runtime source included",
     "pinFile": "runtime-artifacts.lock.json",
-    "pinSha256": "c574d527f87160a2b28ff416dfb0f9da43e16c2989de2b83880b71e1874f3f0b"
+    "pinSha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d"
   },
   "reviewedCopies": [
     {
@@ -245,12 +245,12 @@
     },
     {
       "destinationPath": "README.md",
-      "destinationSha256": "c111184cb97ee66737a50bea67263a70922d9f250c7b7c5ec6b159e21b44e48f",
+      "destinationSha256": "0cc1764ad24d7f14ebfad637958bcf015758de86c6237094d12946d1acca9637",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
       "destinationPath": "package.json",
-      "destinationSha256": "d8b1f7d001371f69062727ab01ce24397a86c2347c813c9227f4e9a7416f095c",
+      "destinationSha256": "6702f3a98f0eaea8b3ca31ef1edb35637e7b724ee20ea467d6c05c0cab3a09bc",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
@@ -260,12 +260,12 @@
     },
     {
       "destinationPath": "tools/check-origin.mjs",
-      "destinationSha256": "10901cb5df489c56f3745ff5420f6c6319233ab9b3a844ff794ccff1146a4561",
+      "destinationSha256": "0d971b3bb1f0196f2c35a6152f43518f17838defe20884d98e5718544f70ecf5",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
       "destinationPath": "tools/native-input.mjs",
-      "destinationSha256": "5a0bc0ff0bda6f7befac0446679e70a706539f2e1e88f90e9318f0669cd86ba2",
+      "destinationSha256": "040faefb069bde41ba27324c954c8576de8c7ef31b3d89bd59c9bd72ecf82bd6",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
@@ -275,7 +275,7 @@
     },
     {
       "destinationPath": "tools/runtime-artifacts.mjs",
-      "destinationSha256": "25cf17edc7ebd6349abaa08151d73f91767e2dc2b74702e84f031663149df2f0",
+      "destinationSha256": "4976086e1c6af1800540a2ef8ff43b5a8d2c3e3f59f00456aa31382f2b57a0df",
       "purpose": "Independent SDK wrapper tooling, validation or distribution documentation"
     },
     {
@@ -290,8 +290,210 @@
     },
     {
       "destinationPath": "runtime-artifacts.lock.json",
-      "destinationSha256": "c574d527f87160a2b28ff416dfb0f9da43e16c2989de2b83880b71e1874f3f0b",
+      "destinationSha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d",
       "purpose": "Reviewed immutable preview.2 manifest: seven private runtime slices and three host SDK archives, exact ABI1 and SHA256 pins; contains no runtime source or credentials"
+    },
+    {
+      "destinationPath": "include/weapp/native_preview.hpp",
+      "destinationSha256": "060a4f70b3651a8e410e54e4679ac36e2a550985cd3d0c6ed3dfc8946bae6372",
+      "purpose": "Public SDK GPU adapter/header or installer regression; no runtime implementation."
+    },
+    {
+      "destinationPath": "include/weapp_container_sdk_gl.h",
+      "destinationSha256": "8812d0e25f023c745ffad7206552b2a58dce3d7291f0e2a661e6f4e521558de7",
+      "purpose": "Public SDK GPU adapter/header or installer regression; no runtime implementation."
+    },
+    {
+      "destinationPath": "src/native_preview.cpp",
+      "destinationSha256": "8c0da0c36036f95bdc4b474596cefe1e957fe271397a5220a52713777d307695",
+      "purpose": "Public SDK GPU adapter/header or installer regression; no runtime implementation."
+    },
+    {
+      "destinationPath": "test/native-preview-ownership.cpp",
+      "destinationSha256": "6de81a05acd4bd287d629bbdbff7d06b83c75433ac4aeaeb7adbda841a0967f5",
+      "purpose": "Public SDK GPU adapter/header or installer regression; no runtime implementation."
+    },
+    {
+      "destinationPath": "test/provenance.test.mjs",
+      "destinationSha256": "ce1ffdbce58a033bb70afc3279cf368ea4dd1ae88c0fe9afdbb5c2996cd09493",
+      "purpose": "Public SDK GPU adapter/header or installer regression; no runtime implementation."
+    }
+  ],
+  "currentRuntimeDependency": {
+    "repository": "weapp-container/runtime-artifacts",
+    "version": "0.1.0-preview.3",
+    "abiVersion": 1,
+    "pinFile": "runtime-artifacts.lock.json",
+    "pinSha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d"
+  },
+  "revisionChanges": [
+    {
+      "baselineCommit": "47209df8a38e9226bb85f2e6df97fcc5aa7020c4",
+      "scope": "Current SDK inventory and preview.3 runtime dependency. Original extraction sourceCommit/sourceSha256 and original preview.2 sdkVersion identity remain historical; this record does not claim native/device acceptance.",
+      "files": [
+        {
+          "path": "CMakeLists.txt",
+          "previousRecordedSha256": "412b11e1322da1b336011161eb43f46bb8d031162dd5c0f9cb9eb5999c20ffaf",
+          "baseCommitSha256": "034bb21ae3abf5a8abd0c70dc1a526d696454897554818bfe1418d3a0ced7e8b",
+          "currentSha256": "034bb21ae3abf5a8abd0c70dc1a526d696454897554818bfe1418d3a0ced7e8b",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "include/weapp/desktop.h",
+          "previousRecordedSha256": "3430d325ec90444bd6b6ae0695a03140448145cbfcd237843656e7180bd2f564",
+          "baseCommitSha256": "3248313fd6972c3e70863fdaf79d73a947b96f1811df990deb49bd1d74170f86",
+          "currentSha256": "3248313fd6972c3e70863fdaf79d73a947b96f1811df990deb49bd1d74170f86",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "include/weapp/desktop.hpp",
+          "previousRecordedSha256": "2bdb90b74addccbcc60f5ead86cdb475e096010a5302afc3dae79baef26df218",
+          "baseCommitSha256": "5a0871ccc105a2605eafcb90409ebd31d30e4f11c26255b6c0536f3d3652470a",
+          "currentSha256": "5a0871ccc105a2605eafcb90409ebd31d30e4f11c26255b6c0536f3d3652470a",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "src/desktop.cpp",
+          "previousRecordedSha256": "a693fb95cc8459b6cc0add9c69c1c27e26be66522ea9fc93f0dce383133659ca",
+          "baseCommitSha256": "a0c43d9a7245040c764b1631f135f34fc5f4492503494fad38ef2bd1547019e2",
+          "currentSha256": "a0c43d9a7245040c764b1631f135f34fc5f4492503494fad38ef2bd1547019e2",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "src/internal.hpp",
+          "previousRecordedSha256": "725f832800433d50463df3f08a60c169412cfee2f5629fbedd0567213cc0313b",
+          "baseCommitSha256": "c481f811a38b838c83dccc742196f265c6300c0fda4e2b46a237f43275cd0dbb",
+          "currentSha256": "c481f811a38b838c83dccc742196f265c6300c0fda4e2b46a237f43275cd0dbb",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "src/linux.cpp",
+          "previousRecordedSha256": "5bf6496b91da18d571840e843dfca0bd9987d47d7f74085c65b6322e1f1deb62",
+          "baseCommitSha256": "b674cd6938854d5b417520ee6a48cf6a70dc05443cfc00338b306e041d022ae8",
+          "currentSha256": "b674cd6938854d5b417520ee6a48cf6a70dc05443cfc00338b306e041d022ae8",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "src/windows.cpp",
+          "previousRecordedSha256": "28f0bfaaf7bd9fb6ce7b3984766f19e28ba98711d6437388d5912a25d419d69f",
+          "baseCommitSha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
+          "currentSha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "CONTRACT.md",
+          "previousRecordedSha256": "8196aa203908de36d50ff7adf002ea07752a52c0b3a1723fb1f090f6a20d2af9",
+          "baseCommitSha256": "d1b8beab03f73c3e2a2ce8d5e838775ec34ed5218eb6e61c0339a15522e29774",
+          "currentSha256": "d1b8beab03f73c3e2a2ce8d5e838775ec34ed5218eb6e61c0339a15522e29774",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "tools/build.mjs",
+          "previousRecordedSha256": "1e45d893f60d878bec0fb1247f5d24b0db27c78e71df59fa542e0a331f7441ab",
+          "baseCommitSha256": "e2dab8524cf13b400feb95521dd3c5e9837c374e3412b371e41e288f14bc78a9",
+          "currentSha256": "e2dab8524cf13b400feb95521dd3c5e9837c374e3412b371e41e288f14bc78a9",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "tools/consumer-smoke.mjs",
+          "previousRecordedSha256": "151c4ee767d6c7085c11dae91ce7ca3e966875f37070cad17979831f1a1f79c2",
+          "baseCommitSha256": "caae18721dc772cca899c13cb430abd743ae465b992689d9fd02659a2f6af962",
+          "currentSha256": "caae18721dc772cca899c13cb430abd743ae465b992689d9fd02659a2f6af962",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "README.md",
+          "previousRecordedSha256": "c111184cb97ee66737a50bea67263a70922d9f250c7b7c5ec6b159e21b44e48f",
+          "baseCommitSha256": "cd41e84d74831f2905bae54ef0e7aeb6f5db3e264ef1308fbb863fbe3ebb2b6a",
+          "currentSha256": "0cc1764ad24d7f14ebfad637958bcf015758de86c6237094d12946d1acca9637",
+          "kind": "current-runtime-pin-and-installer-update"
+        },
+        {
+          "path": "package.json",
+          "previousRecordedSha256": "d8b1f7d001371f69062727ab01ce24397a86c2347c813c9227f4e9a7416f095c",
+          "baseCommitSha256": "6702f3a98f0eaea8b3ca31ef1edb35637e7b724ee20ea467d6c05c0cab3a09bc",
+          "currentSha256": "6702f3a98f0eaea8b3ca31ef1edb35637e7b724ee20ea467d6c05c0cab3a09bc",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "tools/check-origin.mjs",
+          "previousRecordedSha256": "10901cb5df489c56f3745ff5420f6c6319233ab9b3a844ff794ccff1146a4561",
+          "baseCommitSha256": "10901cb5df489c56f3745ff5420f6c6319233ab9b3a844ff794ccff1146a4561",
+          "currentSha256": "0d971b3bb1f0196f2c35a6152f43518f17838defe20884d98e5718544f70ecf5",
+          "kind": "current-runtime-pin-and-installer-update"
+        },
+        {
+          "path": "tools/native-input.mjs",
+          "previousRecordedSha256": "5a0bc0ff0bda6f7befac0446679e70a706539f2e1e88f90e9318f0669cd86ba2",
+          "baseCommitSha256": "040faefb069bde41ba27324c954c8576de8c7ef31b3d89bd59c9bd72ecf82bd6",
+          "currentSha256": "040faefb069bde41ba27324c954c8576de8c7ef31b3d89bd59c9bd72ecf82bd6",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "tools/runtime-artifacts.mjs",
+          "previousRecordedSha256": "25cf17edc7ebd6349abaa08151d73f91767e2dc2b74702e84f031663149df2f0",
+          "baseCommitSha256": "4976086e1c6af1800540a2ef8ff43b5a8d2c3e3f59f00456aa31382f2b57a0df",
+          "currentSha256": "4976086e1c6af1800540a2ef8ff43b5a8d2c3e3f59f00456aa31382f2b57a0df",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "runtime-artifacts.lock.json",
+          "previousRecordedSha256": "c574d527f87160a2b28ff416dfb0f9da43e16c2989de2b83880b71e1874f3f0b",
+          "baseCommitSha256": "c574d527f87160a2b28ff416dfb0f9da43e16c2989de2b83880b71e1874f3f0b",
+          "currentSha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d",
+          "kind": "current-runtime-pin-and-installer-update"
+        },
+        {
+          "path": "include/weapp/native_preview.hpp",
+          "baseCommitSha256": "060a4f70b3651a8e410e54e4679ac36e2a550985cd3d0c6ed3dfc8946bae6372",
+          "currentSha256": "060a4f70b3651a8e410e54e4679ac36e2a550985cd3d0c6ed3dfc8946bae6372",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "include/weapp_container_sdk_gl.h",
+          "baseCommitSha256": "8812d0e25f023c745ffad7206552b2a58dce3d7291f0e2a661e6f4e521558de7",
+          "currentSha256": "8812d0e25f023c745ffad7206552b2a58dce3d7291f0e2a661e6f4e521558de7",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "src/native_preview.cpp",
+          "baseCommitSha256": "8c0da0c36036f95bdc4b474596cefe1e957fe271397a5220a52713777d307695",
+          "currentSha256": "8c0da0c36036f95bdc4b474596cefe1e957fe271397a5220a52713777d307695",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "test/native-preview-ownership.cpp",
+          "baseCommitSha256": "6de81a05acd4bd287d629bbdbff7d06b83c75433ac4aeaeb7adbda841a0967f5",
+          "currentSha256": "6de81a05acd4bd287d629bbdbff7d06b83c75433ac4aeaeb7adbda841a0967f5",
+          "kind": "previously-committed-sdk-evolution"
+        },
+        {
+          "path": "test/provenance.test.mjs",
+          "baseCommitSha256": null,
+          "currentSha256": "ce1ffdbce58a033bb70afc3279cf368ea4dd1ae88c0fe9afdbb5c2996cd09493",
+          "kind": "authored-content-pinned-installer-regression"
+        }
+      ]
+    }
+  ],
+  "currentDerivedCopies": [
+    {
+      "path": "tools/runtime-artifacts.mjs",
+      "sha256": "4976086e1c6af1800540a2ef8ff43b5a8d2c3e3f59f00456aa31382f2b57a0df",
+      "historicalSourceSha256": "25cf17edc7ebd6349abaa08151d73f91767e2dc2b74702e84f031663149df2f0",
+      "note": "Current derived SDK tooling; original reviewedCopies identity is unchanged."
+    },
+    {
+      "path": "tools/unpack-runtime.py",
+      "sha256": "d4f49e8aa2541ca01670a4fd10330e6bc4b470cf95452b0585605bae09f76f89",
+      "historicalSourceSha256": "d4f49e8aa2541ca01670a4fd10330e6bc4b470cf95452b0585605bae09f76f89",
+      "note": "Current derived SDK tooling; original reviewedCopies identity is unchanged."
+    },
+    {
+      "path": "CONTRACT.md",
+      "sha256": "d1b8beab03f73c3e2a2ce8d5e838775ec34ed5218eb6e61c0339a15522e29774",
+      "historicalSourceSha256": "8196aa203908de36d50ff7adf002ea07752a52c0b3a1723fb1f090f6a20d2af9",
+      "note": "Current derived SDK tooling; original reviewedCopies identity is unchanged."
     }
   ]
 }

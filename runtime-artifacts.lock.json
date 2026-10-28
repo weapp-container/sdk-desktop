@@ -1,1 +1,104 @@
-{"abiVersion":1,"artifacts":[{"arch":"universal","architectures":["arm64-v8a","x86_64"],"component":"android-sdk","fileName":"android-sdk-0.1.0-preview.2-android-universal.tar.gz","platform":"android","sha256":"184f1a0981be2c8d9aec96c873f61d893d27fcc3d4c82e5ea3a21626ba4459ce","size":21236687},{"arch":"universal","architectures":["arm64","x86_64"],"component":"desktop-sdk","fileName":"desktop-sdk-0.1.0-preview.2-macos-universal.tar.gz","platform":"macos","sha256":"ff43564f713d311b183df8099881158dc688e78cc1ed7ee0597bfd2538c77f1e","size":44276573},{"arch":"universal","architectures":["arm64-device","arm64-simulator","x86_64-simulator"],"component":"ios-sdk","fileName":"ios-sdk-0.1.0-preview.2-ios-universal.tar.gz","platform":"ios","sha256":"d834996d3f262d3ba57c2171e96ff44f2ebf6c1088d137ab81721fb8a05b4136","size":65313555},{"arch":"arm64-v8a","component":"runtime","fileName":"runtime-0.1.0-preview.2-android-arm64-v8a.tar.gz","platform":"android","sha256":"39ea063002b38eb866d2686ffce92556e8941c0b3b691bfc13abb274edaff91e","size":9019924},{"arch":"x86_64","component":"runtime","fileName":"runtime-0.1.0-preview.2-android-x86_64.tar.gz","platform":"android","sha256":"1ea90a6d050209cada0ca283468a1861a005ca19ad37e14f2a3322b6505ca675","size":9203148},{"arch":"arm64-device","component":"runtime","fileName":"runtime-0.1.0-preview.2-ios-arm64-device.tar.gz","platform":"ios","sha256":"d5db3804b2fb547ed836a2df358bbca645a724f6993fcf0b9b6e08d191376abb","size":21649391},{"arch":"arm64-simulator","component":"runtime","fileName":"runtime-0.1.0-preview.2-ios-arm64-simulator.tar.gz","platform":"ios","sha256":"2b13e93b73723b34b9e737e1cd96e966b0459c960dddc77c415373d18e3a9e2c","size":21653490},{"arch":"x86_64-simulator","component":"runtime","fileName":"runtime-0.1.0-preview.2-ios-x86_64-simulator.tar.gz","platform":"ios","sha256":"bf5dce5be733c3eac04876c42c8f3a19be412672c0cfa8e4f9d1ec9fb1d97c82","size":21970292},{"arch":"arm64","component":"runtime","fileName":"runtime-0.1.0-preview.2-macos-arm64.tar.gz","platform":"macos","sha256":"549726c98346402912342a0290506c649331c2506f53f55d040f56236415b2e6","size":28264654},{"arch":"x86_64","component":"runtime","fileName":"runtime-0.1.0-preview.2-macos-x86_64.tar.gz","platform":"macos","sha256":"20a7b89dd4d3012d077b16cd99abc48cfac867c40216b24f752c6d2e7c9740fe","size":30026196}],"runtimeVersion":"0.1.0-preview.2","schemaVersion":1,"source":{"releaseTag":"runtime-v0.1.0-preview.2","repository":"weapp-container/runtime-artifacts"}}
+{
+  "schemaVersion": 1,
+  "runtimeVersion": "0.1.0-preview.3",
+  "abiVersion": 1,
+  "source": {
+    "repository": "weapp-container/runtime-artifacts",
+    "releaseTag": "runtime-v0.1.0-preview.3"
+  },
+  "artifacts": [
+    {
+      "component": "runtime",
+      "platform": "macos",
+      "arch": "arm64",
+      "fileName": "runtime-0.1.0-preview.3-macos-arm64.tar.gz",
+      "size": 28188855,
+      "sha256": "7b7564ba0f975244826e37e167304870d09e89e64db27c2177777c4a261a90bf"
+    },
+    {
+      "component": "runtime",
+      "platform": "macos",
+      "arch": "x86_64",
+      "fileName": "runtime-0.1.0-preview.3-macos-x86_64.tar.gz",
+      "size": 29888611,
+      "sha256": "acbba480bf2ad50ad51fc4d8471a337e6b1f62827f4c5a3003e96e3f93600498"
+    },
+    {
+      "component": "desktop-sdk",
+      "platform": "macos",
+      "arch": "universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ],
+      "fileName": "desktop-sdk-0.1.0-preview.3-macos-universal.tar.gz",
+      "size": 44014432,
+      "sha256": "dfb6904e90b5acd3fd765262c15ed4d89f99a1feeb4fa3b5277b2fcdbeedc3ac"
+    },
+    {
+      "component": "runtime",
+      "platform": "ios",
+      "arch": "arm64-device",
+      "fileName": "runtime-0.1.0-preview.3-ios-arm64-device.tar.gz",
+      "size": 21544990,
+      "sha256": "71332b53b47cb562c866886faa369a4945fcecca54a9f7b209faadee5196d43f"
+    },
+    {
+      "component": "runtime",
+      "platform": "ios",
+      "arch": "arm64-simulator",
+      "fileName": "runtime-0.1.0-preview.3-ios-arm64-simulator.tar.gz",
+      "size": 21553486,
+      "sha256": "7ca0ceeb448e9d0160a524db469d9bfd69b1af83d6a871564f07c1a64f314b32"
+    },
+    {
+      "component": "runtime",
+      "platform": "ios",
+      "arch": "x86_64-simulator",
+      "fileName": "runtime-0.1.0-preview.3-ios-x86_64-simulator.tar.gz",
+      "size": 21835725,
+      "sha256": "c078b6a04e61df55021a193c5e1ee2dd847ba16888227b1f575155cb1c98fff4"
+    },
+    {
+      "component": "ios-sdk",
+      "platform": "ios",
+      "arch": "universal",
+      "architectures": [
+        "arm64-device",
+        "arm64-simulator",
+        "x86_64-simulator"
+      ],
+      "fileName": "ios-sdk-0.1.0-preview.3-ios-universal.tar.gz",
+      "size": 64971767,
+      "sha256": "0d2b3abc5a9be1004ad7797802eba5c70e26c5086612c6fed3ba1605d8ce71ff"
+    },
+    {
+      "component": "runtime",
+      "platform": "android",
+      "arch": "arm64-v8a",
+      "fileName": "runtime-0.1.0-preview.3-android-arm64-v8a.tar.gz",
+      "size": 9004982,
+      "sha256": "5f87d4df716b8af176f053a79b80cdccd6f5d88b2f976da735e32793687a0952"
+    },
+    {
+      "component": "runtime",
+      "platform": "android",
+      "arch": "x86_64",
+      "fileName": "runtime-0.1.0-preview.3-android-x86_64.tar.gz",
+      "size": 9174551,
+      "sha256": "0df98702fd7ac11afaed0d50137e64eec2bf62a9575f0e5714c62aa02eaa51ce"
+    },
+    {
+      "component": "android-sdk",
+      "platform": "android",
+      "arch": "universal",
+      "architectures": [
+        "arm64-v8a",
+        "x86_64"
+      ],
+      "fileName": "android-sdk-0.1.0-preview.3-android-universal.tar.gz",
+      "size": 20675666,
+      "sha256": "3145eae68784c7b4f17cb0030f7149ee202dee56b1765adc2ea911dc38874420"
+    }
+  ]
+}

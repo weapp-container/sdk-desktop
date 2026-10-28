@@ -6,12 +6,12 @@ This independent repository contains the **Apache-2.0 host wrapper and consumer 
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-This checkout targets **0.1.0-preview.3** for Dev Player. The checked-in
-preview.2 runtime lock and its historical reports remain unchanged; they do not
-supply preview.3 binaries or evidence. Default preparation rejects that version
-mismatch. Use an explicitly reviewed preview.3 lock with `--manifest` once its
-real archive hashes exist, or build the wrapper with an explicit local preview.3
-`--native-root` and `--licenses-root`. No preview.2 fallback is performed.
+This checkout targets **0.1.0-preview.3** for Dev Player. The default runtime
+lock pins the real private `runtime-v0.1.0-preview.3` release by exact size and
+SHA-256. Historical preview.2 releases, reports and source identities are retained
+in history; they are not attributed to this version. Only the listed target pins
+are available. Windows/Linux runtime distributions remain blocked. Binary
+download/installation does not establish Player, GPU or device acceptance.
 
 ## Obtain the native runtime
 

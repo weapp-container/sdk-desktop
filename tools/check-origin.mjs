@@ -19,6 +19,8 @@ const visit = directory => {
   for (const name of readdirSync(directory)) {
     const path = resolve(directory, name), stat = lstatSync(path);
     if (stat.isSymbolicLink()) throw new Error(`Source symlink is forbidden: ${path}`);
+    // Submodules/worktrees store Git metadata in a root file rather than a directory.
+    if (directory === root && name === '.git' && stat.isFile()) continue;
     if (stat.isDirectory()) { if (!ignoredDirectories.has(name)) visit(path); continue; }
     const local = relative(root, path).replaceAll('\\', '/');
     if (!stat.isFile() || !expected.has(local)) throw new Error(`Unreviewed source path: ${local}`);
