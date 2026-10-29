@@ -222,6 +222,9 @@ Status Core::drain() {
   return {};
 }
 Status Core::foreground() {
+  // A borrowed preview does not own app lifecycle. Its wrapper can hide the
+  // child HWND/GTK surface for developer controls while business timers run.
+  if (!owns_handle) return {};
   if (state.status != SessionState::Ready) return {};
   bool visible = requested_foreground && surface_visible;
   if (visible == state.foreground) return {};

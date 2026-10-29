@@ -1,13 +1,13 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.3** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.4** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-This checkout targets **0.1.0-preview.3** for Dev Player. The default runtime
-lock pins the real private `runtime-v0.1.0-preview.3` release by exact size and
+This checkout targets **0.1.0-preview.4** for Dev Player. The default runtime
+lock pins the real private `runtime-v0.1.0-preview.4` release by exact size and
 SHA-256. Historical preview.2 releases, reports and source identities are retained
 in history; they are not attributed to this version. Only the listed target pins
 are available. Windows/Linux runtime distributions remain blocked. Binary

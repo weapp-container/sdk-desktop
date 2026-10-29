@@ -1,6 +1,6 @@
 # SDK contract v1
 
-SDK version: `0.1.0-preview.3`; C ABI version: `1`.
+SDK version: `0.1.0-preview.4`; C ABI version: `1`.
 
 Platform adapters call the separately licensed runtime through `weapp_container_sdk.h`. Application
 code uses the platform's typed session and view API. The JSON below is an internal
@@ -34,9 +34,9 @@ returns no application value.
 
 | Command | Payload / result |
 | --- | --- |
-| `load` | `{packPath, route?, options?}`; a verified local pack directory |
+| `load` | `{packPath, route?, options?, initialHostChrome?}`; a verified local pack directory |
 | `classifyDevPack` | `{packPath}`; fully verifies without changing the session, returns `{reloadKind:"inPlace"|"restart"}` |
-| `applyDevPack` | `{packPath,route?,options?}`; returns `{reloadKind,state}` after candidate acceptance, not GPU presentation |
+| `applyDevPack` | `{packPath,route?,options?,initialHostChrome?}`; returns `{reloadKind,state}` after candidate acceptance, not GPU presentation |
 | `devState` | Read-only `{state,pages:[{id,route,data}]}` inspection |
 | `clearDevStorage` | Clears current wx storage; adapter must await `flushStorage` for durable completion |
 | `registerHostMethod` | `{name}` before the first load |
@@ -44,6 +44,10 @@ returns no application value.
 | `sendMessage` | `{message}` containing JSON data |
 | `navigate` | `{route,query?,replace?}` |
 | `back` | `{}` |
+| `switchTab` | `{route}`; dispatches the runtime's `wx.switchTab` semantics |
+| `inspectPackChrome` | `{packPath,route?}`; verifies all blobs and resolves static host chrome without creating a guest runtime |
+| `hostChrome` | `HostChromeGeometry` schema 1; measured capsule/content rectangles and monotonic layout revision |
+| `setPreviewOccluded` | `{occluded:boolean}`; suspends preview input/presentation independently of application lifecycle |
 | `lifecycle` | `{event:"show"}` or `{event:"hide"}` |
 | `input` | `{events:[...]}` in logical viewport coordinates |
 | `resize` | `{width,height}` in logical pixels |
@@ -56,7 +60,7 @@ returns no application value.
 | `flushStorage` | Returns `{pending:true,ticket}` or `{pending:false}` |
 | `close` | Begins async shutdown; returns `{pending:true,ticket}` or `{pending:false,status:"closed"}` |
 
-Observe `ready`, `navigation`, `message`, `error` and `closed` in public APIs.
+Observe `ready`, `navigation`, `chrome`, `message`, `error` and `closed` in public APIs.
 Adapters also consume `frame`, `hostCall`, `hostCallCancelled` and `storageFlushed`.
 Resolve flush tickets only on their matching `storageFlushed` event; resolve close
 only on `closed`, propagating its persistence error. Continue pumping while closing.
@@ -68,7 +72,7 @@ at most once; release host jobs on cancellation. Late/duplicate native completio
 cannot run JavaScript in a replacement runtime. Never call FFI inside its own event
 dispatch; marshal completion back to the session queue.
 
-## Development reload (preview.3)
+## Development reload (preview.4)
 
 Require `capabilities.pack.devReload.protocolVersion == "1.0"` and the selected
 reload kind before sending a development command. Older runtimes reject unknown
@@ -145,3 +149,62 @@ Include `types/weapp-container.d.ts`. `weappContainer.invoke()` returns a Promis
 `postMessage`, `onMessage` and `offMessage` provide bidirectional JSON messages.
 `wx.request` performs real asynchronous HTTP(S), supports JSON/text/ArrayBuffer,
 timeout and abort. Upload, download and WebSocket are not preview capabilities.
+
+
+## Native host chrome (preview.4)
+
+Negotiate `capabilities.chrome.protocolVersion == "1.0"` plus `geometry`,
+`inspectPack` and `occlusion` before enabling the Player shell. The additions use
+ABI 1; an old runtime must fail capability negotiation, never guess coordinates.
+
+`inspectPackChrome` resolves configuration from SHA-256 verified JSON modules
+(or legacy assets). It does not execute App/Page code, acquire storage or attach
+a GPU. Resolve initial navigation layout, measure the actual content surface,
+supply native `windowMetrics` and `hostChrome`, then `load`. `windowMetrics` is
+also accepted before load; it remains the sole viewport/display update boundary.
+The content rectangle's dimensions must match initial window metrics.
+
+`state.chrome` and `{type:"chrome",generation,chrome}` events contain the
+`PageChrome` observation defined in the declarations. App window defaults,
+page overrides and per-page dynamic title/color have a single runtime resolver.
+The snapshot includes the actual runtime page stack and configured system tabBar;
+`custom:true` tabBars remain application components, never a fake native bar.
+A chrome revision is independent from a content frame revision: changing a title
+or color does not reevaluate View scripts or prove a new GPU frame was presented.
+Tab icons are pack resource references, not arbitrary host file access.
+
+`hostChrome` uses actual current-screen logical-pixel rectangles, not device
+pixels. `contentRect` does not reinterpret `screenTop` or `safeArea`, and its
+origin is never used as a second input-coordinate transform. Native input remains
+relative to the measured content surface. The runtime returns the measured
+capsule through `wx.getMenuButtonBoundingClientRect`. Reusing the exact same
+observation is idempotent; changed observations require a larger revision.
+Optional session/page bindings reject updates for retired owners. Invalid updates
+leave the previous host geometry intact. During a live resize, input and
+presentation receipts remain disabled while content dimensions differ from the
+latest native viewport observation.
+
+Occlusion retires the current input/presentation authority and cancels active
+contacts. It does not call application hide/show hooks, stop business timers,
+replace the session or clear storage. Unocclusion commits a fresh render revision;
+a valid presentation receipt is required again in GPU mode. Keep pumping while
+covered. Downloading immutable updates may continue, but Player defers candidate
+activation until its preview is visible.
+
+
+`capabilities.chrome.transactionalRestart:true` negotiates replacement-layout
+staging. A restart may carry top-level `initialHostChrome`, measured and transformed
+to actual screen logical coordinates before the call. Its optional owner bindings
+refer to the old accepted session/page. Only the new isolated candidate receives
+its viewport and capsule geometry before `App.onLaunch` / `Page.onLoad`; a failed
+startup leaves the previous configuration, geometry and instance intact.
+`initialHostChrome` is rejected for an in-place update.
+
+On success, `state.hostChrome` is rebound to the new owner. The native surface may
+still have its previous physical size: `state.chromeGeometryReady` remains false
+until a native `windowMetrics` observation matches the new content dimensions.
+Draw/present/input must wait for this flag and the normal presentation receipt.
+Old-size observations during staging cannot resize the new session backwards.
+The native wrapper's transform-only `prepareHostChrome` must use the Flutter-root
+to-screen transform, rather than aligning the prospective rectangle to the old
+content view origin; preparing it never mutates the accepted runtime.

@@ -5,7 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define WEAPP_DESKTOP_VERSION "0.1.0-preview.3"
+#define WEAPP_DESKTOP_VERSION "0.1.0-preview.4"
 typedef struct weapp_desktop_session weapp_desktop_session;
 typedef struct weapp_desktop_view weapp_desktop_view;
 typedef struct weapp_desktop_value weapp_desktop_value;
