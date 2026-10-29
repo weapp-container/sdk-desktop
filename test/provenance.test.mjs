@@ -22,7 +22,7 @@ test('provenance accepts actual root worktree metadata but rejects nested metada
   git(repo, ['init', '--quiet']); git(repo, ['add', '.']);
   git(repo, ['-c', 'user.name=SDK Provenance Test', '-c', 'user.email=sdk-provenance@example.invalid', 'commit', '--quiet', '-m', 'Historical fixture']);
   git(repo, ['worktree', 'add', '--quiet', '--detach', root]);
-  writeSourceInventory(root, { sdkVersion: '0.1.0-preview.4', reason: 'Review independent fixture' });
+  writeSourceInventory(root, { sdkVersion: '0.1.0-preview.5', reason: 'Review independent fixture' });
   git(root, ['add', 'SOURCE-INVENTORY.json']);
   const check = () => spawnSync(process.execPath, [join(root, 'tools/check-origin.mjs')], { encoding: 'utf8' });
   const accepted = check(); assert.equal(accepted.status, 0, accepted.stderr);

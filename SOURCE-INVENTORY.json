@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sdkVersion": "0.1.0-preview.4",
-  "sourceBaseCommit": "b65691ff02487150fe31872e99385f54de69894c",
-  "review": "Review actual preview.4 runtime archive pins: ten locally produced, size/SHA-256 verified archives from clean core bf9b8cf86461485969d4f6d71d8b66e4de8d6519. Publication, download and device acceptance require separate evidence.",
+  "sdkVersion": "0.1.0-preview.5",
+  "sourceBaseCommit": "087219964d82fae190f110550076fa9765565916",
+  "review": "Reviewed preview.5 atomic host layout, fault-safe reload coordination and wrapper metadata; preserved historical ORIGIN and preview.4 artifact bytes.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -35,7 +35,7 @@
     },
     {
       "path": "CONTRACT.md",
-      "sha256": "e1ae00fd1b55a952943ac025832eadc0384037e31f728fb703cc8729fde2547c",
+      "sha256": "edf3b4a1dbd46c60d1a8cfc6a096eade85a4b85eed11823999b009d77473a960",
       "size": 13434,
       "mode": "100644"
     },
@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "cdbaf72b87a89ba85509b3095707c9da9ac8501b8f37b5219a8aa5e04c675496",
-      "size": 8003,
+      "sha256": "e4e0a0f2b516e8185edce09491ee3eaa054f9c55af72c97c982a5873d5efc472",
+      "size": 8349,
       "mode": "100644"
     },
     {
@@ -107,7 +107,7 @@
     },
     {
       "path": "include/weapp/desktop.h",
-      "sha256": "2b61d9c6de2b41186781b2c2be4760a9ba9cef188b84a7bba488576284d33167",
+      "sha256": "43e0f08dc08ad5e0716e3008f24c169844c8da865dc59d069c7cd4612871c2c9",
       "size": 8998,
       "mode": "100644"
     },
@@ -137,7 +137,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "350b62cff5d54da32e67b1477d93452a3a569c99b1c96bc2577478c255bdc41e",
+      "sha256": "19abeb2b39dbfc57601eed6d2396a1c4a4d9e480a8abfd949b81094d2a12ade8",
       "size": 498,
       "mode": "100644"
     },
@@ -203,13 +203,13 @@
     },
     {
       "path": "test/provenance.test.mjs",
-      "sha256": "a0f94207c7901f62b8c28e1fab8586deaf6cfdba30fec449a61e91042a7b1458",
+      "sha256": "3c6ce40cee6d945ee6c746b0f5ab0007968afe6f2a6fbc233a71b68dcac3f800",
       "size": 2460,
       "mode": "100644"
     },
     {
       "path": "test/source-inventory.test.mjs",
-      "sha256": "fa7f6e0fdcc6c99a9d03619b5d1925079afe38ffc67071f31462c89698474592",
+      "sha256": "52958dddb23c1e045809d98fa76b4657df3846fd237c71ceb0b310439dfd433c",
       "size": 4319,
       "mode": "100644"
     },
@@ -239,7 +239,7 @@
     },
     {
       "path": "tools/build.mjs",
-      "sha256": "2e2ef7c40a6a6f83fdb7317662eaf56b22f7755fe66fdb224d6bcf28550294a9",
+      "sha256": "392060048f7d307c92b498af81714dfb6e39b0c5e2ea11ca55ebf24c0c583f5f",
       "size": 8138,
       "mode": "100644"
     },
@@ -251,13 +251,13 @@
     },
     {
       "path": "tools/consumer-smoke.mjs",
-      "sha256": "2cb999eae8ac83ce0aa7b675ea74278f194e6317e158a53836920b23fe1393f1",
+      "sha256": "bf76422b4c166e14011de7aa0907e44021f3c6607c11f439b2908c26276c9708",
       "size": 4162,
       "mode": "100644"
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "1e72f9dc75b99763fa4c32f3e45ac3b54d4461265445fcda4b6dcd78f45a9aef",
+      "sha256": "39ad47e3a6a6d4386e011665edd42cb8ea7272ed48948c51839297823bcc4a0d",
       "size": 11274,
       "mode": "100644"
     },
@@ -269,7 +269,7 @@
     },
     {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "ea87525bd7589c62a100ba3ead7f33f8fdc5eb05d04e7b0ee829b99093b99818",
+      "sha256": "1b2037907ce347b724d0a80ccb4384f1bf4152920235e2dee2f5238a1a3d2d86",
       "size": 19111,
       "mode": "100644"
     },

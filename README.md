@@ -1,13 +1,13 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.4** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.5** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-This checkout targets **0.1.0-preview.4** for Dev Player. The default runtime
-lock pins the real private `runtime-v0.1.0-preview.4` release by exact size and
+This checkout targets **0.1.0-preview.5** for Dev Player. The default runtime
+lock pins the real private `runtime-v0.1.0-preview.5` release by exact size and
 SHA-256. Historical preview.2 releases, reports and source identities are retained
 in history; they are not attributed to this version. Only the listed target pins
 are available. Windows/Linux runtime distributions remain blocked. Binary
@@ -83,10 +83,14 @@ After reviewing an update, stage all intended new source files, refresh explicit
 
 ```sh
 git add <reviewed-files>
-node tools/source-inventory.mjs --write --version 0.1.0-preview.4 --reason "Describe the reviewed changes"
+node tools/source-inventory.mjs --write --version 0.1.0-preview.5 --reason "Describe the reviewed changes"
 git add SOURCE-INVENTORY.json
 node tools/check-origin.mjs
 npm test
 ```
 
 Commit source and inventory together before building distributable packages. `sourceBaseCommit` identifies the checkout used to prepare the source review; it does not bind subsequent build evidence to that earlier commit. Never rewrite historical receipts or fabricate runtime archive lock hashes to make this check pass.
+
+## preview.5 source status
+
+This checkout adds the preview.5 protocol. Its preserved preview.4 runtime lock is historical and has not been rebound to the new source. The preview.5 installer refuses this lock until newly built, verified preview.5 artifacts are pinned. No new native/device validation or release is implied by the source version.
