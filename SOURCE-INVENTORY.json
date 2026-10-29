@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.4",
-  "sourceBaseCommit": "2a533efb335bc27b131c969e453976141415390e",
-  "review": "Review preview.4 host chrome wrappers, standalone source inventories and unchanged historical ORIGIN. Runtime archive locks remain preview.3 pending separately verified preview.4 release bytes.",
+  "sourceBaseCommit": "b65691ff02487150fe31872e99385f54de69894c",
+  "review": "Review actual preview.4 runtime archive pins: ten locally produced, size/SHA-256 verified archives from clean core bf9b8cf86461485969d4f6d71d8b66e4de8d6519. Publication, download and device acceptance require separate evidence.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -143,7 +143,7 @@
     },
     {
       "path": "runtime-artifacts.lock.json",
-      "sha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d",
+      "sha256": "418bd79ca6a60c3a654553ca22a70bafbf8d5a4b60beaff9e8fb9869b5d91797",
       "size": 3217,
       "mode": "100644"
     },
