@@ -6,12 +6,14 @@ This independent repository contains the **Apache-2.0 host wrapper and consumer 
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-This checkout targets **0.1.0-preview.5** for Dev Player. The default runtime
-lock pins the real private `runtime-v0.1.0-preview.5` release by exact size and
-SHA-256. Historical preview.2 releases, reports and source identities are retained
-in history; they are not attributed to this version. Only the listed target pins
-are available. Windows/Linux runtime distributions remain blocked. Binary
-download/installation does not establish Player, GPU or device acceptance.
+The default lock identifies the newly built **0.1.0-preview.5** QuickJS + Skia GPU
+artifacts by exact size and SHA-256. It contains seven runtime slices and Android,
+iOS and macOS universal SDK packages; native production is bound to
+`05aec6c4056a124a9c399c75b34d081cffbdaa5d`, while wrapper producer commits are
+recorded separately in archive provenance. Historical preview.2/3/4 releases,
+reports and source identities remain unchanged. No older-runtime fallback is
+allowed. Windows/Linux runtime distributions remain blocked. Archive validation,
+private publication and actual Player/GPU/device acceptance are separate gates.
 
 ## Obtain the native runtime
 
@@ -93,4 +95,4 @@ Commit source and inventory together before building distributable packages. `so
 
 ## preview.5 source status
 
-This checkout adds the preview.5 protocol. Its preserved preview.4 runtime lock is historical and has not been rebound to the new source. The preview.5 installer refuses this lock until newly built, verified preview.5 artifacts are pinned. No new native/device validation or release is implied by the source version.
+This checkout implements the preview.5 protocol and pins newly built preview.5 artifacts. Historical preview.4 bytes and evidence retain their original bindings. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
