@@ -1,14 +1,14 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.5.1** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.5.3** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
-The current source and exact runtime lock target `0.1.0-preview.5.1`. The lock SHA-256 is `bc2bf8a79ebb1ea1b7bcf2b5a4749271f2022c9b103773bd7be6ebc3b94271cd`; it pins ten independently produced archives. Native preparation checks the matching version and exact artifact bytes; it cannot reuse or relabel an older binary. The lock does not assert private-release availability, Player installation or GPU/device acceptance.
+The current source requires **0.1.0-preview.5.3** native artifacts. Production and exact archive pins for that version are **pending**. `runtime-artifacts.lock.json` remains the unchanged historical preview.5.1 lock (SHA-256 `bc2bf8a79ebb1ea1b7bcf2b5a4749271f2022c9b103773bd7be6ebc3b94271cd`); it does not authorize a preview.5.3 build. Preparation rejects that version mismatch explicitly and cannot reuse or relabel preview.5.1 binaries. Source inventory verification is separate from native build, archive, private-release, Player and GPU/device acceptance.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-The default lock identifies the independently built **0.1.0-preview.5.1** QuickJS
+The retained historical lock identifies the independently built **0.1.0-preview.5.1** QuickJS
 + Skia GPU artifacts by exact size and SHA-256: seven runtime slices and Android,
 iOS and macOS universal SDK packages. Native production is bound to
 `747d0b02131d7f67b3adbdd7127abcd5e21ffdbe`; wrapper producer commits remain
@@ -91,7 +91,7 @@ After reviewing an update, stage all intended new source files, refresh explicit
 
 ```sh
 git add <reviewed-files>
-node tools/source-inventory.mjs --write --version 0.1.0-preview.5.1 --reason "Describe the reviewed changes"
+node tools/source-inventory.mjs --write --version 0.1.0-preview.5.3 --reason "Describe the reviewed changes"
 git add SOURCE-INVENTORY.json
 node tools/check-origin.mjs
 npm test
@@ -99,6 +99,6 @@ npm test
 
 Commit source and inventory together before building distributable packages. `sourceBaseCommit` identifies the checkout used to prepare the source review; it does not bind subsequent build evidence to that earlier commit. Never rewrite historical receipts or fabricate runtime archive lock hashes to make this check pass.
 
-## preview.5.1 source status
+## preview.5.3 source status
 
-This checkout retains the preview.5 protocol and pins independently produced preview.5.1 artifacts. The pin commit does not become a new binary producer: archives retain their original runtime and wrapper source identities. All historical release bytes and evidence keep their original bindings. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
+Current wrapper metadata, native-input checks and consumer tools require preview.5.3. New runtime production, reviewed archive hashes and a matching lock are pending; no native build or device result is claimed for these source changes. The retained preview.5.1 lock is rejected by current preparation, so native build/package and consumer validation remain blocked until real preview.5.3 artifacts are produced and pinned. Historical release bytes and evidence retain their original source identities.

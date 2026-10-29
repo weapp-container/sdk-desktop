@@ -1,6 +1,6 @@
 # SDK contract v1
 
-SDK version: `0.1.0-preview.5.1`; C ABI version: `1`.
+SDK version: `0.1.0-preview.5.3`; C ABI version: `1`.
 
 Platform adapters call the separately licensed runtime through `weapp_container_sdk.h`. Application
 code uses the platform's typed session and view API. The JSON below is an internal
