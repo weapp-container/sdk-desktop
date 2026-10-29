@@ -1,0 +1,295 @@
+{
+  "schemaVersion": 1,
+  "sdkVersion": "0.1.0-preview.4",
+  "sourceBaseCommit": "2a533efb335bc27b131c969e453976141415390e",
+  "review": "Review preview.4 host chrome wrappers, standalone source inventories and unchanged historical ORIGIN. Runtime archive locks remain preview.3 pending separately verified preview.4 release bytes.",
+  "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
+  "historicalOrigin": {
+    "path": "ORIGIN.json",
+    "sha256": "4101f0af7044d195e6f9eef19cd18f2aeb93fc4a25cc32aa557865d4a3985118"
+  },
+  "files": [
+    {
+      "path": ".clang-format",
+      "sha256": "51977317b1771c3789febc994d1072092996de145e0f588a9ed6fe8deac2cbea",
+      "size": 21,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/checks.yml",
+      "sha256": "1c18982a507217a8bbac7e65279383e5df5c6460689d5d92ad3e3332658eff00",
+      "size": 483,
+      "mode": "100644"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "b946f246713bf19db0978d154987952117d59a7292eff1befd2c39aae6fb6be5",
+      "size": 50,
+      "mode": "100644"
+    },
+    {
+      "path": "CMakeLists.txt",
+      "sha256": "034bb21ae3abf5a8abd0c70dc1a526d696454897554818bfe1418d3a0ced7e8b",
+      "size": 4273,
+      "mode": "100644"
+    },
+    {
+      "path": "CONTRACT.md",
+      "sha256": "e1ae00fd1b55a952943ac025832eadc0384037e31f728fb703cc8729fde2547c",
+      "size": 13434,
+      "mode": "100644"
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "a60eea817514531668d7e00765731449fe14d059d3249e0bc93b36de45f759f2",
+      "size": 10847,
+      "mode": "100644"
+    },
+    {
+      "path": "ORIGIN.json",
+      "sha256": "4101f0af7044d195e6f9eef19cd18f2aeb93fc4a25cc32aa557865d4a3985118",
+      "size": 24852,
+      "mode": "100644"
+    },
+    {
+      "path": "README.md",
+      "sha256": "cdbaf72b87a89ba85509b3095707c9da9ac8501b8f37b5219a8aa5e04c675496",
+      "size": 8003,
+      "mode": "100644"
+    },
+    {
+      "path": "cmake/WeappContainerDesktopConfig.cmake.in",
+      "sha256": "18055876617fcfe83e7b03def1f359ba88c7070f35eb82057d15b196faf51d9f",
+      "size": 543,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/CMakeLists.txt",
+      "sha256": "a0e68ab7b461fdc0bab819bda15080fea25b805d0b294caa1e664784526efe7e",
+      "size": 636,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/c_smoke.c",
+      "sha256": "db9c3967ecf9c2cf3604bdd004f93efdaf3035603f2b845c4695c69db38c3062",
+      "size": 975,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/linux.cpp",
+      "sha256": "883fabfbc7896f5b9c5a12e68822677b56a04b8478c3fab27c153b2fa1199211",
+      "size": 3338,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/macos.mm",
+      "sha256": "b8681207c4c53cba3265b7ce986f3d91654001b1055604075b50db2009c3541c",
+      "size": 4694,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/smoke.hpp",
+      "sha256": "13e12949736814f4b433013c371c1e142240590925094d7dd97c3507dcc6b4d9",
+      "size": 10264,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/windows.cpp",
+      "sha256": "4f1d1d7fbd595ad9846bb193981ff8a9ecbd284536e9e2150174ee22b4cc5c9d",
+      "size": 2299,
+      "mode": "100644"
+    },
+    {
+      "path": "docs/EMBEDDING.md",
+      "sha256": "8a7116d7d8c8181f657104641edd21c332e20af6e7415c3283d9d5bfa5718b76",
+      "size": 6183,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp/desktop.h",
+      "sha256": "2b61d9c6de2b41186781b2c2be4760a9ba9cef188b84a7bba488576284d33167",
+      "size": 8998,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp/desktop.hpp",
+      "sha256": "5a0871ccc105a2605eafcb90409ebd31d30e4f11c26255b6c0536f3d3652470a",
+      "size": 5383,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp/native_preview.hpp",
+      "sha256": "060a4f70b3651a8e410e54e4679ac36e2a550985cd3d0c6ed3dfc8946bae6372",
+      "size": 1027,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp_container_sdk.h",
+      "sha256": "2a4761c0650c72ccd8d0a791fb66ee48888e1ce182ba99f0c92673a2c44a8e9b",
+      "size": 6842,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp_container_sdk_gl.h",
+      "sha256": "8812d0e25f023c745ffad7206552b2a58dce3d7291f0e2a661e6f4e521558de7",
+      "size": 793,
+      "mode": "100644"
+    },
+    {
+      "path": "package.json",
+      "sha256": "350b62cff5d54da32e67b1477d93452a3a569c99b1c96bc2577478c255bdc41e",
+      "size": 498,
+      "mode": "100644"
+    },
+    {
+      "path": "runtime-artifacts.lock.json",
+      "sha256": "9e8edc773fae37d1a2a909f71b3b7aae5b289aa632941bd291d5b0119713808d",
+      "size": 3217,
+      "mode": "100644"
+    },
+    {
+      "path": "src/c_api.cpp",
+      "sha256": "3d665ef64876b54b3906189fcb887acdfd34876a00ee6070f1ea61e18e141d3c",
+      "size": 16300,
+      "mode": "100644"
+    },
+    {
+      "path": "src/desktop.cpp",
+      "sha256": "b4e03fe97e8058790e3fa10a526ccc44096f180394368476cf6da40e716c7666",
+      "size": 25673,
+      "mode": "100644"
+    },
+    {
+      "path": "src/internal.hpp",
+      "sha256": "c481f811a38b838c83dccc742196f265c6300c0fda4e2b46a237f43275cd0dbb",
+      "size": 2811,
+      "mode": "100644"
+    },
+    {
+      "path": "src/linux.cpp",
+      "sha256": "b674cd6938854d5b417520ee6a48cf6a70dc05443cfc00338b306e041d022ae8",
+      "size": 21745,
+      "mode": "100644"
+    },
+    {
+      "path": "src/macos.mm",
+      "sha256": "81dc51fa1d24f23d074ceadfe3098aa6c591858631b6cf138f280caafdb9ee33",
+      "size": 11655,
+      "mode": "100644"
+    },
+    {
+      "path": "src/native_preview.cpp",
+      "sha256": "8c0da0c36036f95bdc4b474596cefe1e957fe271397a5220a52713777d307695",
+      "size": 3590,
+      "mode": "100644"
+    },
+    {
+      "path": "src/windows.cpp",
+      "sha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
+      "size": 20133,
+      "mode": "100644"
+    },
+    {
+      "path": "test/native-input.test.mjs",
+      "sha256": "8c9b31c462c0a8ccf384d7479c3b498ba3c43ffe8f96fc241fb89143550b6902",
+      "size": 12959,
+      "mode": "100644"
+    },
+    {
+      "path": "test/native-preview-ownership.cpp",
+      "sha256": "6de81a05acd4bd287d629bbdbff7d06b83c75433ac4aeaeb7adbda841a0967f5",
+      "size": 4263,
+      "mode": "100644"
+    },
+    {
+      "path": "test/provenance.test.mjs",
+      "sha256": "a0f94207c7901f62b8c28e1fab8586deaf6cfdba30fec449a61e91042a7b1458",
+      "size": 2460,
+      "mode": "100644"
+    },
+    {
+      "path": "test/source-inventory.test.mjs",
+      "sha256": "fa7f6e0fdcc6c99a9d03619b5d1925079afe38ffc67071f31462c89698474592",
+      "size": 4319,
+      "mode": "100644"
+    },
+    {
+      "path": "third_party/.gitattributes",
+      "sha256": "e8c75d6f3b045bda1a0d9dfb6656c44276d95fa6193a01a826f2ec505fa0c706",
+      "size": 112,
+      "mode": "100644"
+    },
+    {
+      "path": "third_party/nlohmann/LICENSE.MIT",
+      "sha256": "86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14",
+      "size": 1076,
+      "mode": "100644"
+    },
+    {
+      "path": "third_party/nlohmann/SOURCE.json",
+      "sha256": "39229fe031a887a0d389aeec612102291c6a57dd88a6c68471150bb4b36c54ad",
+      "size": 323,
+      "mode": "100644"
+    },
+    {
+      "path": "third_party/nlohmann/json.hpp",
+      "sha256": "9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6",
+      "size": 919975,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/build.mjs",
+      "sha256": "2e2ef7c40a6a6f83fdb7317662eaf56b22f7755fe66fdb224d6bcf28550294a9",
+      "size": 8138,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/check-origin.mjs",
+      "sha256": "6d0bcbffc098f454dbd9125a6490298f9d98cf6a4b8b6de52cd350d776d08e27",
+      "size": 806,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/consumer-smoke.mjs",
+      "sha256": "2cb999eae8ac83ce0aa7b675ea74278f194e6317e158a53836920b23fe1393f1",
+      "size": 4162,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/native-input.mjs",
+      "sha256": "1e72f9dc75b99763fa4c32f3e45ac3b54d4461265445fcda4b6dcd78f45a9aef",
+      "size": 11274,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/prepare-runtime.mjs",
+      "sha256": "d314aceabcea7a5dfcaef7502f0206f9f78c8661f22fd0dfe7c324ec35f43dc1",
+      "size": 4281,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/runtime-artifacts.mjs",
+      "sha256": "ea87525bd7589c62a100ba3ead7f33f8fdc5eb05d04e7b0ee829b99093b99818",
+      "size": 19111,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/source-inventory.mjs",
+      "sha256": "e648d5631263c47b2b2565deb4d10ddc45fdaef76599dbd6929431492400ecf7",
+      "size": 6698,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/unpack-runtime.py",
+      "sha256": "d4f49e8aa2541ca01670a4fd10330e6bc4b470cf95452b0585605bae09f76f89",
+      "size": 9861,
+      "mode": "100644"
+    },
+    {
+      "path": "types/weapp-container.d.ts",
+      "sha256": "c951bcb61181a050f06049417d6db2b8e421b349092cce3bd19042426bb6080b",
+      "size": 1804,
+      "mode": "100644"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { verifySourceInventory } from './source-inventory.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -6,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { copyPack, readNative, readNotices, requireNativeRoot, sourceProvenance, nativeIdentity } from './native-input.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const reviewedSource = verifySourceInventory(root);
 const args=process.argv.slice(2);
 function option(name,fallback){const i=args.indexOf(name);if(i<0)return fallback;if(!args[i+1]||args[i+1].startsWith('--'))throw new Error(`${name} requires a value`);return args[i+1];}
 const platform=option('--target',process.platform==='darwin'?'macos-universal':process.platform==='win32'?'windows-x64':'linux-x64');
@@ -23,7 +25,7 @@ const licensesRoot=resolve(option('--licenses-root',resolve(nativeRoot,'../licen
 if(args.includes('--verify')&&!option('--pack'))throw new Error('--pack is required for consumer execution');
 mkdirSync(prefix,{recursive:true});
 function query(command,argv){const r=spawnSync(command,argv,{cwd:root,encoding:'utf8'});if(r.error||r.status!==0)throw new Error(`${command} failed: ${r.error?.message||r.stderr}`);return r.stdout.trim();}
-const receipt={schemaVersion:1,sdkVersion:'0.1.0-preview.4',platform,...sourceProvenance(root),toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
+const receipt={schemaVersion:1,sdkVersion:'0.1.0-preview.4',platform,...sourceProvenance(root), sourceInventorySha256: reviewedSource.inventorySha256,toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
 const receiptPath=resolve(prefix,'package.json');
 const validationDir=resolve(out,`validation-${platform}`);mkdirSync(validationDir,{recursive:true});
 const commandEvidence=[];
