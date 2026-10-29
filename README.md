@@ -1,6 +1,8 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.5** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.5.1** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+
+The current source is the `0.1.0-preview.5.1` patch. Native preparation requires an independently reviewed matching `0.1.0-preview.5.1` artifact lock; a source version bump cannot reuse or relabel older binaries. The checked-in historical lock and producer identities below remain unchanged until new artifacts are built and pinned. Missing matching artifacts fail explicitly.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
@@ -85,7 +87,7 @@ After reviewing an update, stage all intended new source files, refresh explicit
 
 ```sh
 git add <reviewed-files>
-node tools/source-inventory.mjs --write --version 0.1.0-preview.5 --reason "Describe the reviewed changes"
+node tools/source-inventory.mjs --write --version 0.1.0-preview.5.1 --reason "Describe the reviewed changes"
 git add SOURCE-INVENTORY.json
 node tools/check-origin.mjs
 npm test
@@ -93,6 +95,6 @@ npm test
 
 Commit source and inventory together before building distributable packages. `sourceBaseCommit` identifies the checkout used to prepare the source review; it does not bind subsequent build evidence to that earlier commit. Never rewrite historical receipts or fabricate runtime archive lock hashes to make this check pass.
 
-## preview.5 source status
+## preview.5.1 source status
 
-This checkout implements the preview.5 protocol and pins newly built preview.5 artifacts. Historical preview.4 bytes and evidence retain their original bindings. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
+This checkout retains the preview.5 protocol while preparing the preview.5.1 patch. Its existing preview.5 lock and all historical bytes/evidence retain their original bindings until new patch artifacts are independently produced and pinned. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
