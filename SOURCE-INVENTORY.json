@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.5.3",
-  "sourceBaseCommit": "c3c88ef0cbb57439fa72bdf4998639eb233e83f3",
-  "review": "Review preview.5.3 current wrapper versions and native dependency requirements; retain historical preview.5.1 artifact pins pending new production",
+  "sourceBaseCommit": "b7f9674128f31106e35f5e3428189f652e546011",
+  "review": "Review installed consumer presentation-gated geometry queries and deterministic bounded host-loop waiting tests; no runtime or ABI changes.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -89,8 +89,14 @@
     },
     {
       "path": "consumer/smoke.hpp",
-      "sha256": "13e12949736814f4b433013c371c1e142240590925094d7dd97c3507dcc6b4d9",
-      "size": 10264,
+      "sha256": "ca0376e777c833400c52d10f7b1683fff49e8f1a1a5de658ac09d0396dc33981",
+      "size": 12055,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/wait.hpp",
+      "sha256": "f80afd230d2c27d63f3d7aa2fec6f097c0a55712b24990285bfff2d9ea7b23c8",
+      "size": 766,
       "mode": "100644"
     },
     {
@@ -187,6 +193,12 @@
       "path": "src/windows.cpp",
       "sha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
       "size": 20133,
+      "mode": "100644"
+    },
+    {
+      "path": "test/consumer-wait.cpp",
+      "sha256": "2428dbd307f8755c527233161bd8b71bcf16a912a62c41795c3370a9d6a06b0a",
+      "size": 1616,
       "mode": "100644"
     },
     {

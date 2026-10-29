@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <thread>
 #include <weapp/desktop.hpp>
+#include "wait.hpp"
 using namespace weapp::desktop;
 extern "C" int c_consumer_smoke(void);
 inline void require(bool yes, const std::string& message) {
@@ -82,13 +83,42 @@ inline int smoke(const std::string& pack, Host host,
     ok(status);
     auto right = View::create(second, host.parent, {380, 0, 360, 420}, status);
     ok(status);
+    auto describe_progress = [&] {
+      auto describe_session = [](const char* name, Session& session, View& view) {
+        const auto state = session.state();
+        const char* status = state.status == SessionState::Ready ? "ready"
+            : state.status == SessionState::Closing ? "closing"
+            : state.status == SessionState::Closed ? "closed" : "empty";
+        return std::string(name) + "={status=" + status +
+            ",generation=" + std::to_string(state.generation) +
+            ",revision=" + std::to_string(state.revision) +
+            ",route=" + state.route + ",foreground=" +
+            (state.foreground ? "true" : "false") + ",inputEnabled=" +
+            (view.input_enabled() ? "true" : "false") + "}";
+      };
+      std::string progress = describe_session("first", *first, *left) + " " +
+          describe_session("second", *second, *right) + "; received:";
+      for (const auto& entry : messages) progress += " " + entry.first;
+      progress += "; SDK errors:";
+      for (const auto& entry : errors) progress += " [" + entry + "]";
+      return progress;
+    };
+    auto wait_for = [&](const std::string& phase, auto ready) {
+      consumer::wait_until(phase, std::chrono::seconds(3), ready,
+          [&] { host.spin(.005); },
+          [] { return std::chrono::steady_clock::now(); }, describe_progress);
+    };
     host.spin(.15);
     auto duplicate = View::create(first, host.parent, {0, 0, 50, 50}, status);
     require(!duplicate && status.code == "ERR_SURFACE_ATTACHED",
             "second presenter was not rejected");
     ok(first->load(pack));
     ok(second->load(pack));
-    host.spin(.2);
+    // Native GPU submission is asynchronous. Query only after each exact
+    // current frame has acquired the runtime's presentation/input authority.
+    wait_for("both initial previews to be presented", [&] {
+      return left->input_enabled() && right->input_enabled();
+    });
     Frame a, b;
     ok(first->snapshot(a));
     ok(second->snapshot(b));
@@ -98,7 +128,8 @@ inline int smoke(const std::string& pack, Host host,
     const auto second_revision = second->state().revision;
     const auto before = first->state().revision;
     ok(first->send_message(Value::Object{{"op", "inspect"}}));
-    host.spin(.05);
+    // Send inspect exactly once; pumping may deliver its queued host message.
+    wait_for("the geometry response", [&] { return messages.count("geometry") != 0; });
     const auto geometry = required_message("geometry");
     const auto tap = std::get<Value::Object>(geometry.at("tap").data);
     host.click(*left, std::get<double>(tap.at("x").data), std::get<double>(tap.at("y").data));
