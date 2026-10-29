@@ -2,13 +2,13 @@
 
 Version **0.1.0-preview.5.3** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
-The current source requires **0.1.0-preview.5.3** native artifacts. Production and exact archive pins for that version are **pending**. `runtime-artifacts.lock.json` remains the unchanged historical preview.5.1 lock (SHA-256 `bc2bf8a79ebb1ea1b7bcf2b5a4749271f2022c9b103773bd7be6ebc3b94271cd`); it does not authorize a preview.5.3 build. Preparation rejects that version mismatch explicitly and cannot reuse or relabel preview.5.1 binaries. Source inventory verification is separate from native build, archive, private-release, Player and GPU/device acceptance.
+The default `runtime-artifacts.lock.json` now pins the privately published **0.1.0-preview.5.3** native artifacts (SHA-256 `ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388`). The exact archives passed independent member/provenance review and offline installation checks. Native production remains bound to `012400d43cb20b4d91a73fbbde7e1cf11bd0bb6a`, the desktop wrapper to `ae67dde1a104587968e2db37a9636b8776328607`, and the packaging envelope to `eff194421aa48ea7871b0989f9903f3636f6432e`. This pinning commit does not relabel those producers. Source verification, actual Player/GPU/device execution and performance remain separate gates.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-The retained historical lock identifies the independently built **0.1.0-preview.5.1** QuickJS
+The historical preview.5.1 lock (SHA-256 `bc2bf8a79ebb1ea1b7bcf2b5a4749271f2022c9b103773bd7be6ebc3b94271cd`) identified the independently built **0.1.0-preview.5.1** QuickJS
 + Skia GPU artifacts by exact size and SHA-256: seven runtime slices and Android,
 iOS and macOS universal SDK packages. Native production is bound to
 `747d0b02131d7f67b3adbdd7127abcd5e21ffdbe`; wrapper producer commits remain
@@ -101,4 +101,4 @@ Commit source and inventory together before building distributable packages. `so
 
 ## preview.5.3 source status
 
-Current wrapper metadata, native-input checks and consumer tools require preview.5.3. New runtime production, reviewed archive hashes and a matching lock are pending; no native build or device result is claimed for these source changes. The retained preview.5.1 lock is rejected by current preparation, so native build/package and consumer validation remain blocked until real preview.5.3 artifacts are produced and pinned. Historical release bytes and evidence retain their original source identities.
+Current wrapper metadata, native-input checks and consumer tools require preview.5.3, and the default lock now selects the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution remain blocked; all prior release bytes and evidence retain their original source identities.
