@@ -2,20 +2,24 @@
 
 Version **0.1.0-preview.5.1** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
-The current source is the `0.1.0-preview.5.1` patch. Native preparation requires an independently reviewed matching `0.1.0-preview.5.1` artifact lock; a source version bump cannot reuse or relabel older binaries. The checked-in historical lock and producer identities below remain unchanged until new artifacts are built and pinned. Missing matching artifacts fail explicitly.
+The current source and exact runtime lock target `0.1.0-preview.5.1`. The lock SHA-256 is `bc2bf8a79ebb1ea1b7bcf2b5a4749271f2022c9b103773bd7be6ebc3b94271cd`; it pins ten independently produced archives. Native preparation checks the matching version and exact artifact bytes; it cannot reuse or relabel an older binary. The lock does not assert private-release availability, Player installation or GPU/device acceptance.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
 A fresh clone needs Node.js 24+, Python 3 and the platform toolchain below. It does **not** need a parent monorepo, Rust, Cargo, a git submodule or private implementation source.
 
-The default lock identifies the newly built **0.1.0-preview.5** QuickJS + Skia GPU
-artifacts by exact size and SHA-256. It contains seven runtime slices and Android,
-iOS and macOS universal SDK packages; native production is bound to
-`05aec6c4056a124a9c399c75b34d081cffbdaa5d`, while wrapper producer commits are
-recorded separately in archive provenance. Historical preview.2/3/4 releases,
-reports and source identities remain unchanged. No older-runtime fallback is
-allowed. Windows/Linux runtime distributions remain blocked. Archive validation,
-private publication and actual Player/GPU/device acceptance are separate gates.
+The default lock identifies the independently built **0.1.0-preview.5.1** QuickJS
++ Skia GPU artifacts by exact size and SHA-256: seven runtime slices and Android,
+iOS and macOS universal SDK packages. Native production is bound to
+`747d0b02131d7f67b3adbdd7127abcd5e21ffdbe`; wrapper producer commits remain
+separately recorded in archive provenance. Later pin-only commits do not change
+those producer identities. Windows/Linux runtime distributions remain blocked.
+Archive validation, private publication and actual Player/GPU/device acceptance
+are separate gates. No older-runtime fallback is allowed.
+
+Historical preview.5 native production remains bound to
+`05aec6c4056a124a9c399c75b34d081cffbdaa5d`. All earlier release bytes, reports
+and source identities keep their original bindings.
 
 ## Obtain the native runtime
 
@@ -97,4 +101,4 @@ Commit source and inventory together before building distributable packages. `so
 
 ## preview.5.1 source status
 
-This checkout retains the preview.5 protocol while preparing the preview.5.1 patch. Its existing preview.5 lock and all historical bytes/evidence retain their original bindings until new patch artifacts are independently produced and pinned. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
+This checkout retains the preview.5 protocol and pins independently produced preview.5.1 artifacts. The pin commit does not become a new binary producer: archives retain their original runtime and wrapper source identities. All historical release bytes and evidence keep their original bindings. The source version and lock do not establish a Player, GPU or device pass; consult separately source-bound validation reports.
