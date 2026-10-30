@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sdkVersion": "0.1.0-preview.5.5",
-  "sourceBaseCommit": "c93ac37d9ee48d47c83e1348e983c400c036a88f",
-  "review": "Reviewed preview.5.5 source version and installation guidance; typed iOS cancellation and diagnostic adapters; historical runtime locks and ORIGIN remain unchanged.",
+  "sdkVersion": "0.1.0-preview.5.6",
+  "sourceBaseCommit": "63a126f1f82fba11acc5059f2c8c73e94cfa915d",
+  "review": "Reviewed preview.5.6 wrapper identity and new runtime requirement; historical runtime locks and ORIGIN remain unchanged.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -53,7 +53,7 @@
     },
     {
       "path": "README.md",
-      "sha256": "4078a472204c84e0f57897495ae444619c66aa3ca9c45ab2fb646ef9c08fd1d8",
+      "sha256": "0e20ca243d753dc115ac09b59545d22fe456a2a5009c6e6adf693a15ee5a3186",
       "size": 9574,
       "mode": "100644"
     },
@@ -113,7 +113,7 @@
     },
     {
       "path": "include/weapp/desktop.h",
-      "sha256": "d30db022fa611db7235f51755f6bea57325d50bd6aa623269c01a0ec841a1ba5",
+      "sha256": "c29ba2f836c5c110d85abd55e5e30effbfb60c35f2255280912fabf68f327947",
       "size": 9000,
       "mode": "100644"
     },
@@ -143,7 +143,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "9f4396cb85346c2dbf7829068bc21e7ca36daf38371cc6ac8da8260fcb9c6685",
+      "sha256": "169f0db748d32f56c5a060e96db5dfa2675409ea2779e555d19bc0472f26a864",
       "size": 500,
       "mode": "100644"
     },
@@ -269,7 +269,7 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "ccedf4b2659b4ba53c1612aff47cb5e2f9198e45279662593fa82157e7aed431",
+      "sha256": "d95d1f3cf8657270829b00ea755d19d9ee4278aab63e2ffd6b8bb9eeb780eeed",
       "size": 11295,
       "mode": "100644"
     },
@@ -281,7 +281,7 @@
     },
     {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "eca88880c2e6fe954c580da9328afbf9b03699113490a503c2fc83695f899912",
+      "sha256": "04062504e3fdf569aef12419f7a643e412b0c4c92faa7cd246024aae1a6fe172",
       "size": 19113,
       "mode": "100644"
     },
