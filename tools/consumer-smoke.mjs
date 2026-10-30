@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { copyPack } from './native-input.mjs';
+import { SDK_VERSION, copyPack } from './native-input.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 function option(name, fallback) {
@@ -21,7 +21,7 @@ if (process.platform !== 'darwin' && architecture !== process.arch) throw new Er
 const validation = resolve(root, 'artifacts/validation'); mkdirSync(validation, { recursive: true });
 const work = mkdtempSync(resolve(validation, `desktop-${process.platform}-${architecture}-`));
 const staged = resolve(work, 'sdk-original'), installed = resolve(work, 'sdk-relocated');
-const report = { schemaVersion: 1, sdkVersion: '0.1.0-preview.5.3', status: 'running', architecture, execution: process.platform === 'darwin' && process.arch !== architecture ? 'Rosetta x86_64' : `${process.platform}-${process.arch}`, checks: [] };
+const report = { schemaVersion: 1, sdkVersion: SDK_VERSION, status: 'running', architecture, execution: process.platform === 'darwin' && process.arch !== architecture ? 'Rosetta x86_64' : `${process.platform}-${process.arch}`, checks: [] };
 const save = () => writeFileSync(resolve(work, 'validation.json'), `${JSON.stringify(report, null, 2)}\n`);
 function run(label, command, argv) {
   const result = spawnSync(command, argv, { cwd: work, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024, timeout: 120_000 });
