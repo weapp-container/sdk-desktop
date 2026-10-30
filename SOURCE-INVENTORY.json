@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sdkVersion": "0.1.0-preview.5.4",
-  "sourceBaseCommit": "1fb95ce0a3a9b77ced3b36ca638b6f3b70c42843",
-  "review": "Reviewed preview.5.4 wrapper version and exact native diagnostic provenance; Flutter also isolates retired View lease diagnostics. Historical ORIGIN and preview.5.3 artifact lock preserved.",
+  "sdkVersion": "0.1.0-preview.5.5",
+  "sourceBaseCommit": "c93ac37d9ee48d47c83e1348e983c400c036a88f",
+  "review": "Reviewed preview.5.5 source version and installation guidance; typed iOS cancellation and diagnostic adapters; historical runtime locks and ORIGIN remain unchanged.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -53,8 +53,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "0ab91dd57b87dc39a7dee5db5c38124e9977fbd2b2e63870a1b7c963abc7d902",
-      "size": 9640,
+      "sha256": "4078a472204c84e0f57897495ae444619c66aa3ca9c45ab2fb646ef9c08fd1d8",
+      "size": 9574,
       "mode": "100644"
     },
     {
@@ -113,7 +113,7 @@
     },
     {
       "path": "include/weapp/desktop.h",
-      "sha256": "b319de5e26e2aa3154784c1d558e98869d74719168f1f0a23662b41575053607",
+      "sha256": "d30db022fa611db7235f51755f6bea57325d50bd6aa623269c01a0ec841a1ba5",
       "size": 9000,
       "mode": "100644"
     },
@@ -143,7 +143,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "4c935cc2bfcb206fc2b45006bf3790a1b3ee3e8007139df49f9462f132ef80aa",
+      "sha256": "9f4396cb85346c2dbf7829068bc21e7ca36daf38371cc6ac8da8260fcb9c6685",
       "size": 500,
       "mode": "100644"
     },
@@ -269,7 +269,7 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "6abe89ca6a8cc16ebf1a878268e8a61cb177ebf7f8c5662cca6c78fff57142f2",
+      "sha256": "ccedf4b2659b4ba53c1612aff47cb5e2f9198e45279662593fa82157e7aed431",
       "size": 11295,
       "mode": "100644"
     },
@@ -281,7 +281,7 @@
     },
     {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "b9370a356f8e140d1c057920b78ad7067a7ec1299d2db18a185da0bebfeb7c75",
+      "sha256": "eca88880c2e6fe954c580da9328afbf9b03699113490a503c2fc83695f899912",
       "size": 19113,
       "mode": "100644"
     },

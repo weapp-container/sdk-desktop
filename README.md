@@ -1,8 +1,8 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.5.3** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.5.5** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
-The default `runtime-artifacts.lock.json` now pins the privately published **0.1.0-preview.5.3** native artifacts (SHA-256 `ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388`). The exact archives passed independent member/provenance review and offline installation checks. Native production remains bound to `012400d43cb20b4d91a73fbbde7e1cf11bd0bb6a`, the desktop wrapper to `ae67dde1a104587968e2db37a9636b8776328607`, and the packaging envelope to `eff194421aa48ea7871b0989f9903f3636f6432e`. This pinning commit does not relabel those producers. Source verification, actual Player/GPU/device execution and performance remain separate gates.
+Current source requires a newly built **0.1.0-preview.5.5** runtime and matching SDK bundles. Production, exact archive pins, private publication and consumer validation for this version are pending. The checked-in `runtime-artifacts.lock.json` retains the historical **0.1.0-preview.5.3** archive set (SHA-256 `ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388`); it does not satisfy this source version. Preparation must reject that mismatch. Old native producer, archive and device evidence remains unchanged; new binaries require independent source and artifact bindings.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
