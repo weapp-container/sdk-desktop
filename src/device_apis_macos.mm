@@ -14,7 +14,7 @@
 #import <EventKit/EventKit.h>
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <objc/runtime.h>
-#include "device_apis_common.hpp"
+#include "device_location_common.hpp"
 #include <cmath>
 
 using namespace weapp::desktop;
@@ -191,7 +191,14 @@ void media_pixels(const std::weak_ptr<DeviceQueue>& weak,const std::shared_ptr<M
 namespace weapp::desktop::detail {
 class MacDeviceApis final : public DeviceBase {
   WCDeviceNetwork* network_;NSURLSession* session_;std::map<std::string,NSURLSessionTask*> tasks_;std::map<std::string,std::shared_ptr<std::atomic<bool>>> network_cancellations_;
-  WCDeviceLocation* location_delegate_;CLLocationManager* location_;std::set<std::string> location_calls_;bool continuous_location_=false;
+  WCDeviceLocation* location_delegate_=nil;CLLocationManager* location_=nil;
+  struct MacLocationRequest {LocationOptions options;std::shared_ptr<std::atomic<bool>> delivery;std::chrono::steady_clock::time_point deadline;};
+  std::map<std::string,MacLocationRequest> location_calls_;
+  struct MacLocationIntent {std::shared_ptr<std::atomic<bool>> delivery;bool continuous;};
+  std::map<std::string,MacLocationIntent> location_intents_;
+  bool continuous_location_=false,location_started_=false;uint64_t location_generation_=0;
+  LocationOptions location_watch_options_;
+  std::shared_ptr<std::atomic<bool>> location_watch_delivery_;
   struct Audio {AVPlayer* player=nil;id timer=nil,ended=nil;Json properties=Json::object();};std::map<std::string,Audio> audio_;
   struct Mount {AVCaptureSession* capture=nil;AVCapturePhotoOutput* photo=nil;AVCaptureVideoDataOutput* output=nil;WCDeviceFrames* capture_delegate=nil;AVPlayer* player=nil;AVPlayerItemVideoOutput* video_output=nil;Json snapshot;std::string source;uint64_t sequence=0,incarnation=0;bool permission_pending=false,permission_denied=false;};std::map<std::string,Mount> mounts_;
   std::shared_ptr<MediaMailbox> media_=std::make_shared<MediaMailbox>();CIContext* media_context_=[CIContext contextWithOptions:nil];uint64_t mount_sequence_=0;
@@ -400,7 +407,7 @@ class MacDeviceApis final : public DeviceBase {
   }
   Status foreground_changed(bool visible) override {
     for(auto& entry:mounts_){auto& mount=entry.second;if(!visible){[mount.capture stopRunning];[mount.player pause];}else if(mount.capture && mount.snapshot.value("visible",false))[mount.capture startRunning];}
-    if(!visible){[bluetooth_ stopScan];if(recorder_.recording){[recorder_ pause];queue_event(weak_queue(),"InterruptionBegin",recorder_object_,Json::object());}[location_ stopUpdatingLocation];for(auto& entry:audio_)[entry.second.player pause];}else if(continuous_location_)[location_ startUpdatingLocation];return {};
+    if(!visible){[bluetooth_ stopScan];if(recorder_.recording){[recorder_ pause];queue_event(weak_queue(),"InterruptionBegin",recorder_object_,Json::object());}cancel_locations("location request was retired when the application entered background");for(auto& entry:audio_)[entry.second.player pause];}return {};
   }
   void request_permission(const std::string& scope,std::function<void(bool)> completion) override {
     if(scope=="open-settings") {
@@ -413,14 +420,94 @@ class MacDeviceApis final : public DeviceBase {
     NSAlert* alert=[NSAlert new];alert.messageText=@"Allow application access?";alert.informativeText=ns(encode(options_.application).value("appId","")+" requests "+scope);[alert addButtonWithTitle:@"Allow"];[alert addButtonWithTitle:@"Deny"];dialogs_.push_back(alert.window);
     [alert beginSheetModalForWindow:parent completionHandler:^(NSModalResponse response){completion(response==NSAlertFirstButtonReturn);}];
   }
-  void locate(const std::string& call,const std::string& api,bool continuous) {
+  void detach_location_manager() {
+    ++location_generation_;
+    [location_ stopUpdatingLocation];location_.delegate=nil;
+    if(location_delegate_){location_delegate_->update={};location_delegate_->authorization={};}
+    location_=nil;location_delegate_=nil;
+  }
+  void cancel_locations(const std::string& message,const std::string& code="cancelled") {
+    for(const auto& [call,intent]:location_intents_){*intent.delivery=false;if(calls_.count(call))fail(call,calls_.at(call).context.value("api","wx.getLocation"),message,code);}
+    if(location_watch_delivery_)*location_watch_delivery_=false;
+    continuous_location_=false;location_started_=false;location_calls_.clear();detach_location_manager();
+  }
+  void location_receipt(const std::string& call,const std::string& api,Json value,const std::shared_ptr<std::atomic<bool>>& delivery) {
+    DeviceQueued item{DeviceQueued::Complete,call,"","",device_ok(api,std::move(value))};item.delivery_allowed=delivery;
+    if(!queue_->push(std::move(item)))fail(call,api,"native location completion queue is full");
+  }
+  void ensure_location_manager() {
+    if(location_)return;
+    location_delegate_=[WCDeviceLocation new];location_=[CLLocationManager new];location_.delegate=location_delegate_;
+    auto weak=weak_queue();auto generation=++location_generation_;
+    location_delegate_->update=[this,weak,generation](CLLocation* value,NSError* error){
+      queue_action(weak,[this,weak,generation,value,error]{
+        auto queue=weak.lock();if(!queue||queue->closed||generation!=location_generation_||!foreground_)return;
+        Json result;std::string failure;int64_t native=0;
+        try {
+          if(error){failure=utf(error.localizedDescription);native=error.code;}
+          else if(value){
+            result={{"latitude",value.coordinate.latitude},{"longitude",value.coordinate.longitude},{"accuracy",value.horizontalAccuracy},{"horizontalAccuracy",value.horizontalAccuracy}};
+            if(value.verticalAccuracy>=0){result["altitude"]=value.altitude;result["verticalAccuracy"]=value.verticalAccuracy;}
+            if(value.speed>=0)result["speed"]=value.speed;
+            result=location_position(std::move(result),false);
+          }else failure="OS location returned no position";
+        }catch(const std::exception& invalid){failure=invalid.what();}
+        auto pending=std::move(location_calls_);location_calls_.clear();
+        if(failure.empty()&&continuous_location_)location_started_=true;
+        for(const auto& [call,request]:pending)if(calls_.count(call)){
+          auto api=calls_.at(call).context.value("api","wx.getLocation");
+          if(!failure.empty())fail(call,api,failure,"invalid_request",native);
+          else location_receipt(call,api,request.options.continuous?Json::object():location_position(result,request.options.fuzzy),request.delivery);
+        }
+        if(continuous_location_){
+          DeviceQueued event{DeviceQueued::NativeEvent,"",failure.empty()?"LocationChange":"LocationChangeError","",failure.empty()?result:Json{{"errMsg",failure},{"errCode",native}}};
+          event.delivery_allowed=location_watch_delivery_;queue_->push(std::move(event));
+        }else [location_ stopUpdatingLocation];
+      });
+    };
+    location_delegate_->authorization=[this,weak,generation](CLAuthorizationStatus status){
+      queue_action(weak,[this,weak,generation,status]{
+        auto queue=weak.lock();if(!queue||queue->closed||generation!=location_generation_||!foreground_)return;
+        if(status==kCLAuthorizationStatusAuthorizedAlways){if(continuous_location_||!location_calls_.empty())[location_ startUpdatingLocation];}
+        else if(status==kCLAuthorizationStatusDenied||status==kCLAuthorizationStatusRestricted)cancel_locations("OS location permission denied","permission_denied");
+      });
+    };
+  }
+  void refresh_location_accuracy() {
+    bool precise=continuous_location_,high=continuous_location_&&location_watch_options_.high_accuracy;
+    for(const auto& [call,request]:location_calls_){precise|=!request.options.fuzzy;high|=request.options.high_accuracy;}
+    location_.desiredAccuracy=high?kCLLocationAccuracyBest:precise?kCLLocationAccuracyHundredMeters:kCLLocationAccuracyThreeKilometers;
+  }
+  void locate(const std::string& call,const std::string& api,const LocationOptions& options,const std::shared_ptr<std::atomic<bool>>& intent) {
+    if(!intent->load()){fail(call,api,"location request was retired","cancelled");return;}
     if(!foreground_){fail(call,api,"location requires a foreground application","permission_denied");return;}
     if(![NSBundle.mainBundle objectForInfoDictionaryKey:@"NSLocationWhenInUseUsageDescription"]) {fail(call,api,"host Info.plist must declare NSLocationWhenInUseUsageDescription","permission_denied");return;}
-    auto status=location_.authorizationStatus;
+    if(options.continuous&&continuous_location_){
+      if(options.high_accuracy!=location_watch_options_.high_accuracy||options.timeout_ms!=location_watch_options_.timeout_ms)throw std::invalid_argument("stop the active location watch before changing its options");
+      if(!location_started_)throw std::invalid_argument("location watch startup is already pending");
+      location_receipt(call,api,Json::object(),intent);return;
+    }
+    if(location_calls_.size()>=8)throw std::invalid_argument("native location concurrency limit exceeded");
+    ensure_location_manager();auto status=location_.authorizationStatus;
     if(status==kCLAuthorizationStatusDenied||status==kCLAuthorizationStatusRestricted){fail(call,api,"OS location permission denied","permission_denied");return;}
-    if(!continuous)location_calls_.insert(call);else {continuous_location_=true;done(call,api);}
+    location_calls_[call]={options,intent,std::chrono::steady_clock::now()+std::chrono::milliseconds(options.timeout_ms)};
+    if(options.continuous){continuous_location_=true;location_started_=false;location_watch_options_=options;location_watch_delivery_=intent;}
+    refresh_location_accuracy();
+    calls_.at(call).cancel=[this,call,intent]{
+      *intent=false;location_calls_.erase(call);
+      if(location_watch_delivery_==intent){continuous_location_=false;location_started_=false;detach_location_manager();if(!location_calls_.empty()){ensure_location_manager();refresh_location_accuracy();[location_ startUpdatingLocation];}}
+      else if(location_calls_.empty()&&!continuous_location_)[location_ stopUpdatingLocation];else refresh_location_accuracy();
+    };
     if(status==kCLAuthorizationStatusNotDetermined)[location_ requestWhenInUseAuthorization];else [location_ startUpdatingLocation];
-    calls_.at(call).cancel=[this,call]{location_calls_.erase(call);if(location_calls_.empty()&&!continuous_location_)[location_ stopUpdatingLocation];};
+  }
+  void stop_location(const std::string& call,const std::string& api) {
+    for(const auto& [pending,intent]:location_intents_)if(intent.continuous){*intent.delivery=false;if(calls_.count(pending))fail(pending,"wx.startLocationUpdate","location update was stopped","cancelled");}
+    if(location_watch_delivery_)*location_watch_delivery_=false;
+    continuous_location_=false;location_started_=false;
+    for(auto item=location_calls_.begin();item!=location_calls_.end();)if(item->second.options.continuous)item=location_calls_.erase(item);else ++item;
+    detach_location_manager();
+    if(!location_calls_.empty()){ensure_location_manager();refresh_location_accuracy();[location_ startUpdatingLocation];}
+    done(call,api);
   }
   bool platform_call(const std::string& call,const std::string& api,const Json& payload,const Json& context) override {
     if(bluetooth_call(call,api,payload)||recorder_call(call,api,payload)||system_call(call,api,payload))return true;
@@ -438,8 +525,13 @@ class MacDeviceApis final : public DeviceBase {
       dialogs_.push_back(alert.window);auto weak=weak_queue();auto count=api=="wx.showActionSheet"?payload["itemList"].size():0;
       [alert beginSheetModalForWindow:parent completionHandler:^(NSModalResponse response){if(api=="wx.showModal")queue_complete(weak,call,device_ok(api,{{"confirm",response==NSAlertFirstButtonReturn},{"cancel",response!=NSAlertFirstButtonReturn}}));else if(response>=NSAlertFirstButtonReturn&&size_t(response-NSAlertFirstButtonReturn)<count)queue_complete(weak,call,device_ok(api,{{"tapIndex",response-NSAlertFirstButtonReturn}}));else queue_failure(weak,call,device_failure(api,"user cancelled"));}];return true;
     }
-    if(api=="wx.getLocation"||api=="wx.getFuzzyLocation"||api=="wx.startLocationUpdate") {permit("scope.userLocation",api,call,[this,call,api]{locate(call,api,api=="wx.startLocationUpdate");});return true;}
-    if(api=="wx.stopLocationUpdate"){continuous_location_=false;if(location_calls_.empty())[location_ stopUpdatingLocation];done(call,api);return true;}
+    if(api=="wx.getLocation"||api=="wx.getFuzzyLocation"||api=="wx.startLocationUpdate") {
+      if(!foreground_)throw std::invalid_argument("location requires a foreground application");
+      auto options=location_options(api,payload);auto intent=std::make_shared<std::atomic<bool>>(true);location_intents_[call]={intent,options.continuous};
+      calls_.at(call).cancel=[intent]{*intent=false;};
+      permit(options.fuzzy?"scope.userFuzzyLocation":"scope.userLocation",api,call,[this,call,api,options,intent]{try{locate(call,api,options,intent);}catch(const std::exception& error){fail(call,api,error.what());}});return true;
+    }
+    if(api=="wx.stopLocationUpdate"){stop_location(call,api);return true;}
     if(api=="wx.openLocation"){double latitude=payload.at("latitude").get<double>(),longitude=payload.at("longitude").get<double>();if(!std::isfinite(latitude)||!std::isfinite(longitude)||fabs(latitude)>90||fabs(longitude)>180)throw std::invalid_argument("invalid location coordinate");NSURL* url=[NSURL URLWithString:ns("https://maps.apple.com/?ll="+std::to_string(latitude)+","+std::to_string(longitude))];if(![NSWorkspace.sharedWorkspace openURL:url])throw std::runtime_error("cannot open system map application");done(call,api);return true;}
     if(api=="wx.getNetworkType"){SCNetworkReachabilityRef reachability=SCNetworkReachabilityCreateWithName(nullptr,"apple.com");SCNetworkReachabilityFlags flags=0;bool reachable=reachability&&SCNetworkReachabilityGetFlags(reachability,&flags)&&(flags&kSCNetworkReachabilityFlagsReachable);if(reachability)CFRelease(reachability);done(call,api,{{"networkType",reachable?([CWWiFiClient.sharedWiFiClient interface].powerOn?"wifi":"ethernet"):"none"}});return true;}
     if(api=="wx.getBatteryInfo"){done(call,api,battery());return true;}
@@ -469,12 +561,12 @@ class MacDeviceApis final : public DeviceBase {
   void dispose_audio(const std::string& id){auto found=audio_.find(id);if(found==audio_.end())return;[found->second.player pause];if(found->second.timer)[found->second.player removeTimeObserver:found->second.timer];if(found->second.ended)[NSNotificationCenter.defaultCenter removeObserver:found->second.ended];audio_.erase(found);}
   void permissions_reset() override {
     {std::lock_guard<std::mutex> barrier(queue_->side_effects);for(auto photo:photos_)if(photo->cancelled)*photo->cancelled=true;}
-    close_bluetooth();stop_recorder(false);for(auto& entry:calls_)if(entry.second.context.value("api","")=="object:RecorderManager.start"||entry.second.context.value("api","")=="object:CameraContext.takePhoto")fail(entry.first,entry.second.context.value("api",""),"application recording permission was reset","permission_denied");[location_ stopUpdatingLocation];continuous_location_=false;auto pending=location_calls_;location_calls_.clear();for(const auto& call:pending)if(calls_.count(call))fail(call,calls_.at(call).context.value("api","wx.getLocation"),"application location permission was reset","permission_denied");
+    close_bluetooth();stop_recorder(false);for(auto& entry:calls_)if(entry.second.context.value("api","")=="object:RecorderManager.start"||entry.second.context.value("api","")=="object:CameraContext.takePhoto")fail(entry.first,entry.second.context.value("api",""),"application recording permission was reset","permission_denied");cancel_locations("application location permission was reset","permission_denied");
     for(auto& entry:mounts_)if(entry.second.snapshot.value("tag","")=="camera"){destroy_mount(entry.second);entry.second.incarnation=++mount_sequence_;entry.second.permission_denied=true;entry.second.permission_pending=false;}
   }
   void retire_platform() override {
     close_bluetooth();stop_recorder(false);recorder_managers_.clear();for(LAContext* context:authentication_)[context invalidate];authentication_.clear();
-    [location_ stopUpdatingLocation];location_delegate_->update={};location_delegate_->authorization={};location_calls_.clear();continuous_location_=false;
+    cancel_locations("native location owner was retired");location_intents_.clear();
     [session_ invalidateAndCancel];tasks_.clear();network_cancellations_.clear();while(!audio_.empty())dispose_audio(audio_.begin()->first);
     for(auto& entry:mounts_)destroy_mount(entry.second);mounts_.clear();{std::lock_guard<std::mutex> lock(media_->mutex);media_->targets.clear();media_->latest.clear();media_->sequences.clear();media_->incarnations.clear();}camera_nodes_.clear();video_nodes_.clear();photos_.clear();
     for(NSWindow* dialog:dialogs_){if(dialog.sheetParent)[dialog.sheetParent endSheet:dialog returnCode:NSModalResponseCancel];[dialog orderOut:nil];}dialogs_.clear();
@@ -495,9 +587,7 @@ class MacDeviceApis final : public DeviceBase {
     for(auto event:{"BluetoothAdapterStateChange","BluetoothDeviceFound","BLEConnectionStateChange","BLECharacteristicValueChange"})add_event("wx.on"+std::string(event),"wx.off"+std::string(event),event);
     for(auto event:{"Start","Stop","Pause","Resume","Error","InterruptionBegin"})add_event("object:RecorderManager.on"+std::string(event),"",event);
     snapshot("wx.getAppAuthorizeSetting",app_authorization());try{snapshot("wx.getBatteryInfoSync",battery());}catch(const std::exception&){}
-    location_delegate_=[WCDeviceLocation new];location_=[CLLocationManager new];location_.delegate=location_delegate_;location_.desiredAccuracy=kCLLocationAccuracyBest;
-    auto weak=weak_queue();location_delegate_->update=[this,weak](CLLocation* value,NSError* error){Json result;if(value)result={{"latitude",value.coordinate.latitude},{"longitude",value.coordinate.longitude},{"accuracy",value.horizontalAccuracy},{"altitude",value.altitude},{"verticalAccuracy",value.verticalAccuracy},{"horizontalAccuracy",value.horizontalAccuracy},{"speed",value.speed}};else result={{"errMsg",utf(error.localizedDescription)},{"errCode",error.code}};queue_action(weak,[this,weak,result,error]{auto queue=weak.lock();if(!queue||queue->closed)return;auto calls=location_calls_;location_calls_.clear();for(const auto& call:calls)if(calls_.count(call)){auto api=calls_.at(call).context.value("api","wx.getLocation");if(error)fail(call,api,result.value("errMsg","OS location failed"),"invalid_request",result.value("errCode",0));else done(call,api,result);}if(continuous_location_)queue_event(weak,error?"LocationChangeError":"LocationChange","",result);else [location_ stopUpdatingLocation];});};
-    location_delegate_->authorization=[this,weak](CLAuthorizationStatus status){queue_action(weak,[this,weak,status]{auto queue=weak.lock();if(!queue||queue->closed)return;if(status==kCLAuthorizationStatusAuthorizedAlways&&(continuous_location_||!location_calls_.empty()))[location_ startUpdatingLocation];else if(status==kCLAuthorizationStatusDenied||status==kCLAuthorizationStatusRestricted){auto pending=location_calls_;location_calls_.clear();for(auto& call:pending)if(calls_.count(call))fail(call,calls_.at(call).context.value("api","wx.getLocation"),"OS location permission denied","permission_denied");}});};
+
   }
   ~MacDeviceApis() override{retire();}
   Status set_native_parent(void* parent) override {
@@ -507,7 +597,10 @@ class MacDeviceApis final : public DeviceBase {
     auto status=DeviceBase::pump();if(!status||queue_->closed)return status;
     photos_.erase(std::remove_if(photos_.begin(),photos_.end(),[](WCDevicePhoto* photo){return photo->finished&&photo->finished->load();}),photos_.end());dialogs_.erase(std::remove_if(dialogs_.begin(),dialogs_.end(),[](NSWindow* window){return !window.sheetParent&&!window.visible;}),dialogs_.end());
     auto authorization=app_authorization();if(authorization!=snapshots_["wx.getAppAuthorizeSetting"]){snapshots_["wx.getAppAuthorizeSetting"]=authorization;DeviceQueued update;update.kind=DeviceQueued::Snapshots;update.value={{"wx.getAppAuthorizeSetting",authorization}};queue_->push(std::move(update));}
-    auto now=std::chrono::steady_clock::now();for(auto entry=ble_pending_.begin();entry!=ble_pending_.end();)if(now>=entry->second.deadline){auto pending=entry->second;if(pending.operation=="connect")[bluetooth_ cancelPeripheralConnection:peripherals_.at(entry->first)];entry=ble_pending_.erase(entry);if(calls_.count(pending.call))fail(pending.call,pending.api,"Bluetooth operation timed out","timeout");}else ++entry;
+    auto now=std::chrono::steady_clock::now();
+    for(auto entry=location_intents_.begin();entry!=location_intents_.end();)if(!calls_.count(entry->first))entry=location_intents_.erase(entry);else ++entry;
+    for(auto entry=location_calls_.begin();entry!=location_calls_.end();)if(now>=entry->second.deadline){auto call=entry->first;*entry->second.delivery=false;entry=location_calls_.erase(entry);if(calls_.count(call))fail(call,calls_.at(call).context.value("api","wx.getLocation"),"OS location fix timed out","timeout");}else ++entry;
+    for(auto entry=ble_pending_.begin();entry!=ble_pending_.end();)if(now>=entry->second.deadline){auto pending=entry->second;if(pending.operation=="connect")[bluetooth_ cancelPeripheralConnection:peripherals_.at(entry->first)];entry=ble_pending_.erase(entry);if(calls_.count(pending.call))fail(pending.call,pending.api,"Bluetooth operation timed out","timeout");}else ++entry;
     if(foreground_)for(auto& entry:mounts_){auto& mount=entry.second;if(!mount.video_output||!mount.player||!mount.snapshot.value("visible",false))continue;auto time=[mount.video_output itemTimeForHostTime:CACurrentMediaTime()];if([mount.video_output hasNewPixelBufferForItemTime:time]){CVPixelBufferRef buffer=[mount.video_output copyPixelBufferForItemTime:time itemTimeForDisplay:nil];if(buffer){media_pixels(weak_queue(),media_,entry.first,mount.incarnation,buffer,media_context_);CVPixelBufferRelease(buffer);}}}
     std::map<std::string,Json> frames;{std::lock_guard<std::mutex> lock(media_->mutex);frames.swap(media_->latest);}
     for(auto& frame:frames){auto result=command_("hostComponentFrame",std::get<Value::Object>(decode(frame.second).data),nullptr);if(!result)return result;}return {};

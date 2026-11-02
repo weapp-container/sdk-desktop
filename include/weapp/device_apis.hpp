@@ -11,6 +11,9 @@ struct DeviceApiOptions {
   Value::Object application, account;
   std::vector<std::string> allowed_network_origins;
   void* native_parent = nullptr;
+  // Installed host desktop-file ID used by GeoClue authorization. Empty keeps
+  // Linux location routes disabled; guest request parameters cannot set it.
+  std::string linux_desktop_id;
 };
 
 // Reusable with an owned Session or an external/Flutter native session. Commands

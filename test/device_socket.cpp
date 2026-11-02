@@ -1,7 +1,9 @@
 #include "device_socket_common.hpp"
+#include "core_host_services.hpp"
 #include <iostream>
 using namespace weapp::desktop;
 using namespace weapp::desktop::detail;
+using namespace weapp::desktop::detail::test;
 namespace {
 void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct WorkerControl {
@@ -42,42 +44,6 @@ class TestDevices : public DeviceSockets {
   void request_permission(const std::string&, std::function<void(bool)>) override {}
   bool platform_call(const std::string& call, const std::string& api, const Json& payload, const Json&) override { return socket_call(call, api, payload); }
 };
-class CoreSession {
-  weapp_container_sdk_session* session_ = nullptr;
-  static Json consume(weapp_container_sdk_buffer& buffer) {
-    auto result = Json::parse(buffer.data, buffer.data + buffer.len);
-    weapp_container_sdk_buffer_free(&buffer); return result;
-  }
- public:
-  CoreSession() {
-    const std::string config = R"({"engine":"quickjs","gpuRequired":false})";
-    weapp_container_sdk_buffer buffer{};
-    auto code = weapp_container_sdk_session_new(reinterpret_cast<const uint8_t*>(config.data()), config.size(), &session_, &buffer);
-    auto result = consume(buffer);
-    if (code != WEAPP_CONTAINER_SDK_OK || !session_) throw std::runtime_error("core test session: " + result.dump());
-  }
-  ~CoreSession() {
-    if (session_) { weapp_container_sdk_buffer buffer{}; weapp_container_sdk_session_destroy(&session_, &buffer); weapp_container_sdk_buffer_free(&buffer); }
-  }
-  Json configure(const Json& config) {
-    const std::string operation = "configureHostServices", payload = config.dump();
-    weapp_container_sdk_buffer buffer{};
-    weapp_container_sdk_session_command(session_, reinterpret_cast<const uint8_t*>(operation.data()), operation.size(),
-        reinterpret_cast<const uint8_t*>(payload.data()), payload.size(), &buffer);
-    return consume(buffer);
-  }
-};
-void configure_actual_core_catalog(const TestDevices& devices, const Json& application, const Json& account) {
-  auto configuration = encode(devices.configuration());
-  configuration["application"] = application; configuration["account"] = account;
-  CoreSession core;
-  auto accepted = core.configure(configuration);
-  if (!accepted.value("ok", false)) throw std::runtime_error("native socket configuration rejected by core: " + accepted.dump());
-  auto unknown = configuration;
-  unknown["apis"].push_back("object:SocketTask.offOpen");
-  require(!core.configure(unknown).value("ok", false), "core accepted an API absent from its locked catalog");
-  require(core.configure(configuration).value("ok", false), "rejected catalog update corrupted the previous configuration");
-}
 void close_receipt_waits_for_worker_and_delivery_stays_on_owner() {
   control = std::make_shared<WorkerControl>();
   TestRoot fixture; const auto& root = fixture.path;

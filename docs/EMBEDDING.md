@@ -151,13 +151,49 @@ continuations remain retired. Linux uses GTK/GIO, optional libcurl 7.85+,
 NetworkManager Wi-Fi discovery/current access points, the freedesktop screen
 inhibitor and sysfs backlight control. Linux services may reject unavailable
 hardware, missing daemons or insufficient OS permissions. NetworkManager lists
-its observed access-point cache after requesting a scan. Other desktop device
-families remain unsupported unless a host adds its own registered handlers.
+its observed access-point cache after requesting a scan.
+
+Foreground location uses CoreLocation on macOS, C++/WinRT Geolocator on Windows
+when its SDK headers and runtime activation are available, and GeoClue on Linux
+when a system service is owned or activatable. Linux hosts must set the trusted
+`DeviceApiOptions::linux_desktop_id` to their installed desktop-file ID (with or
+without `.desktop`); empty disables location routes. Guest parameters cannot
+supply this identity. GeoClue service policy and OS consent still apply. Windows
+permission acquisition requires the attached visible host HWND, its UI thread
+and foreground root window. Missing capabilities leave the routes unregistered.
+
+All three drivers accept WGS84 only; unsupported coordinate systems are rejected.
+`wx.getFuzzyLocation` requests `scope.userFuzzyLocation`, rounds coordinates to
+0.01 degrees, reports accuracy of at least 1500 metres and removes altitude and
+speed metadata. Precise calls request `scope.userLocation`. Location timeout is
+100..120000 milliseconds (default 30000). Starting a watch waits for its initial
+native startup/fix; an active watch accepts repeated starts with identical
+options, while a changed accuracy or timeout requires stopping it first. Windows
+polls Geolocator fixes at one-second intervals; Linux observes GeoClue's client
+location at 500ms intervals. Neither implementation promises an OS event stream.
+
+Stop invalidates queued watch delivery and pending application/native grants.
+Windows/Linux stop receipts wait until their native source is destroyed, including
+late acquisition after cancellation; cancelled workers retain their slots within
+the eight-owner limit until cleanup completes. Windows retains the same async
+operation until a completion callback or terminal status permits `Close`, and
+retries uncertain close failures without releasing the operation or apartment.
+GeoClue tries Stop/DeleteClient, then confirms closure of its private D-Bus
+connection; GeoClue documents private disconnect as client cleanup. Failed
+connection closure retains the connection for retry. A persistent native cleanup
+failure keeps stop/retirement pending rather than acknowledging released resources.
+macOS detaches the old manager/delegate and captures a new generation before a
+fresh watch; queued callbacks from a retired manager cannot enter that watch.
+Reset, background and retirement revoke both queued delivery and pending grants;
+returning to foreground requires a fresh start. Other desktop device families
+remain unsupported unless a host adds its own registered handlers.
 
 The macOS source has a local CMake archive-build check. This is not camera,
 Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
-Windows/Linux target builds and physical device verification remain separate
-requirements; available source routes do not establish OS parity.
+Windows target compilation, a complete Linux GTK target build and physical
+device verification remain separate requirements; available source routes do
+not establish OS parity. The GeoClue source has an isolated compile check against
+real GIO headers on the local macOS machine; this does not execute GeoClue.
 
 The optional CMake `WEAPP_DESKTOP_BUILD_TESTS=ON` target builds
 `weapp_device_permissions_test`; run it with `ctest --test-dir <build-dir>
@@ -166,6 +202,11 @@ owner queue and retained-object cleanup with fake OS consent callbacks. Pending
 application grants, delayed OS grants and queued successful completions cannot
 escape a permission reset; fresh authorization can recover afterward. This is
 an executable lifecycle contract check, not hardware or privacy-dialog acceptance.
+The `weapp_device_location_test` executable additionally uses fake native sources
+to verify fuzzy projection/scopes, queued-event revocation, delayed acquisition,
+stop/drain ordering, cleanup failure recovery, background behavior and bounded
+cancelled workers. It submits the adapter's complete configuration through the
+actual linked core C ABI; this validates catalog registration, not OS location.
 
 Native request cancellation and managed-file publication share a completion
 barrier on macOS, Windows and Linux. Cancellation before publication prevents

@@ -63,6 +63,7 @@ struct DeviceQueued {
   Json value;
   size_t bytes=0;
   std::function<void()> action;
+  std::shared_ptr<std::atomic<bool>> delivery_allowed;
 };
 struct DeviceQueue {
   std::atomic<bool> closed{false};std::mutex mutex,side_effects;std::deque<DeviceQueued> items;size_t bytes=0;
@@ -326,6 +327,7 @@ class DeviceBase : public DeviceApis {
       {std::lock_guard<std::mutex> guard(queue_->mutex);if(queue_->items.empty())break;item=std::move(queue_->items.front());queue_->items.pop_front();queue_->bytes-=item.bytes;}
       if(item.kind==DeviceQueued::OwnerAction) {if(item.action)item.action();}
       else if(item.kind==DeviceQueued::NativeEvent||item.kind==DeviceQueued::NativeTerminalEvent) {
+        if(item.delivery_allowed&&!item.delivery_allowed->load())continue;
         for(auto& entry:subscriptions_) {auto& subscription=entry.second;if(subscription.event!=item.event||subscription.object!=item.object)continue;
           Json data={{"sessionId",subscription.context.at("sessionId")},{"accountEpoch",exact_epoch(subscription.context.at("account").at("epoch"))},{"subscriptionId",entry.first},{"sequence",std::to_string(++subscription.sequence)},{"value",item.value},{"event",item.event}};
           if(!item.object.empty())data["objectId"]=item.object;
@@ -334,7 +336,8 @@ class DeviceBase : public DeviceApis {
       else {auto found=calls_.find(item.id);if(found==calls_.end())continue;
         // A completion may already precede reset's queued failure. Revocation
         // wins at delivery too, and the failure releases retained resources.
-        if(item.kind==DeviceQueued::Complete&&found->second.permission_generation&&*found->second.permission_generation!=permission_generation_){item.kind=DeviceQueued::Failure;item.value=device_failure(found->second.context.value("api",""),"application permission was reset","permission_denied");}
+        if((item.kind==DeviceQueued::Complete||item.kind==DeviceQueued::Failure)&&found->second.permission_generation&&*found->second.permission_generation!=permission_generation_){item.kind=DeviceQueued::Failure;item.value=device_failure(found->second.context.value("api",""),"application permission was reset","permission_denied");}
+        if(item.kind==DeviceQueued::Complete&&item.delivery_allowed&&!item.delivery_allowed->load()){item.kind=DeviceQueued::Failure;item.value=device_failure(found->second.context.value("api",""),"native operation was retired","cancelled");}
         bool retained=found->second.retained;if(item.kind==DeviceQueued::Failure)cancelled(item.id);else if(!retained)calls_.erase(found);
         Json data={{"callId",item.id},{item.kind==DeviceQueued::Failure?"error":"result",item.value}};
         auto status=command_("completeHostCall",std::get<Value::Object>(decode(data).data),nullptr);if(!status)return status;}
