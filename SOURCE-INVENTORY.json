@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "1bb832c567e7e4539e30d9d239d4099743cc60ba",
-  "review": "Initialize the actual GTK host event loop for native account and reference-service test consumers; preserve production event-loop requirements and require an owned X11 or Wayland display.",
+  "sourceBaseCommit": "87721b05d7b9098e6088c7eef695cdd39bc881d3",
+  "review": "Bind preview.6.0 runtime artifacts for Android, iOS, macOS and Linux release consumers",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -203,8 +203,8 @@
     },
     {
       "path": "runtime-artifacts.lock.json",
-      "sha256": "ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388",
-      "size": 3241,
+      "sha256": "1f066a5d333147faff726fcc36778cbe2d705142f4f15cc7a902b85d1600d13f",
+      "size": 3786,
       "mode": "100644"
     },
     {
