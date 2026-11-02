@@ -241,9 +241,26 @@ static EventType event_type(const std::string& t) {
   auto i = types.find(t);
   return i == types.end() ? EventType::Unknown : i->second;
 }
+void Core::retry_account_cleanup() {
+  if(account_cleanup_operation.empty())return;
+  Status cleanup;
+  if(devices)cleanup=devices->retire();
+  if(cleanup&&presenter)cleanup=presenter->detach();
+  if(cleanup){
+    devices.reset();
+    cleanup=call("acknowledgeAccountCleanup",{{"operationId",account_cleanup_operation}});
+    if(cleanup){account_cleanup_operation.clear();account_cleanup_last_error={};return;}
+  }
+  // A pending drain is normal progress. Report persistent failures only when
+  // their diagnostic changes; each owner-loop turn still retries the resource.
+  if(cleanup.code!="ERR_RESOURCE_CLEANUP_PENDING"&&
+      (cleanup.code!=account_cleanup_last_error.code||cleanup.message!=account_cleanup_last_error.message))report(cleanup);
+  account_cleanup_last_error=cleanup;
+}
 Status Core::drain() {
   if (delivering)
     return {};  // nested host event loops cannot recursively drain callbacks
+  retry_account_cleanup();
   std::vector<Event> events;
   events.swap(pending);
   if (handle) {
@@ -260,14 +277,8 @@ Status Core::drain() {
         if (phase == "revoking") {input_enabled=false;touches.clear();}
         if (phase == "stoppingResources") {
           input_enabled=false;touches.clear();
-          Status cleanup;
-          if(devices) cleanup=devices->retire();
-          if(cleanup && presenter) cleanup=presenter->detach();
-          if(cleanup) {
-            devices.reset();
-            cleanup=call("acknowledgeAccountCleanup",{{"operationId",j.at("receipt").at("operationId")}});
-          }
-          if(!cleanup) report(cleanup);
+          account_cleanup_operation=j.at("receipt").at("operationId").get<std::string>();
+          retry_account_cleanup();
         } else if (phase == "awaitingPresentation") {
           auto status=prepare_devices();
           if(status && presenter)status=presenter->attach();

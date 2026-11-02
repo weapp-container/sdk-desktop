@@ -100,7 +100,11 @@ void close_receipt_waits_for_worker_and_delivery_stays_on_owner() {
     }
     control->release = true;
     require(bounded, "cancelled workers released concurrency before native drain");
-    require(bool(devices.retire()), "retirement did not join the socket worker");
+    const auto retirement_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(3);
+    Status retirement;
+    do { retirement = devices.retire(); if (retirement) break; std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
+    while (std::chrono::steady_clock::now() < retirement_deadline);
+    require(bool(retirement), "retirement did not drain the socket worker");
     require(control->drained == 9, "retirement returned before every fake native resource drained");
   }
 }

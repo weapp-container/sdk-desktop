@@ -26,6 +26,8 @@ class DeviceApis {
   virtual Value::Object configuration() const = 0;
   virtual bool dispatch(const Event&) = 0;
   virtual Status pump() = 0;
+  // Pending native drain returns ERR_RESOURCE_CLEANUP_PENDING without blocking
+  // the owner loop. Retain this owner and retry; destroy only after success.
   virtual Status retire() = 0;
   virtual Status set_native_parent(void*) = 0;
   virtual Status set_foreground(bool) = 0;

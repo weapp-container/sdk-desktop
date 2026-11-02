@@ -198,7 +198,7 @@ class MacDeviceApis final : public DeviceBase {
   std::map<std::string,MacLocationIntent> location_intents_;
   bool continuous_location_=false,location_started_=false;uint64_t location_generation_=0;
   LocationOptions location_watch_options_;
-  std::shared_ptr<std::atomic<bool>> location_watch_delivery_;
+  std::shared_ptr<std::atomic<bool>> location_watch_delivery_,location_terminal_delivery_,location_overflow_;
   struct Audio {AVPlayer* player=nil;id timer=nil,ended=nil;Json properties=Json::object();};std::map<std::string,Audio> audio_;
   struct Mount {AVCaptureSession* capture=nil;AVCapturePhotoOutput* photo=nil;AVCaptureVideoDataOutput* output=nil;WCDeviceFrames* capture_delegate=nil;AVPlayer* player=nil;AVPlayerItemVideoOutput* video_output=nil;Json snapshot;std::string source;uint64_t sequence=0,incarnation=0;bool permission_pending=false,permission_denied=false;};std::map<std::string,Mount> mounts_;
   std::shared_ptr<MediaMailbox> media_=std::make_shared<MediaMailbox>();CIContext* media_context_=[CIContext contextWithOptions:nil];uint64_t mount_sequence_=0;
@@ -429,7 +429,17 @@ class MacDeviceApis final : public DeviceBase {
   void cancel_locations(const std::string& message,const std::string& code="cancelled") {
     for(const auto& [call,intent]:location_intents_){*intent.delivery=false;if(calls_.count(call))fail(call,calls_.at(call).context.value("api","wx.getLocation"),message,code);}
     if(location_watch_delivery_)*location_watch_delivery_=false;
+    if(location_terminal_delivery_)*location_terminal_delivery_=false;
     continuous_location_=false;location_started_=false;location_calls_.clear();detach_location_manager();
+  }
+  void location_backpressure() {
+    bool watched=continuous_location_;
+    cancel_locations("native location ingress backpressure limit exceeded");
+    if(watched){
+      location_terminal_delivery_=std::make_shared<std::atomic<bool>>(true);
+      DeviceQueued event{DeviceQueued::NativeTerminalEvent,"","LocationChangeError","",{{"errMsg","native location ingress backpressure limit exceeded"}}};
+      event.delivery_allowed=location_terminal_delivery_;queue_->push(std::move(event));
+    }
   }
   void location_receipt(const std::string& call,const std::string& api,Json value,const std::shared_ptr<std::atomic<bool>>& delivery) {
     DeviceQueued item{DeviceQueued::Complete,call,"","",device_ok(api,std::move(value))};item.delivery_allowed=delivery;
@@ -439,8 +449,10 @@ class MacDeviceApis final : public DeviceBase {
     if(location_)return;
     location_delegate_=[WCDeviceLocation new];location_=[CLLocationManager new];location_.delegate=location_delegate_;
     auto weak=weak_queue();auto generation=++location_generation_;
-    location_delegate_->update=[this,weak,generation](CLLocation* value,NSError* error){
-      queue_action(weak,[this,weak,generation,value,error]{
+    if(location_terminal_delivery_)*location_terminal_delivery_=false;
+    location_overflow_=std::make_shared<std::atomic<bool>>(false);auto overflow=location_overflow_;
+    location_delegate_->update=[this,weak,generation,overflow](CLLocation* value,NSError* error){
+      if(!queue_action(weak,[this,weak,generation,value,error]{
         auto queue=weak.lock();if(!queue||queue->closed||generation!=location_generation_||!foreground_)return;
         Json result;std::string failure;int64_t native=0;
         try {
@@ -461,16 +473,16 @@ class MacDeviceApis final : public DeviceBase {
         }
         if(continuous_location_){
           DeviceQueued event{DeviceQueued::NativeEvent,"",failure.empty()?"LocationChange":"LocationChangeError","",failure.empty()?result:Json{{"errMsg",failure},{"errCode",native}}};
-          event.delivery_allowed=location_watch_delivery_;queue_->push(std::move(event));
+          event.delivery_allowed=location_watch_delivery_;if(!queue_->push(std::move(event)))location_backpressure();
         }else [location_ stopUpdatingLocation];
-      });
+      }))*overflow=true;
     };
-    location_delegate_->authorization=[this,weak,generation](CLAuthorizationStatus status){
-      queue_action(weak,[this,weak,generation,status]{
+    location_delegate_->authorization=[this,weak,generation,overflow](CLAuthorizationStatus status){
+      if(!queue_action(weak,[this,weak,generation,status]{
         auto queue=weak.lock();if(!queue||queue->closed||generation!=location_generation_||!foreground_)return;
         if(status==kCLAuthorizationStatusAuthorizedAlways){if(continuous_location_||!location_calls_.empty())[location_ startUpdatingLocation];}
         else if(status==kCLAuthorizationStatusDenied||status==kCLAuthorizationStatusRestricted)cancel_locations("OS location permission denied","permission_denied");
-      });
+      }))*overflow=true;
     };
   }
   void refresh_location_accuracy() {
@@ -503,6 +515,7 @@ class MacDeviceApis final : public DeviceBase {
   void stop_location(const std::string& call,const std::string& api) {
     for(const auto& [pending,intent]:location_intents_)if(intent.continuous){*intent.delivery=false;if(calls_.count(pending))fail(pending,"wx.startLocationUpdate","location update was stopped","cancelled");}
     if(location_watch_delivery_)*location_watch_delivery_=false;
+    if(location_terminal_delivery_)*location_terminal_delivery_=false;
     continuous_location_=false;location_started_=false;
     for(auto item=location_calls_.begin();item!=location_calls_.end();)if(item->second.options.continuous)item=location_calls_.erase(item);else ++item;
     detach_location_manager();
@@ -595,6 +608,7 @@ class MacDeviceApis final : public DeviceBase {
   }
   Status pump() override {
     auto status=DeviceBase::pump();if(!status||queue_->closed)return status;
+    if(location_overflow_&&location_overflow_->exchange(false))location_backpressure();
     photos_.erase(std::remove_if(photos_.begin(),photos_.end(),[](WCDevicePhoto* photo){return photo->finished&&photo->finished->load();}),photos_.end());dialogs_.erase(std::remove_if(dialogs_.begin(),dialogs_.end(),[](NSWindow* window){return !window.sheetParent&&!window.visible;}),dialogs_.end());
     auto authorization=app_authorization();if(authorization!=snapshots_["wx.getAppAuthorizeSetting"]){snapshots_["wx.getAppAuthorizeSetting"]=authorization;DeviceQueued update;update.kind=DeviceQueued::Snapshots;update.value={{"wx.getAppAuthorizeSetting",authorization}};queue_->push(std::move(update));}
     auto now=std::chrono::steady_clock::now();

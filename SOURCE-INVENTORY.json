@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "586ea329242177cc61381973a8f101fc5997922f",
-  "review": "Add foreground WinRT and GeoClue location sources with retryable native cleanup, harden macOS location privacy and manager generations, and cover cancellation/drain with fake native sources plus actual core catalog configuration; macOS archive and isolated GIO headers checked locally, Windows/Linux/device acceptance remains separate.",
+  "sourceBaseCommit": "60a27db702051ab6ee689353b3e00f6d65c10371",
+  "review": "Make native worker retirement retryable without blocking the owner loop, retry desktop account cleanup before acknowledgement, stop macOS location on ingress saturation, and test retained cleanup failure/recovery; local macOS archive, six CTests and fake native lifecycle evidence only.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -107,8 +107,8 @@
     },
     {
       "path": "docs/EMBEDDING.md",
-      "sha256": "8f9a6d7b8588a6d900e30a3f0a141cd771a73d219d3a95a45f6d5ad107636b53",
-      "size": 17179,
+      "sha256": "e5a0f050eb0a0d01305b7b26750508658a634eea8fb926ebb795f5d59b9ec3d8",
+      "size": 17791,
       "mode": "100644"
     },
     {
@@ -125,8 +125,8 @@
     },
     {
       "path": "include/weapp/device_apis.hpp",
-      "sha256": "63af8af1103a0f4441085b97a2b1dd4a33453f9b48887e36cfd8dbecd3dbcd19",
-      "size": 1461,
+      "sha256": "a4248f346a1626928ddd3d6f028fe326c3d6de4ce68856266b98ced174ef8ada",
+      "size": 1619,
       "mode": "100644"
     },
     {
@@ -167,14 +167,14 @@
     },
     {
       "path": "src/desktop.cpp",
-      "sha256": "cc247a6e7bfdccad877225912524b9aff76136cc6c22f70afd703bf3b826d990",
-      "size": 34318,
+      "sha256": "1238f157721cbdb64f5795d98e2fea367f1b75476c2689d4dbe5344e44d5a686",
+      "size": 34908,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "a149e5229ef377437232f905535fdca8b7f2989a0bbe11e465b22048f5ffc6bc",
-      "size": 33340,
+      "sha256": "c5268c37e0c93e0e1389fcb35aeb950dd54f1431e640b1de3160581a8ba943d4",
+      "size": 34267,
       "mode": "100644"
     },
     {
@@ -185,8 +185,8 @@
     },
     {
       "path": "src/device_apis_macos.mm",
-      "sha256": "88ef10a359d70746131f7abc089d6ec426446dbab9a4fcd5a75546679439f94b",
-      "size": 93266,
+      "sha256": "5714ea5c58667762c98b7e4086d2b15084f3b5b5229212f1cf6c1b127e3f22ee",
+      "size": 94296,
       "mode": "100644"
     },
     {
@@ -233,8 +233,8 @@
     },
     {
       "path": "src/internal.hpp",
-      "sha256": "b267892306a3c04f9a85645d9a30a5d99502dcf62bfe6a7c3e898d89cfcdc19d",
-      "size": 2985,
+      "sha256": "99e1d78f28d643fe86844ee509579514b5bb402a2f0cca4cbc536836c458c8ae",
+      "size": 3095,
       "mode": "100644"
     },
     {
@@ -287,14 +287,14 @@
     },
     {
       "path": "test/device_location.cpp",
-      "sha256": "6f5c03dff887eaf4a820549f6d8add90b9b2c741d650dc8a98b34618a32ccde5",
-      "size": 15041,
+      "sha256": "9a9a29eeacbf195695e8aa4fb25ae6f307a47b90f20440d7d168b88b998288e7",
+      "size": 15998,
       "mode": "100644"
     },
     {
       "path": "test/device_permissions.cpp",
-      "sha256": "a5ded4aeb5acaee22eaf87abe66665fcd1e3a55ebbe20dade549c45836ee2254",
-      "size": 8190,
+      "sha256": "5db3f89d70e93e48c31d030908b9eef6242a46f09b66792d725f2babaa504d43",
+      "size": 9608,
       "mode": "100644"
     },
     {
@@ -305,8 +305,8 @@
     },
     {
       "path": "test/device_socket.cpp",
-      "sha256": "a3a4171f730b291d587bd88ca74d821581dde0a29b80dce0bb1dc2925bf09972",
-      "size": 6762,
+      "sha256": "04997647d2494fbe28bb88c8bb6ac2d4c80cfeb8a8cc52a8fb16ee266e508592",
+      "size": 7069,
       "mode": "100644"
     },
     {

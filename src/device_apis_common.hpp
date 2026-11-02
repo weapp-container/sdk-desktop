@@ -191,7 +191,7 @@ class DeviceBase : public DeviceApis {
   std::map<std::string,Json> apis_,snapshots_;std::filesystem::path root_,consents_file_;std::vector<std::future<void>> workers_;
   struct Call {Json context;bool retained=false;std::function<void()> cancel;std::optional<uint64_t> permission_generation;};std::map<std::string,Call> calls_;
   struct Subscription {std::string event,object,call;Json context;uint64_t sequence=0;};std::map<std::string,Subscription> subscriptions_;
-  bool foreground_=true,retired_successfully_=false;
+  bool foreground_=true,retired_successfully_=false,platform_retired_=false;
   uint64_t permission_generation_=0;
   std::map<std::string,std::string> objects_;std::map<std::string,bool> consents_;std::string bound_session_;
   DeviceBase(DeviceApiOptions options,Command command,std::filesystem::path = {}):options_(std::move(options)),command_(std::move(command)) {
@@ -345,10 +345,24 @@ class DeviceBase : public DeviceApis {
     return {};
   }
   Status retire() override {
+    if(std::this_thread::get_id()!=owner_)return Status::error("ERR_THREAD","native device retirement requires its owner thread");
     if(retired_successfully_)return {};
     {std::lock_guard<std::mutex> barrier(queue_->side_effects);queue_->closed=true;}
-    try {for(auto& call:calls_)if(call.second.cancel)call.second.cancel();calls_.clear();subscriptions_.clear();retire_platform();objects_.clear();
-      for(auto& worker:workers_)worker.wait();workers_.clear();std::lock_guard<std::mutex> guard(queue_->mutex);queue_->items.clear();queue_->bytes=0;retired_successfully_=true;return {};
+    try {
+      // Erase each successful cancellation before moving on. A later failure
+      // must remain retryable without repeating already acknowledged cleanup.
+      for(auto call=calls_.begin();call!=calls_.end();) {if(call->second.cancel)call->second.cancel();call=calls_.erase(call);}
+      subscriptions_.clear();
+      if(!platform_retired_){retire_platform();platform_retired_=true;}
+      objects_.clear();
+      for(auto worker=workers_.begin();worker!=workers_.end();) {
+        if(worker->wait_for(std::chrono::seconds(0))!=std::future_status::ready){++worker;continue;}
+        auto completed=std::move(*worker);worker=workers_.erase(worker);completed.get();
+      }
+      // Native permission acquisition/cleanup may still be draining. Keep its
+      // exact worker and handles alive while returning control to the UI loop.
+      if(!workers_.empty())return Status::error("ERR_RESOURCE_CLEANUP_PENDING","native cleanup is still pending; retry retirement");
+      std::lock_guard<std::mutex> guard(queue_->mutex);queue_->items.clear();queue_->bytes=0;retired_successfully_=true;return {};
     }catch(const std::exception& error){return Status::error("ERR_RESOURCE_CLEANUP",error.what());}
   }
   Status set_native_parent(void* parent) override {options_.native_parent=parent;return {};}

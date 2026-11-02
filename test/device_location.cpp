@@ -177,6 +177,15 @@ void pending_consent_and_cleanup_failures() {
   require(!cleanup.control()->closed && !cleanup.receipts.count("stop"), "failed native cleanup discarded its resource or acknowledged stop");
   cleanup.control()->fail_cleanup = false; cleanup.until([&] { return cleanup.receipts.count("stop"); });
   require(cleanup.receipts.at("stop").contains("result") && cleanup.control()->closed && bool(cleanup.devices->retire()), "recovered cleanup could not complete retirement");
+  Harness retirement; retirement.call("start", "wx.startLocationUpdate"); retirement.until([&] { return retirement.receipts.count("start"); });
+  retirement.control()->fail_cleanup = true;
+  const auto before = std::chrono::steady_clock::now(); auto pending = retirement.devices->retire();
+  require(!pending && pending.code == "ERR_RESOURCE_CLEANUP_PENDING" && std::chrono::steady_clock::now() - before < std::chrono::milliseconds(100), "pending native drain blocked the owner or acknowledged cleanup");
+  retirement.until([&] { return retirement.control()->cleanup_attempts >= 2; }, false);
+  require(!retirement.control()->closed && !retirement.devices->retire(), "retirement discarded a native source after uncertain cleanup");
+  retirement.control()->fail_cleanup = false;
+  retirement.until([&] { return bool(retirement.devices->retire()); }, false);
+  require(retirement.control()->closed, "retirement succeeded before recovered native source destruction");
 }
 void cancellation_retains_capacity_until_native_drain() {
   Harness fixture;
@@ -191,7 +200,7 @@ void cancellation_retains_capacity_until_native_drain() {
   fixture.until([&] { return fixture.receipts.count("overflow"); });
   require(fixture.receipts.at("overflow").contains("error") && !fixture.control()->created, "cancelled location owners bypassed the worker limit");
   for (const auto& control : fixture.all_controls) control->allow_acquire = true;
-  require(bool(fixture.devices->retire()), "native location retirement failed");
+  fixture.until([&] { return bool(fixture.devices->retire()); }, false);
   require(std::count_if(fixture.all_controls.begin(), fixture.all_controls.end(), [](const auto& control) { return control->closed.load(); }) == 8,
       "retirement returned before every cancelled native owner drained");
 }

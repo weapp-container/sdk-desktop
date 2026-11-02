@@ -182,8 +182,16 @@ GeoClue tries Stop/DeleteClient, then confirms closure of its private D-Bus
 connection; GeoClue documents private disconnect as client cleanup. Failed
 connection closure retains the connection for retry. A persistent native cleanup
 failure keeps stop/retirement pending rather than acknowledging released resources.
+`DeviceApis::retire` returns `ERR_RESOURCE_CLEANUP_PENDING` while native workers
+drain and returns control to the owner loop. Hosts retain the owner and retry
+retirement; they must obtain success before destroying it. The desktop account
+switch loop retries automatically and sends the core cleanup acknowledgement
+only after success. Destruction without successful explicit retirement retains
+a synchronous safety fallback and may wait for native cleanup.
 macOS detaches the old manager/delegate and captures a new generation before a
 fresh watch; queued callbacks from a retired manager cannot enter that watch.
+Ingress saturation stops the manager on its owner and emits a bounded terminal
+error instead of silently continuing to collect discarded location updates.
 Reset, background and retirement revoke both queued delivery and pending grants;
 returning to foreground requires a fresh start. Other desktop device families
 remain unsupported unless a host adds its own registered handlers.

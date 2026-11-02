@@ -41,6 +41,8 @@ struct Core {
   std::set<std::string> methods;
   std::function<void(const Event&)> listener;
   std::vector<Event> pending;
+  std::string account_cleanup_operation;
+  Status account_cleanup_last_error;
   struct Touch {
     double x, y, start_x, start_y;
     std::chrono::steady_clock::time_point start;
@@ -56,6 +58,7 @@ struct Core {
   Status read_state();
   Status acknowledge_presentation(uint64_t generation, uint64_t revision);
   Status drain();
+  void retry_account_cleanup();
   Status foreground();
   void report(const Status&);
   Status set_metrics(const Metrics&);

@@ -69,10 +69,12 @@ class FakeDevices : public DeviceBase {
  public:
   std::vector<std::function<void(bool)>> prompts, os_callbacks;
   int mutations = 0, disposed = 0;
+  std::map<std::string,std::function<void()>> retirement_cleanup;
   FakeDevices(Fixture& fixture) : DeviceBase(fixture.options(), fixture.command()) {
     add("test.sensitive");
     add("test.retained");
     add("test.failRetained");
+    add("test.retire");
   }
   void reset() { reset_permissions(); }
   bool has_consent() const { return consents_.count("scope.contacts") != 0; }
@@ -87,7 +89,12 @@ class FakeDevices : public DeviceBase {
     prompts.push_back(std::move(callback));
   }
   bool platform_call(const std::string& call, const std::string& api,
-      const Json&, const Json&) override {
+      const Json& payload, const Json&) override {
+    if (api == "test.retire") {
+      auto id = payload.at("objectId").get<std::string>();
+      retain_object(id, call, "Test", [this,id] { retirement_cleanup.at(id)(); });
+      done(call, api); return true;
+    }
     if (api == "test.failRetained") {
       retain_object("failed-object", call, "Test", [this] { ++disposed; });
       fail(call, api, "simulated native failure");
@@ -175,6 +182,20 @@ void native_failure_disposes_retained_object() {
   devices.retire();
   require(devices.disposed == 1, "retirement disposed failed object twice");
 }
+void retirement_retries_only_unacknowledged_cleanup() {
+  Fixture fixture; FakeDevices devices(fixture);
+  unsigned first = 0, second_attempts = 0, second = 0; bool fail = true;
+  devices.retirement_cleanup["first"] = [&] { ++first; };
+  devices.retirement_cleanup["second"] = [&] { ++second_attempts; if (fail) throw std::runtime_error("native close not acknowledged"); ++second; };
+  devices.dispatch(fixture.call("first-call", "test.retire", {{"objectId", "first"}}));
+  devices.dispatch(fixture.call("second-call", "test.retire", {{"objectId", "second"}}));
+  auto failed = devices.retire();
+  require(!failed && failed.code == "ERR_RESOURCE_CLEANUP" && first == 1 && second_attempts == 1 && second == 0, "retirement discarded or acknowledged failed cleanup");
+  fail = false;
+  require(bool(devices.retire()) && first == 1 && second_attempts == 2 && second == 1, "retirement repeated acknowledged cleanup or failed to recover");
+  require(bool(devices.retire()) && first == 1 && second == 1, "successful retirement repeated native cleanup");
+}
+
 }  // namespace
 
 int main() {
@@ -183,6 +204,7 @@ int main() {
     late_os_callback_cannot_mutate_after_reset();
     queued_success_becomes_one_failure_and_disposes_retained_object();
     native_failure_disposes_retained_object();
+    retirement_retries_only_unacknowledged_cleanup();
     std::cout << "DeviceBase permission lifecycle: 4 cases passed (fake OS callbacks; no hardware acceptance)\n";
     return 0;
   } catch (const std::exception& error) {
