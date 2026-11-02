@@ -5,6 +5,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <roapi.h>
+#include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.Devices.Geolocation.h>
 #include "device_location_common.hpp"
 

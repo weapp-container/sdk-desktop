@@ -88,7 +88,7 @@ class WinPresenter final : public Presenter {
     wc.hInstance = GetModuleHandleW(nullptr);
     wc.lpszClassName = L"WeappDesktopViewV1";
     wc.style = CS_OWNDC;
-    wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
+    wc.hCursor = LoadCursorW(nullptr, MAKEINTRESOURCEW(32512));  // IDC_ARROW
     if (!RegisterClassW(&wc) && GetLastError() != ERROR_CLASS_ALREADY_EXISTS)
       return win_error("RegisterClassW");
     double scale = GetDpiForWindow(static_cast<HWND>(parent)) / 96.0;

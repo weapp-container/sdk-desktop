@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "b526d81ef865a9048d588b61f10738928137646e",
-  "review": "Preserve reviewed source bytes and tracked executable modes on real Windows checkouts",
+  "sourceBaseCommit": "2009069cee88dd9088bccfdde3d036399d086d90",
+  "review": "Fix actual Windows target compilation: explicit Foundation projection, wide cursor resource, and UTF-8 source encoding",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -41,8 +41,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "a441965a467e9ad357ad40fa55066842d165c1e272887975b8890615cb2b90dd",
-      "size": 11348,
+      "sha256": "71207c143680fa460cfd9b9ca8063b393713d64a5769ec8c307c1a7a69ee1a16",
+      "size": 11436,
       "mode": "100644"
     },
     {
@@ -263,8 +263,8 @@
     },
     {
       "path": "src/device_location_winrt.hpp",
-      "sha256": "516c20242fbd11e859e99af5c102dcaefa675f281dddfd47c3ed4ff66613d7eb",
-      "size": 7499,
+      "sha256": "8cf9326e50e8a2df01b1f5cd77736aa0dc4db72c00236f3160e6aa2c0ffdb295",
+      "size": 7537,
       "mode": "100644"
     },
     {
@@ -329,8 +329,8 @@
     },
     {
       "path": "src/windows.cpp",
-      "sha256": "a52873cb0508f9213f82b6d242e637a851c1cbb49c8944cf32386260dab3332e",
-      "size": 20133,
+      "sha256": "8d9423372de4189eee9d7af61a85fe35c2d75996e78f75ff9838cb97d093c549",
+      "size": 20161,
       "mode": "100644"
     },
     {
@@ -425,8 +425,8 @@
     },
     {
       "path": "test/native-sources/CMakeLists.txt",
-      "sha256": "30d88f66b383cf33fa31bac60a86662b328c537206e2343a3fba64eca20d1243",
-      "size": 1647,
+      "sha256": "28f7adf6a3fca5da1e06d04d4e38afa39f9205f2328c804394438205a839ac13",
+      "size": 1694,
       "mode": "100644"
     },
     {
