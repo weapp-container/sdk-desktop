@@ -70,7 +70,9 @@ SDK 从后端取得与可信应用/账号/epoch 绑定的 launch，拒绝 guest 
 `wechat-h5/alipay-h5`（h5）。APP 与 JSAPI 参数不能传给桌面渠道，也不自动转换。
 同一时刻只允许一个支付 UI；渠道支持重叠时拒绝选择。
 
-渠道 `launch` 的 completion 必须在其自有 UI/任务终结并释放后结算；成功仅表示渠道
+渠道 `launch` 的 completion 使用 `HostApiError`，失败时可在 `details` 中保留渠道原始
+`errCode`（数字或字符串）、`errMsg` 及公开扩展字段；容器仍负责外层错误分类和调用
+上下文。completion 必须在其自有 UI/任务终结并释放后结算；成功仅表示渠道
 交互完成，不代表付款。QR 收银台可以提供明确的“已完成”按钮，但该按钮不证明付款。
 SDK 再按同一订单轮询
 后端，只有服务端 `paid` 才向 JS 返回 `serverConfirmed:true`。等待上限可配置为

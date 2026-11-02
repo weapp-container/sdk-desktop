@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 
 #include <algorithm>
+#include <memory>
 #include <mutex>
 
 #include "host_services_internal.hpp"
@@ -9,6 +10,24 @@
 #endif
 
 namespace weapp::desktop::detail {
+bool host_services_post_to_context(GMainContext* context,
+                                   std::function<void()> task) {
+  if (!context || !task) return false;
+  auto* source = g_idle_source_new();
+  g_source_set_callback(
+      source,
+      +[](gpointer data) -> gboolean {
+        std::unique_ptr<std::function<void()>> callback(
+            static_cast<std::function<void()>*>(data));
+        (*callback)();
+        return G_SOURCE_REMOVE;
+      },
+      new std::function<void()>(std::move(task)),
+      +[](gpointer data) { delete static_cast<std::function<void()>*>(data); });
+  g_source_attach(source, context);
+  g_source_unref(source);
+  return true;
+}
 bool host_http_available() {
 #if WEAPP_DEVICE_CURL
   return true;
@@ -138,11 +157,15 @@ class LinuxHostConsent final : public HostConsentPresenter {
   explicit LinuxHostConsent(GtkWidget* parent) : parent_(parent) {
     g_object_add_weak_pointer(G_OBJECT(parent_),
                               reinterpret_cast<gpointer*>(&parent_));
+    owner_context_ = g_main_context_ref_thread_default();
+    if (!owner_context_)
+      owner_context_ = g_main_context_ref(g_main_context_default());
   }
   ~LinuxHostConsent() override {
     if (parent_)
       g_object_remove_weak_pointer(G_OBJECT(parent_),
                                    reinterpret_cast<gpointer*>(&parent_));
+    if (owner_context_) g_main_context_unref(owner_context_);
   }
   void present(const HostConsentRequest& request, HostCancellation cancellation,
                std::function<void(HostResult<bool>)> complete) override {
@@ -206,26 +229,24 @@ class LinuxHostConsent final : public HostConsentPresenter {
         },
         GConnectFlags(0));
     std::weak_ptr<GtkConsent> weak = state;
-    cancellation.on_cancel([weak] {
-      if (auto state = weak.lock())
-        g_main_context_invoke(
-            nullptr,
-            +[](gpointer data) -> gboolean {
-              std::unique_ptr<std::shared_ptr<GtkConsent>> retained(
-                  static_cast<std::shared_ptr<GtkConsent>*>(data));
-              auto state = *retained;
-              if (state->dialog)
-                gtk_dialog_response(GTK_DIALOG(state->dialog),
-                                    GTK_RESPONSE_CANCEL);
-              return G_SOURCE_REMOVE;
-            },
-            new std::shared_ptr<GtkConsent>(std::move(state)));
+    auto* context = owner_context_;
+    cancellation.on_cancel([weak, context] {
+      if (auto state = weak.lock()) {
+        // g_main_context_invoke() may dispatch synchronously when called by a
+        // thread that owns the context. An explicitly attached idle source
+        // always queues the cancellation onto the captured GTK owner context.
+        host_services_post_to_context(context, [state = std::move(state)] {
+          if (state->dialog)
+            gtk_dialog_response(GTK_DIALOG(state->dialog), GTK_RESPONSE_CANCEL);
+        });
+      }
     });
     if (state->dialog) gtk_widget_show_all(state->dialog);
   }
 
  private:
   GtkWidget* parent_;
+  GMainContext* owner_context_ = nullptr;
   const std::thread::id owner_ = std::this_thread::get_id();
 };
 }  // namespace

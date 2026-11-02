@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "d835795caed88f085951d8da376cb4574db06927",
-  "review": "Review explicit BlueZ UUID string comparison for GCC 13 C++20 native source compilation",
+  "sourceBaseCommit": "b800c6285f744bc1516743e3ae35d44dcb648c36",
+  "review": "Review GTK owner-context cancellation and preserve original payment API error details",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -41,8 +41,8 @@
     },
     {
       "path": "ACCOUNT-SERVICES.md",
-      "sha256": "860a02133d06336f768ffcf6051ac166b833db7086b6870d0de4a4026a4daf02",
-      "size": 11446,
+      "sha256": "2115474747686d51e0a296770247924b05e06820ea03a3dde3d456fba79a05a4",
+      "size": 11653,
       "mode": "100644"
     },
     {
@@ -173,8 +173,8 @@
     },
     {
       "path": "include/weapp/host_services.hpp",
-      "sha256": "d7faa11e4ca81db3666c51d3de2c73071ebb20eb65bd5d20745d5c7bd106c6de",
-      "size": 7739,
+      "sha256": "06c92830d2826d4e399e9cf7a7080b2d5e72046e6e78f21df0e9d6b8bcc9ee93",
+      "size": 8101,
       "mode": "100644"
     },
     {
@@ -341,8 +341,8 @@
     },
     {
       "path": "src/host_services_adapter.cpp",
-      "sha256": "3b4a0e0b56980bc66af4de89eff3393dcbc6c9356243d0e5ed43705b0cb593aa",
-      "size": 30809,
+      "sha256": "c88c63351d1785ba130d1bdd53265932e9d56436226fb10f79360e5ca5c9e85b",
+      "size": 31004,
       "mode": "100644"
     },
     {
@@ -353,8 +353,8 @@
     },
     {
       "path": "src/host_services_linux.cpp",
-      "sha256": "48ec51841ac941ffc8d2eda9e8c55c8d1ded8c370c77d16dff5f8d3346dadec9",
-      "size": 9549,
+      "sha256": "a7f2ab72c1b4fcb24e1fb5e51669c33422316aa7ba011af3dfc0c6348b7df9bd",
+      "size": 10432,
       "mode": "100644"
     },
     {
@@ -497,8 +497,14 @@
     },
     {
       "path": "test/host_services_reference.cpp",
-      "sha256": "7337e99e4d7232eb546cb0181ee4b93a2a4882a0701fed06b55529ba40792731",
-      "size": 19201,
+      "sha256": "1951f1c17c532c027358f1f511605522a284b96e6ddef59431a72dc9099e5117",
+      "size": 20792,
+      "mode": "100644"
+    },
+    {
+      "path": "test/linux_consent_thread.cpp",
+      "sha256": "a517b2871b6359f6f90ea1e162418d8673112d85e78aa8448f68e20a03cd83a2",
+      "size": 1073,
       "mode": "100644"
     },
     {
@@ -527,8 +533,8 @@
     },
     {
       "path": "test/native-sources/CMakeLists.txt",
-      "sha256": "810258fec3da25dc095a8a300d20b96968de07f7a3a23b37012f313e3298150e",
-      "size": 3614,
+      "sha256": "82d0a853d7e29d3c214e25015e0ea027513ac1757162611a1fed109add91ca00",
+      "size": 4100,
       "mode": "100644"
     },
     {

@@ -122,16 +122,18 @@ struct HostServices::Impl {
     return status;
   }
   void fail(const std::shared_ptr<Call>& call, Status status,
-            const std::string& backend = {}) {
+            const std::string& backend = {}, Value::Object api_details = {}) {
     if (!current(call)) return;
     auto code = status.code == "ERR_PERMISSION_DENIED" ? "permission_denied"
                 : status.code == "ERR_UNSUPPORTED"     ? "unsupported"
                 : status.code == "ERR_TIMEOUT"         ? "timeout"
                 : status.code == "ERR_CANCELLED"       ? "cancelled"
                                                        : "invalid_request";
-    Json details = {
-        {"errMsg", call->context.api + ":fail " + status.message},
-        {"errCode", status.code == "ERR_PERMISSION_DENIED" ? 2001 : -1}};
+    Json details = encode(api_details);
+    if (!details.contains("errMsg"))
+      details["errMsg"] = call->context.api + ":fail " + status.message;
+    if (!details.contains("errCode"))
+      details["errCode"] = status.code == "ERR_PERMISSION_DENIED" ? 2001 : -1;
     if (!backend.empty()) details["backendCode"] = backend;
     auto failed = command("completeHostCall",
                           {{"callId", call->context.call_id},
@@ -438,17 +440,17 @@ struct HostServices::Impl {
                      "Official desktop payment channel is not configured"));
             return;
           }
-          auto box = std::make_shared<Mailbox<Status>>();
+          auto box = std::make_shared<Mailbox<HostApiError>>();
           try {
             selected->launch(order, call->context, call->cancel,
                              [box](auto value) { box->put(std::move(value)); });
           } catch (const std::exception& e) {
-            box->put(invalid(e.what()));
+            box->put({invalid(e.what()), {}});
           }
           auto deadline = std::chrono::steady_clock::now() +
                           options.payment_confirmation_timeout;
           pending.push_back([this, call, id, deadline, box] {
-            Status launched;
+            HostApiError launched;
             bool settled;
             {
               std::lock_guard<std::mutex> lock(box->mutex);
@@ -471,7 +473,7 @@ struct HostServices::Impl {
             }
             if (!launched) {
               payment_busy = false;
-              fail(call, launched);
+              fail(call, launched.status, {}, std::move(launched.details));
               return true;
             }
             confirm_payment(call, id, deadline);

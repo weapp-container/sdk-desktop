@@ -42,6 +42,7 @@ struct ControlledConsent final : HostConsentPresenter {
 struct ReferenceChannel final : HostPaymentChannel {
   Json input;
   bool confirm = true;
+  HostApiError forced_error;
   size_t launches = 0;
   std::vector<std::future<void>> workers;
   explicit ReferenceChannel(Json value) : input(std::move(value)) {}
@@ -54,15 +55,21 @@ struct ReferenceChannel final : HostPaymentChannel {
   }
   void launch(const HostPaymentOrder& order, const HostApiContext&,
               HostCancellation cancellation,
-              std::function<void(Status)> complete) override {
+              std::function<void(HostApiError)> complete) override {
     ++launches;
     const auto confirm_now = confirm;
-    workers.push_back(
-        std::async(std::launch::async, [input = input, id = order.order_id,
-                                        cancellation, complete, confirm_now] {
+    workers.push_back(std::async(
+        std::launch::async,
+        [input = input, id = order.order_id, cancellation, complete,
+         confirm_now, forced_error = forced_error] {
           if (cancellation.cancelled()) {
             complete(
-                Status::error("ERR_CANCELLED", "Reference launch cancelled"));
+                {Status::error("ERR_CANCELLED", "Reference launch cancelled"),
+                 {}});
+            return;
+          }
+          if (!forced_error.status.code.empty()) {
+            complete(forced_error);
             return;
           }
           try {
@@ -70,7 +77,7 @@ struct ReferenceChannel final : HostPaymentChannel {
               control(input, "/fixture/confirm", {{"orderId", id}});
             complete({});
           } catch (const std::exception& e) {
-            complete(Status::error("ERR_REFERENCE_TEST", e.what()));
+            complete({Status::error("ERR_REFERENCE_TEST", e.what()), {}});
           }
         }));
   }
@@ -350,6 +357,33 @@ void identity_and_payment(const std::string& pack, const Json& input) {
                   .value("errMsg", "")
                   .find("server payment confirmation") != std::string::npos,
           "Native channel launch was treated as a paid trade");
+  f.payments->confirm = false;
+  f.payments->forced_error = {
+      Status::error("ERR_PAYMENT_DECLINED", "Reference channel declined"),
+      {{"errCode", 7001},
+       {"errMsg", "wx.requestPayment:fail merchant declined"},
+       {"extension", "preserved"},
+       {"numericCode", 7001.0}}};
+  begin = f.messages.size();
+  auto channel_failure = f.wait(
+      "payment-failure",
+      f.send("payment", {{"orderId", input.at("orders").at("pending")}}));
+  require(channel_failure["error"]["errCode"] == 7001,
+          "Payment callback lost original numeric errCode");
+  require(channel_failure["error"]["errMsg"] ==
+              "wx.requestPayment:fail merchant declined",
+          "Payment callback rewrote original errMsg");
+  require(channel_failure["error"]["extension"] == "preserved",
+          "Payment callback lost public extension field");
+  auto channel_promise = f.wait("payment-reject", begin);
+  require(channel_promise["error"]["errCode"] == 7001,
+          "Payment Promise lost original numeric errCode");
+  require(channel_promise["error"]["errMsg"] ==
+              "wx.requestPayment:fail merchant declined",
+          "Payment Promise rewrote original errMsg");
+  const auto channel_complete = f.wait("payment-complete", begin);
+  require(channel_complete.value("kind", "") == "payment-complete",
+          "Payment complete callback did not settle after channel failure");
   std::cout
       << "host-services signed reference payment and pending result: passed\n";
   const auto before_logout = f.context();

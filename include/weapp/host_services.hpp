@@ -63,6 +63,14 @@ struct HostPaymentOrder {
   std::string order_id, channel, product, status, kind;
   Value::Object launch;
 };
+// A channel can report the platform API's original error envelope in details.
+// The adapter owns the container classification (code/context); these fields
+// are copied into the public API error object without being interpreted.
+struct HostApiError {
+  Status status;
+  Value::Object details;
+  explicit operator bool() const { return bool(status); }
+};
 struct HostBackendOptions {
   std::string endpoint;
   bool allow_loopback_http = false;
@@ -133,7 +141,7 @@ class HostPaymentChannel {
   // Desktop channels must explicitly support official QR/H5 products. APP or
   // JSAPI signatures cannot be mapped to these products by the SDK.
   virtual void launch(const HostPaymentOrder&, const HostApiContext&,
-                      HostCancellation, std::function<void(Status)>) = 0;
+                      HostCancellation, std::function<void(HostApiError)>) = 0;
 };
 struct HostServicesOptions {
   std::shared_ptr<HostServicesClient> backend;
