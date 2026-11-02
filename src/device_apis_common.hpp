@@ -172,9 +172,15 @@ inline std::vector<uint8_t> read_managed(const std::filesystem::path& path,size_
   std::ifstream input(path,std::ios::binary);if(!input) throw std::runtime_error("cannot open managed file");
   std::vector<uint8_t> bytes(size);if(size&&!input.read(reinterpret_cast<char*>(bytes.data()),size)) throw std::runtime_error("cannot read managed file");return bytes;
 }
+inline std::string path_utf8(const std::filesystem::path& path) {
+  // C++20 returns u8string; convert its UTF-8 bytes rather than JSON-encoding
+  // char8_t as numeric elements or using the host ANSI code page.
+  const auto bytes=path.generic_u8string();
+  return std::string(reinterpret_cast<const char*>(bytes.data()),bytes.size());
+}
 inline void check_managed_quota(const std::filesystem::path& root,const std::filesystem::path& target,size_t size) {
   constexpr uint64_t quota=32*1024*1024;uint64_t total=0;size_t entries=0;
-  for(auto iterator=std::filesystem::recursive_directory_iterator(root);iterator!=std::filesystem::recursive_directory_iterator();++iterator){const auto& entry=*iterator;if(++entries>4096||iterator.depth()>32)throw std::invalid_argument("managed file entry budget exceeded");if(entry.is_symlink()){iterator.disable_recursion_pending();continue;}if(entry.path().filename().u8string().rfind(".weapp-",0)==0){iterator.disable_recursion_pending();continue;}if(entry.is_regular_file()){auto bytes=entry.file_size();if(bytes>quota||total>quota-bytes)throw std::invalid_argument("managed file quota exceeded");total+=bytes;}}
+  for(auto iterator=std::filesystem::recursive_directory_iterator(root);iterator!=std::filesystem::recursive_directory_iterator();++iterator){const auto& entry=*iterator;if(++entries>4096||iterator.depth()>32)throw std::invalid_argument("managed file entry budget exceeded");if(entry.is_symlink()){iterator.disable_recursion_pending();continue;}if(path_utf8(entry.path().filename()).rfind(".weapp-",0)==0){iterator.disable_recursion_pending();continue;}if(entry.is_regular_file()){auto bytes=entry.file_size();if(bytes>quota||total>quota-bytes)throw std::invalid_argument("managed file quota exceeded");total+=bytes;}}
   auto previous=std::filesystem::exists(target)&&std::filesystem::is_regular_file(target)?std::filesystem::file_size(target):0;
   if(size>quota||total-std::min<uint64_t>(total,previous)>quota-size)throw std::invalid_argument("managed file quota exceeded");
 }
@@ -278,8 +284,8 @@ class DeviceBase : public DeviceApis {
         else if(leaf=="rename") {auto source=path_for("oldPath"),destination=path_for("newPath");std::filesystem::rename(source,destination);}
         else if(leaf=="mkdir") {auto path=path_for("dirPath");if(payload.value("recursive",false))std::filesystem::create_directories(path);else if(!std::filesystem::create_directory(path))throw std::invalid_argument("directory already exists");}
         else if(leaf=="rmdir") {auto path=path_for("dirPath");if(payload.value("recursive",false))std::filesystem::remove_all(path);else if(!std::filesystem::remove(path))throw std::invalid_argument("directory does not exist");}
-        else if(leaf=="readdir") {result["files"]=Json::array();for(const auto& entry:std::filesystem::directory_iterator(path_for("dirPath",true))) {if(!entry.is_symlink()&&entry.path().filename().u8string().rfind(".weapp-",0)!=0)result["files"].push_back(entry.path().filename().u8string());if(result["files"].size()>4096)throw std::invalid_argument("directory entry budget exceeded");}}
-        else if(leaf=="getSavedFileList") {result["fileList"]=Json::array();for(const auto& entry:std::filesystem::recursive_directory_iterator(root)) if(entry.is_regular_file()&&!entry.is_symlink()&&entry.path().filename().u8string().rfind(".weapp-",0)!=0) {result["fileList"].push_back({{"filePath","wxfile://user/"+std::filesystem::relative(entry.path(),root).generic_u8string()},{"size",entry.file_size()}});if(result["fileList"].size()>4096)throw std::invalid_argument("saved file entry budget exceeded");}}
+        else if(leaf=="readdir") {result["files"]=Json::array();for(const auto& entry:std::filesystem::directory_iterator(path_for("dirPath",true))) {if(!entry.is_symlink()&&path_utf8(entry.path().filename()).rfind(".weapp-",0)!=0)result["files"].push_back(path_utf8(entry.path().filename()));if(result["files"].size()>4096)throw std::invalid_argument("directory entry budget exceeded");}}
+        else if(leaf=="getSavedFileList") {result["fileList"]=Json::array();for(const auto& entry:std::filesystem::recursive_directory_iterator(root)) if(entry.is_regular_file()&&!entry.is_symlink()&&path_utf8(entry.path().filename()).rfind(".weapp-",0)!=0) {result["fileList"].push_back({{"filePath","wxfile://user/"+path_utf8(std::filesystem::relative(entry.path(),root))},{"size",entry.file_size()}});if(result["fileList"].size()>4096)throw std::invalid_argument("saved file entry budget exceeded");}}
         else if(leaf=="saveFile") {auto source=path_for("tempFilePath");auto target=payload.value("filePath","");if(target.empty())target="wxfile://user/saved-"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());auto destination=managed_path(root,target);std::filesystem::rename(source,destination);result["savedFilePath"]=target;}
         else throw std::invalid_argument("unknown managed file operation");
         queue_complete(weak,call,device_ok(api,std::move(result)));
