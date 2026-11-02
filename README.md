@@ -85,6 +85,11 @@ Windows source workflow compiles the actual Windows/C++/WinRT adapters with the
 official SDK without linking a fabricated runtime archive. Hardware and
 packaged-runtime acceptance require separate evidence.
 
+[Windows audio](WINDOWS-AUDIO.md) documents the actual WinRT `InnerAudioContext`
+backend, strict managed/package WAVE source boundary, exact decoder teardown
+and finite ownership cases. MP3/AAC, remote audio, two unavailable policy
+properties and real output/runtime transport acceptance remain explicit gaps.
+
 The 2026-10-27 preview.2 report for wrapper source `360e789` records a universal macOS package, independent C/C++ build/link and arm64 native execution with actual Metal presentation. The consumer uses synthetic Cocoa event dispatch to exercise two views, input/scrolling, navigation, resize, hidden completion pumping, window visibility, owner-thread enforcement and durable reopening. It does not establish physical OS input. macOS x86_64 execution, Windows/Linux execution, performance and WeChat parity remain unmeasured; their unavailable runtime pins fail explicitly.
 
 `ORIGIN.json` lists the allowlisted source paths, original source SHA-256, transformed destination SHA-256 and reviewed C-header contract hash. This repository includes no core implementation, Git history from the original repository, binary runtime, cache or credentials.

@@ -5,7 +5,7 @@ using namespace weapp::desktop::detail;
 namespace {
 void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct Control {
-  std::atomic<bool> created{false}, allow_open{true}, opened{false}, fail_open{false}, closed{false}, fail_cleanup{false}, block_command{false}, entered{false}, block_reset{false}, resetting{false};
+  std::atomic<bool> created{false}, allow_open{true}, opened{false}, fail_open{false}, fail_command{false}, closed{false}, fail_cleanup{false}, block_command{false}, entered{false}, block_reset{false}, resetting{false};
   std::atomic<unsigned> cleanup_attempts{0}, executed{0}, emit{0}, produced{0};
   std::atomic<size_t> resource_bytes{0};
 };
@@ -32,6 +32,7 @@ class ControlledBackend final : public AudioBackend {
     control_->entered = true;
     while (control_->block_command && state->current(command->generation) && !command->cancelled) std::this_thread::sleep_for(std::chrono::milliseconds(1));
     if (!state->current(command->generation) || command->cancelled) throw AudioFailure("retired native operation", "cancelled");
+    if (control_->fail_command) throw AudioFailure("native media failed", "invalid_request", -1, {{"errMsg", "original media error"}, {"nativeMediaError", 3}, {"nativeErrorMessage", "raw message"}});
     ++control_->executed; control_->resource_bytes = command->resource.size(); return {{"nativeSequence", control_->executed.load()}};
   }
   bool cleanup(const std::shared_ptr<NativeAudio>&) override { ++control_->cleanup_attempts; return !control_->fail_cleanup; }
@@ -125,6 +126,11 @@ void queued_receipt_fencing() {
   require(f.receipts.at("old").contains("error") && f.receipts.at("source").contains("result"), "source replacement let an already queued old receipt escape");
   f.member("cancel", "play"); f.until([&] { return f.control->executed == 3; }, false); f.pump();
   f.devices->dispatch({EventType::HostCallCancelled, Fixture::object({{"callId", "cancel"}})}); f.pump(); require(!f.receipts.count("cancel"), "cancelled queued audio receipt delivered");
+  Fixture preferences; preferences.create(); preferences.control->block_command = true; preferences.set("volume", "volume", 0.2);
+  preferences.until([&] { return preferences.control->entered.load(); }, false);
+  preferences.devices->dispatch({EventType::HostCallCancelled, Fixture::object({{"callId", "volume"}})}); preferences.control->block_command = false;
+  preferences.member("snapshot", "pause"); preferences.until([&] { return preferences.receipts.count("snapshot"); });
+  require(preferences.receipts.at("snapshot").at("result").at("properties").at("volume") == 1.0, "cancelled preference contaminated confirmed native settings");
 }
 void background_and_reset() {
   Fixture f; f.create(); f.subscribe(); f.control->emit = 1; f.until([&] { return f.control->produced == 1; }, false);
@@ -139,6 +145,9 @@ void late_acquire_and_raw_errors() {
   f.control->fail_cleanup = false; f.until([&] { return f.receipts.count("destroy"); }); require(f.control->closed, "late decoder outlived destroy");
   Fixture denied; denied.devices->saturate(); denied.control->fail_open = true; denied.call("denied", "wx.createInnerAudioContext", {{"objectId", "audio"}}, true); denied.until([&] { return denied.receipts.count("denied"); });
   require(denied.receipts.at("denied").at("error").at("details").at("errCode") == -2147024891LL, "raw Windows playback error lost under backpressure");
+  Fixture decode; decode.create(); decode.control->fail_command = true; decode.member("decode", "play"); decode.until([&] { return decode.receipts.count("decode"); });
+  auto detail = decode.receipts.at("decode").at("error").at("details");
+  require(detail.at("errCode") == -1 && detail.at("nativeMediaError") == 3 && detail.at("errMsg") == "original media error" && detail.at("nativeErrorMessage") == "raw message", "native media public failure fields were rewritten or dropped");
 }
 void budget_backpressure_retirement() {
   Fixture f; f.create(); f.control->block_command = true; for (unsigned i = 0; i < 33; ++i) f.member("command" + std::to_string(i), "play");

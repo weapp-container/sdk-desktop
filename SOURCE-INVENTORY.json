@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "5c3fbcf60f495ae8f8fb1009966a2c2bfcb1e738",
-  "review": "Review actual Windows MediaPlayer InnerAudioContext ownership, strict WAVE source policy, runtime-verified package chunks, checked teardown, finite lifecycle regressions and official Windows SDK compilation; no hardware or full runtime acceptance claimed.",
+  "sourceBaseCommit": "57f03cadb0b21c8f8afd851a5749a02b34ed0603",
+  "review": "Review Windows audio confirmed-preference serialization, cancellation fencing, native media public failure fields, and discoverable parameter/acceptance documentation; finite regressions pass, hardware and actual JS transport acceptance remain pending.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -65,8 +65,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "5bb607890eb7e50837dcb5b657a61d04e57bb27ebaad3cb3e79eb481914a710a",
-      "size": 9978,
+      "sha256": "4c9a6cb771df21232743f182145ef78cd2874dca043165b0919803dc1e860868",
+      "size": 10289,
       "mode": "100644"
     },
     {
@@ -233,8 +233,8 @@
     },
     {
       "path": "src/device_audio_common.hpp",
-      "sha256": "a86aad741f5611130d3f58cf3de33896bcc7d07a4873989dffbd604f58565d0b",
-      "size": 20654,
+      "sha256": "ac0fa66bb2e51276101d35cb7f9a0ca2d68f7e042d8f10699b9bc630015ff010",
+      "size": 21271,
       "mode": "100644"
     },
     {
@@ -245,8 +245,8 @@
     },
     {
       "path": "src/device_audio_winrt.hpp",
-      "sha256": "553d61a5b705f13c90f06666918ba585d5ee5a3673bda8679209ad6deff8a1dd",
-      "size": 17740,
+      "sha256": "cd9bc169880c7de0e8cbe1cf83c02ca91fdfbef6cf4760a5d282f4aa00d8756c",
+      "size": 17748,
       "mode": "100644"
     },
     {
@@ -389,8 +389,8 @@
     },
     {
       "path": "test/device_audio.cpp",
-      "sha256": "0649e99dc7000308b222e093960ffbef5884cf2b4ff339682bbba77146f2815e",
-      "size": 15962,
+      "sha256": "1260ad71f8b4e43140550b85a0935bf7458934e36e481d312dfbcbc8a60c336d",
+      "size": 17305,
       "mode": "100644"
     },
     {

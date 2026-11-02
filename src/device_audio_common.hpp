@@ -5,8 +5,9 @@ namespace weapp::desktop::detail {
 struct AudioFailure : std::runtime_error {
   std::string category;
   int64_t native;
-  AudioFailure(std::string message, std::string code = "invalid_request", int64_t raw = 0)
-      : std::runtime_error(std::move(message)), category(std::move(code)), native(raw) {}
+  Json public_fields;
+  AudioFailure(std::string message, std::string code = "invalid_request", int64_t raw = 0, Json fields = Json::object())
+      : std::runtime_error(std::move(message)), category(std::move(code)), native(raw), public_fields(std::move(fields)) {}
 };
 inline Json audio_defaults() {
   return {{"src", ""}, {"autoplay", false}, {"loop", false}, {"startTime", 0.0}, {"volume", 1.0}, {"playbackRate", 1.0},
@@ -160,12 +161,18 @@ class DeviceAudio : public DeviceSensors {
               if (command->cancelled || !state->current(command->generation)) throw AudioFailure("audio command was retired", "cancelled");
               command->result = backend->execute(state, command);
               if (command->cancelled || !state->current(command->generation)) throw AudioFailure("audio command was retired", "cancelled");
-            } catch (const AudioFailure& error) { command->failure = device_failure(command->api, error.what(), error.category, error.native); }
+              if (command->payload.value("action", "") == "set") {
+                std::lock_guard<std::mutex> guard(state->mutex);
+                if (state->current(command->generation) && !command->cancelled) state->properties[command->member] = command->payload.at("value");
+              }
+            } catch (const AudioFailure& error) { command->failure = device_failure(command->api, error.what(), error.category, error.native); command->failure["details"].update(error.public_fields); }
+              catch (const std::system_error& error) { command->failure = device_failure(command->api, error.what(), "invalid_request", error.code().value()); }
               catch (const std::exception& error) { command->failure = device_failure(command->api, error.what()); }
               catch (...) { command->failure = device_failure(command->api, "native audio command failed"); }
             command->finished = true;
           }
         } catch (const AudioFailure& error) { state->fault(error.what(), error.category, error.native); }
+          catch (const std::system_error& error) { state->fault(error.what(), "invalid_request", error.code().value()); }
           catch (const std::exception& error) { state->fault(error.what()); }
           catch (...) { state->fault("native audio backend failed"); }
         state->abandon_commands();
@@ -193,7 +200,7 @@ class DeviceAudio : public DeviceSensors {
     command->delivery = std::make_shared<std::atomic<bool>>(true);
     // Capacity is checked before accepting a new source or local preference.
     { std::lock_guard<std::mutex> guard(state->mutex); if (state->pending >= 32) throw std::invalid_argument("native audio command limit exceeded"); }
-    if (setting) { if (member == "src") state->retire_source(); std::lock_guard<std::mutex> guard(state->mutex); state->properties[member] = payload.at("value"); }
+    if (setting && member == "src") state->retire_source();
     command->generation = state->generation;
     if (setting && member == "src") {
       const auto& source = payload.at("value").get_ref<const std::string&>();
