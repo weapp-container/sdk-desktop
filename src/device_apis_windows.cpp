@@ -7,7 +7,7 @@
 #include <wlanapi.h>
 #include <iphlpapi.h>
 #include <shellapi.h>
-#include "device_apis_common.hpp"
+#include "device_socket_winhttp.hpp"
 #include <cmath>
 #include <cstdio>
 
@@ -29,7 +29,7 @@ ParsedUrl parse_url(const std::string& value) {
   ParsedUrl parsed;parsed.host.assign(parts.lpszHostName,parts.dwHostNameLength);parsed.path.assign(parts.lpszUrlPath,parts.dwUrlPathLength);parsed.path.append(parts.lpszExtraInfo,parts.dwExtraInfoLength);if(parsed.path.empty())parsed.path=L"/";parsed.port=parts.nPort;auto host=utf8(parsed.host);std::transform(host.begin(),host.end(),host.begin(),[](unsigned char c){return std::tolower(c);});if(host.find(':')!=std::string::npos)host="["+host+"]";parsed.origin="https://"+host+(parsed.port!=443?":"+std::to_string(parsed.port):"");return parsed;
 }
 }
-class WindowsDeviceApis final:public DeviceBase {
+class WindowsDeviceApis final:public DeviceSockets {
   std::map<std::string,std::shared_ptr<WinTransfer>> transfers_;
   HANDLE wlan_=nullptr;std::map<std::string,GUID> wifi_interfaces_;std::string wifi_connect_call_,wifi_connect_ssid_;GUID wifi_connect_interface_{};std::chrono::steady_clock::time_point wifi_connect_deadline_;
   static std::string guid_text(const GUID& guid){wchar_t text[40]{};StringFromGUID2(guid,text,40);return utf8(text);}
@@ -87,7 +87,7 @@ class WindowsDeviceApis final:public DeviceBase {
     }));
   }
   bool platform_call(const std::string& call,const std::string& api,const Json& payload,const Json&) override {
-    if(system_call(call,api,payload))return true;
+    if(socket_call(call,api,payload)||system_call(call,api,payload))return true;
     if(api=="wx.request"||api=="wx.downloadFile"||api=="wx.uploadFile"){request(call,api,payload);return true;}
     if(api=="object:RequestTask.abort"||api=="object:DownloadTask.abort"||api=="object:UploadTask.abort"){auto found=transfers_.find(payload.value("objectId",""));if(found==transfers_.end())throw std::invalid_argument("native task is unavailable");found->second->cancel();done(call,api);return true;}
     if(api=="wx.getBatteryInfo"){done(call,api,windows_battery());return true;}
@@ -100,12 +100,13 @@ class WindowsDeviceApis final:public DeviceBase {
   void permissions_reset() override {stop_wifi();}
   void retire_platform() override {stop_wifi();for(auto& entry:transfers_)entry.second->cancel();transfers_.clear();SetThreadExecutionState(ES_CONTINUOUS);}
  public:
-  WindowsDeviceApis(const DeviceApiOptions& options,Command command):DeviceBase(options,std::move(command)) {
+  WindowsDeviceApis(const DeviceApiOptions& options,Command command):DeviceSockets(options,std::move(command)) {
+    install_socket_runner(run_winhttp_socket);
     for(auto api:{"wx.getNetworkType","wx.openLocation","wx.openAppAuthorizeSetting","wx.openSystemBluetoothSetting","wx.startWifi","wx.stopWifi","wx.getConnectedWifi","wx.getWifiList","wx.connectWifi","wx.request","wx.downloadFile","wx.uploadFile","object:RequestTask.abort","object:DownloadTask.abort","object:UploadTask.abort","wx.getBatteryInfo","wx.setKeepScreenOn","wx.getClipboardData","wx.setClipboardData","wx.showModal","wx.showActionSheet"})add(api);
     add_event("wx.onGetWifiList","wx.offGetWifiList","GetWifiList");add_event("wx.onWifiConnected","wx.offWifiConnected","WifiConnected");
     for(auto type:{"RequestTask","DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onHeadersReceived","object:"+std::string(type)+".offHeadersReceived","HeadersReceived");add_event("object:RequestTask.onChunkReceived","object:RequestTask.offChunkReceived","ChunkReceived");for(auto type:{"DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onProgressUpdate","object:"+std::string(type)+".offProgressUpdate","ProgressUpdate");
   }
-  Status pump() override {auto status=DeviceBase::pump();if(!status||queue_->closed)return status;if(!wifi_connect_call_.empty()&&std::chrono::steady_clock::now()>=wifi_connect_deadline_){auto call=std::move(wifi_connect_call_);wifi_connect_call_.clear();if(calls_.count(call))fail(call,"wx.connectWifi","OS Wi-Fi connection timed out","timeout");}return {};}
+  Status pump() override {auto status=DeviceSockets::pump();if(!status||queue_->closed)return status;if(!wifi_connect_call_.empty()&&std::chrono::steady_clock::now()>=wifi_connect_deadline_){auto call=std::move(wifi_connect_call_);wifi_connect_call_.clear();if(calls_.count(call))fail(call,"wx.connectWifi","OS Wi-Fi connection timed out","timeout");}return {};}
   ~WindowsDeviceApis() override {retire();}
 };
 }

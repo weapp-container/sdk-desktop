@@ -1,6 +1,9 @@
 #include <gtk/gtk.h>
 #include <gio/gio.h>
-#include "device_apis_common.hpp"
+#include "device_socket_common.hpp"
+#if defined(WEAPP_DEVICE_CURL_WEBSOCKET)
+#include "device_socket_curl.hpp"
+#endif
 #include <cmath>
 #if defined(WEAPP_DEVICE_CURL)
 #include <curl/curl.h>
@@ -37,7 +40,7 @@ Json linux_battery() {
 }
 }
 
-class LinuxDeviceApis final:public DeviceBase {
+class LinuxDeviceApis final:public DeviceSockets {
   bool wifi_active_=false;uint64_t wifi_generation_=0;Bus screen_bus_;guint32 screen_cookie_=0;
   GNetworkMonitor* network_=nullptr;gulong network_signal_=0;std::set<GtkWidget*> dialogs_;
   std::map<std::string,std::shared_ptr<std::atomic<bool>>> transfers_;
@@ -100,7 +103,7 @@ class LinuxDeviceApis final:public DeviceBase {
     return false;
   }
   bool platform_call(const std::string& call,const std::string& api,const Json& payload,const Json&) override {
-    if(system_call(call,api,payload))return true;
+    if(socket_call(call,api,payload)||system_call(call,api,payload))return true;
 #if defined(WEAPP_DEVICE_CURL)
     if(api=="wx.request"||api=="wx.downloadFile"||api=="wx.uploadFile"){request(call,api,payload);return true;}
     if(api=="object:RequestTask.abort"||api=="object:DownloadTask.abort"||api=="object:UploadTask.abort"){auto found=transfers_.find(payload.value("objectId",""));if(found==transfers_.end())throw std::invalid_argument("native task is unavailable");cancel_device_work(weak_queue(),*found->second);done(call,api);return true;}
@@ -115,13 +118,16 @@ class LinuxDeviceApis final:public DeviceBase {
   void permissions_reset() override {++wifi_generation_;wifi_active_=false;}
   void retire_platform() override {++wifi_generation_;release_screen();if(network_signal_){g_signal_handler_disconnect(network_,network_signal_);network_signal_=0;}auto dialogs=std::move(dialogs_);for(auto widget:dialogs)gtk_widget_destroy(widget);for(auto& transfer:transfers_)cancel_device_work(weak_queue(),*transfer.second);transfers_.clear();}
  public:
-  LinuxDeviceApis(const DeviceApiOptions& options,Command command):DeviceBase(options,std::move(command)) {
+  LinuxDeviceApis(const DeviceApiOptions& options,Command command):DeviceSockets(options,std::move(command)) {
     network_=g_network_monitor_get_default();
     for(auto api:{"wx.startWifi","wx.stopWifi","wx.getWifiList","wx.getConnectedWifi","wx.openLocation","wx.setKeepScreenOn","wx.getScreenBrightness","wx.setScreenBrightness","wx.getNetworkType","wx.getBatteryInfo","wx.getClipboardData","wx.setClipboardData","wx.showModal","wx.showActionSheet"})add(api);
     add_event("wx.onGetWifiList","wx.offGetWifiList","GetWifiList");
     add_event("wx.onNetworkStatusChange","wx.offNetworkStatusChange","NetworkStatusChange");auto weak=new std::weak_ptr<DeviceQueue>(weak_queue());network_signal_=g_signal_connect_data(network_,"network-changed",G_CALLBACK(+[](GNetworkMonitor*,gboolean available,gpointer pointer){queue_event(*static_cast<std::weak_ptr<DeviceQueue>*>(pointer),"NetworkStatusChange","",{{"isConnected",bool(available)},{"networkType",available?"unknown":"none"}});}),weak,[](gpointer pointer,GClosure*){delete static_cast<std::weak_ptr<DeviceQueue>*>(pointer);},GConnectFlags(0));
 #if defined(WEAPP_DEVICE_CURL)
     static const auto curl_ready=curl_global_init(CURL_GLOBAL_DEFAULT);if(curl_ready!=CURLE_OK)throw std::runtime_error("system HTTP initialization failed");
+#if defined(WEAPP_DEVICE_CURL_WEBSOCKET)
+    if(curl_socket_available())install_socket_runner(run_curl_socket);
+#endif
     for(auto api:{"wx.request","wx.downloadFile","wx.uploadFile","object:RequestTask.abort","object:DownloadTask.abort","object:UploadTask.abort"})add(api);
     for(auto type:{"RequestTask","DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onHeadersReceived","object:"+std::string(type)+".offHeadersReceived","HeadersReceived");
     add_event("object:RequestTask.onChunkReceived","object:RequestTask.offChunkReceived","ChunkReceived");for(auto type:{"DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onProgressUpdate","object:"+std::string(type)+".offProgressUpdate","ProgressUpdate");

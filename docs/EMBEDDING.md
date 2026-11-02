@@ -175,3 +175,42 @@ returns; cancellation does not roll back an accepted file. The optional
 `weapp_device_publication_test` executable checks both orderings using real
 managed files and controlled worker timing, plus rejection after owner retirement.
 It does not establish WinHTTP, libcurl, NSURLSession or hardware acceptance.
+
+Windows advertises `wx.connectSocket` and the `SocketTask` send, close and
+Open/Message/Error/Close event family through asynchronous WinHTTP. Linux
+advertises that same family only when built against libcurl **8.16+**, both
+WebSocket symbols link, and the loaded library reports the `wss` protocol.
+The installed CMake package requires 8.16+ if its archive contains this route;
+an HTTP-only archive retains its 7.85+ dependency. A missing gate leaves the
+entire SocketTask family absent from the native service configuration.
+
+| Source route | Platform transport | Activation requirement | Acceptance still required |
+| --- | --- | --- | --- |
+| HTTPS request/download/upload | WinHTTP / optional libcurl | Windows 10 SDK / libcurl 7.85+ | Target build and real transfer/cancellation |
+| WSS SocketTask | Async WinHTTP WebSocket | Windows 10 SDK | Windows build and real TLS/close/cancellation |
+| WSS SocketTask | libcurl WebSocket | Headers/library 8.16+, linked APIs, runtime `wss` protocol | Linux build and real TLS/close/cancellation |
+
+These WSS routes accept only ASCII credential-free URLs without fragments and
+match their canonical **HTTPS origin** against `allowed_network_origins`.
+They retain system certificate/hostname verification, reject redirects,
+validate offered and selected subprotocols, and reject reserved or injected
+request headers. Text/binary messages are limited to one MiB; each socket has
+32 queued commands and four MiB of queued outgoing bytes. Each owner has at
+most eight native socket workers, including cancelled workers still draining.
+Inbound messages share the bounded owner queue; saturation closes the transport
+and reserves space for Error/Close notifications. All guest events and results
+are delivered by the owner thread. Close completion follows native handle
+cleanup; retirement cancels and joins the workers. WinHTTP callback state
+survives the final `HANDLE_CLOSING` notifications.
+
+With `WEAPP_DESKTOP_BUILD_TESTS=ON`, `weapp_device_socket_protocol_test`
+checks strict inputs, fragments, binary bytes, quotas, terminal queue capacity
+and UTF-8 handling without linking a runtime or contacting a server.
+`weapp_device_socket_test` links the SDK and exercises its actual dispatcher,
+owner delivery, cancellation bounds and worker drain with a fake OS transport.
+On UNIX with libcurl 8.16+, `weapp_curl_socket_compile` compiles the actual
+optional transport against real headers, and `weapp_curl_socket_headers_test`
+executes the bounded C callback with malformed and duplicate response headers.
+These checks do not establish a Linux
+target build, a Windows build or real network/device acceptance. The older
+macOS NSURLSession SocketTask implementation is a separate source route.

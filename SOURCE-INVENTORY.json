@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "c63170d7301a71013740bd40b2bdb1ee3cb6e6c4",
-  "review": "Linearize native request cancellation with managed download file publication and completion on macOS Windows Linux; real-file executable common barrier regression; macOS build validated, Windows/Linux builds pending",
+  "sourceBaseCommit": "c37b2eb455f7d832cf941f6aafa3e3a4654cafa8",
+  "review": "Add bounded Windows WinHTTP and optional libcurl 8.16+ WSS SocketTask source routes, owner-thread lifecycle and protocol regressions, and installed dependency gates; local macOS archive plus fake-OS CTest and real libcurl header compilation are separate from pending Windows/Linux target and live TLS acceptance",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "fb51625423de9c91b2f823e38f1672bf829921d44d5f289a193c7ef6d002d413",
-      "size": 5818,
+      "sha256": "e7461abf4a4c028dfc8031ec150a15a9461cb294298f3b581822cc7a38a2e5ea",
+      "size": 8380,
       "mode": "100644"
     },
     {
@@ -59,8 +59,8 @@
     },
     {
       "path": "cmake/WeappContainerDesktopConfig.cmake.in",
-      "sha256": "3fe99af7d8ff564f0942271c0fc83e73fc0fc488ad5dde2d632366656864701f",
-      "size": 636,
+      "sha256": "dc1352907af136d501578d26a080c4a25d54fb8d736ede9aaf77d3eea79891b8",
+      "size": 664,
       "mode": "100644"
     },
     {
@@ -107,8 +107,8 @@
     },
     {
       "path": "docs/EMBEDDING.md",
-      "sha256": "d05880d34953fd98c388720d34faf061e21b7d3bd6bfbf393daf30112b4ed075",
-      "size": 11052,
+      "sha256": "04f2b6bc08a5135e9e935ff5ad38215c60cdbf918f56d7817ebb49021e202c31",
+      "size": 13785,
       "mode": "100644"
     },
     {
@@ -173,14 +173,14 @@
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "67c7c89b9756f81ae83248c97bda769cac285bbcf541e8b05c2f5d9f36049784",
-      "size": 32783,
+      "sha256": "4930cf14eac3bbd70d1832b2decf60705c53cd528e2978e9e48a933cac11f5c5",
+      "size": 32915,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_linux.cpp",
-      "sha256": "93b8bdcaedf4d931dd2804539d7ef5e145ef733818b9cfae39bee7e8f65d8c3c",
-      "size": 25612,
+      "sha256": "301680847a03e3430c9da5898850591948076a327379bcff237240f20bd7a959",
+      "size": 25852,
       "mode": "100644"
     },
     {
@@ -191,8 +191,26 @@
     },
     {
       "path": "src/device_apis_windows.cpp",
-      "sha256": "fbb3ad42ce40996b20012962b0e8e73ffc9b9e6a25c23367d372982c9234382f",
-      "size": 27858,
+      "sha256": "d22f05035633044c9ae3f7807fe2c3470600ec7c1530bc78ee0da73dde96ce35",
+      "size": 27948,
+      "mode": "100644"
+    },
+    {
+      "path": "src/device_socket_common.hpp",
+      "sha256": "5f388f496e5cb4a88509135bf2c234110bd5934d1a056fd6af7c56e4386bccad",
+      "size": 15773,
+      "mode": "100644"
+    },
+    {
+      "path": "src/device_socket_curl.hpp",
+      "sha256": "f90aa696872e0d24c1807e18ee9356e40a9f981bd5b7b3018c3cc9e8ef6ab297",
+      "size": 11661,
+      "mode": "100644"
+    },
+    {
+      "path": "src/device_socket_winhttp.hpp",
+      "sha256": "640ba48f4eed7f1104342f0b94fa2dcf92ce39025e45839da948a9076ea1801b",
+      "size": 15825,
       "mode": "100644"
     },
     {
@@ -232,6 +250,18 @@
       "mode": "100644"
     },
     {
+      "path": "test/curl_socket_compile.cpp",
+      "sha256": "dee3bb1d65eaa9a68b36b97cb2ff3aece3d97de5f3e7afb9812d599a4dfd2db0",
+      "size": 339,
+      "mode": "100644"
+    },
+    {
+      "path": "test/curl_socket_headers.cpp",
+      "sha256": "b324ebc47e3cdeaf5bed198d8e11d74937a83af49a1579740187f7cdca8775d3",
+      "size": 1602,
+      "mode": "100644"
+    },
+    {
       "path": "test/device_permissions.cpp",
       "sha256": "a5ded4aeb5acaee22eaf87abe66665fcd1e3a55ebbe20dade549c45836ee2254",
       "size": 8190,
@@ -241,6 +271,18 @@
       "path": "test/device_publication.cpp",
       "sha256": "a2ddbf6bb77c08a59f5731915d98effc1026d827459ceff60de16c28fc519763",
       "size": 3932,
+      "mode": "100644"
+    },
+    {
+      "path": "test/device_socket.cpp",
+      "sha256": "38b32276ac077f1cb6d2655d1292b4891ca2e1a82dbfaa4c5bbe04398484bd70",
+      "size": 6621,
+      "mode": "100644"
+    },
+    {
+      "path": "test/device_socket_protocol.cpp",
+      "sha256": "9cfb202792aa51df5906700acd6eb1c9f0444e5e437c698028a4405ad79e6cb1",
+      "size": 5049,
       "mode": "100644"
     },
     {

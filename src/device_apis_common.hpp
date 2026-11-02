@@ -1,4 +1,7 @@
 #pragma once
+#if defined(_WIN32) && !defined(NOMINMAX)
+#define NOMINMAX
+#endif
 #include "internal.hpp"
 #include "weapp/device_apis.hpp"
 #include <algorithm>
@@ -55,7 +58,7 @@ inline std::string scope_material(const DeviceApiOptions& options) {
   scope.push_back(account.value("principalId",Json(nullptr)));exact_epoch(account.at("epoch"));return scope.dump();
 }
 struct DeviceQueued {
-  enum Kind {Complete,Failure,NativeEvent,Snapshots,OwnerAction} kind=Complete;
+  enum Kind {Complete,Failure,NativeEvent,NativeTerminalEvent,Snapshots,OwnerAction} kind=Complete;
   std::string id,event,object;
   Json value;
   size_t bytes=0;
@@ -322,7 +325,7 @@ class DeviceBase : public DeviceApis {
     for(size_t count=0;count<512;++count){DeviceQueued item;
       {std::lock_guard<std::mutex> guard(queue_->mutex);if(queue_->items.empty())break;item=std::move(queue_->items.front());queue_->items.pop_front();queue_->bytes-=item.bytes;}
       if(item.kind==DeviceQueued::OwnerAction) {if(item.action)item.action();}
-      else if(item.kind==DeviceQueued::NativeEvent) {
+      else if(item.kind==DeviceQueued::NativeEvent||item.kind==DeviceQueued::NativeTerminalEvent) {
         for(auto& entry:subscriptions_) {auto& subscription=entry.second;if(subscription.event!=item.event||subscription.object!=item.object)continue;
           Json data={{"sessionId",subscription.context.at("sessionId")},{"accountEpoch",exact_epoch(subscription.context.at("account").at("epoch"))},{"subscriptionId",entry.first},{"sequence",std::to_string(++subscription.sequence)},{"value",item.value},{"event",item.event}};
           if(!item.object.empty())data["objectId"]=item.object;
