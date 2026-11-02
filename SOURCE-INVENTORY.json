@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "2c5211c3b06b45fbc0c7d727782563f2779efeb7",
-  "review": "Review standalone HostCancellation source shared by production library and Linux owner-thread regression",
+  "sourceBaseCommit": "b10410706d745e1af5f58f2c96e5d32a62595961",
+  "review": "Fix GLib owner-context cancellation source to release callback data exactly once",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -359,8 +359,8 @@
     },
     {
       "path": "src/host_services_linux.cpp",
-      "sha256": "a7f2ab72c1b4fcb24e1fb5e51669c33422316aa7ba011af3dfc0c6348b7df9bd",
-      "size": 10432,
+      "sha256": "05e944d002ae4831e0be942347d419f034017a73ecb5251d049ba7f8e8aa59c0",
+      "size": 10352,
       "mode": "100644"
     },
     {

@@ -17,9 +17,7 @@ bool host_services_post_to_context(GMainContext* context,
   g_source_set_callback(
       source,
       +[](gpointer data) -> gboolean {
-        std::unique_ptr<std::function<void()>> callback(
-            static_cast<std::function<void()>*>(data));
-        (*callback)();
+        (*static_cast<std::function<void()>*>(data))();
         return G_SOURCE_REMOVE;
       },
       new std::function<void()>(std::move(task)),
