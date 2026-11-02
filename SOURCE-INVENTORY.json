@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "b800c6285f744bc1516743e3ae35d44dcb648c36",
-  "review": "Review GTK owner-context cancellation and preserve original payment API error details",
+  "sourceBaseCommit": "40a080843d93031dd4bfb3bbd37d8da6866701f6",
+  "review": "Require release-mode owner-thread cancellation regression to remain active",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -503,8 +503,8 @@
     },
     {
       "path": "test/linux_consent_thread.cpp",
-      "sha256": "a517b2871b6359f6f90ea1e162418d8673112d85e78aa8448f68e20a03cd83a2",
-      "size": 1073,
+      "sha256": "de43f3896237e4c5cba32b198a8886b237e23a6a252965a9832d70fb72be3173",
+      "size": 1543,
       "mode": "100644"
     },
     {
