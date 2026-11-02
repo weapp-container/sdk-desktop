@@ -138,6 +138,7 @@ class Frame {
   friend class Session;
 };
 class View;
+class HostServices;
 namespace detail {
 struct Core;
 class Presenter;
@@ -181,6 +182,7 @@ class Session final : public std::enable_shared_from_this<Session> {
   std::unique_ptr<detail::Core> core_;
   friend class View;
   friend class detail::Presenter;
+  friend class HostServices;
 };
 struct Rect {
   double x = 0, y = 0, width = 0, height = 0;

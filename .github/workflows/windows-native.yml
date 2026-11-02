@@ -1,4 +1,4 @@
-name: Windows native source build
+name: Desktop native source build
 on:
   workflow_dispatch:
   push:
@@ -37,6 +37,34 @@ jobs:
         if: always()
         with:
           name: windows-native-source-build
+          path: |
+            build/native-sources/CMakeCache.txt
+            build/native-sources/Testing/Temporary/LastTest.log
+            build/native-sources/CMakeFiles/CMakeConfigureLog.yaml
+  linux-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install native Linux source dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libepoxy-dev libfontconfig1-dev libcurl4-openssl-dev
+      - name: Verify reviewed source and public ABI copy
+        run: node tools/check-origin.mjs
+      - name: Configure native source compilation
+        run: cmake -S test/native-sources -B build/native-sources -DCMAKE_BUILD_TYPE=Release
+      - name: Compile actual Linux GTK/GIO/libcurl translation units
+        run: cmake --build build/native-sources --parallel 2
+      - name: Run finite lifecycle cases
+        run: ctest --test-dir build/native-sources --output-on-failure
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-native-source-build
           path: |
             build/native-sources/CMakeCache.txt
             build/native-sources/Testing/Temporary/LastTest.log

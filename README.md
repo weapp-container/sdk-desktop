@@ -114,4 +114,5 @@ Commit source and inventory together before building distributable packages. `so
 
 At preview.5.3, wrapper metadata, native-input checks and consumer tools required preview.5.3, and the default lock selected the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution were blocked in that record; all prior release bytes and evidence retain their original source identities.
 
-账号切换的异步清理、身份快照、C ABI 兼容与验收范围见 [ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md)。
+类型化宿主账号/身份/支付客户端、三端 HTTPS、原生授权 UI、账号清理和实际参考服务回归见
+[ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md)。正式桌面 QR/H5 展示器与商户交易仍待交付/验收。

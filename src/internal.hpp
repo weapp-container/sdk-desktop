@@ -33,6 +33,7 @@ struct Core {
   std::unique_ptr<Loop> loop;
   Presenter* presenter = nullptr;
   std::unique_ptr<DeviceApis> devices;
+  std::shared_ptr<HostServices> services;
   State state;
   bool requested_foreground = true, surface_visible = true, delivering = false;
   bool presentation_required = false;
@@ -48,8 +49,10 @@ struct Core {
   Value::Object account_cleanup_snapshots;
   std::shared_future<AccountCleanupResult> account_cleanup_future;
   std::string account_cleanup_future_operation;
+  bool account_cleanup_future_services = false;
   bool account_cleanup_native_done = false;
   bool account_cleanup_hook_done = false;
+  bool account_cleanup_services_started = false;
   bool account_cleanup_failed = false;
   bool account_cleanup_retry_on_close = false;
   bool close_requested = false;

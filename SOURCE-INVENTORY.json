@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "1274cffded5efd246a80adc04bce23eb0aad60d1",
-  "review": "Start native account cleanup from revoking; serialize asynchronous cleanup futures and prepare operation-scoped identity snapshots before ACK, including close and retry. Replace replay snapshots from the runtime revocation baseline; cover omitted old grants and reload. Preserve C ABI enum numbers and expose C host-services and async cleanup completion APIs. Add public C++/C to real QuickJS lifecycle regressions; clarify historical preview.5.3 docs. Installed release, device and merchant acceptance remain separate.",
+  "sourceBaseCommit": "04fd9a9b6ede59a76687e47465d5ac257e78076d",
+  "review": "Review typed native host identity/payment client, bounded transport, consent UI and account lifecycle",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -29,8 +29,8 @@
     },
     {
       "path": ".github/workflows/windows-native.yml",
-      "sha256": "e7707b385c67301b01be85e8c507b4717abf3a4c1a4dd2e807cb4c9c35f86b8b",
-      "size": 1664,
+      "sha256": "507379fd9f4fefc7117b3371a684da07d4ee8610d7d7aa9d533a73a151d01932",
+      "size": 2872,
       "mode": "100644"
     },
     {
@@ -41,20 +41,20 @@
     },
     {
       "path": "ACCOUNT-SERVICES.md",
-      "sha256": "20843cba9f6e7298eb3e9d64e2b4951c09f152f66e5268543de4564aee1ca978",
-      "size": 4360,
+      "sha256": "860a02133d06336f768ffcf6051ac166b833db7086b6870d0de4a4026a4daf02",
+      "size": 11446,
       "mode": "100644"
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "3dc302e1bf45d8c0132e544738e05d30f6676a1edd4dedf9ba0ead8c6ea4d27e",
-      "size": 13138,
+      "sha256": "944a7d0bb57941225ee96ef7811d9838b2d951f22ee39bf9a78a02626e525d2c",
+      "size": 14835,
       "mode": "100644"
     },
     {
       "path": "CONTRACT.md",
-      "sha256": "195117b3a5a95b2d2c9dfba96f0c152718f62711efa4918545ac4f4ea8c7d59e",
-      "size": 14004,
+      "sha256": "ba10912a5e56bfeca475d4da513df0bb002b833daad68c6a9617fc5106d33c38",
+      "size": 14835,
       "mode": "100644"
     },
     {
@@ -71,8 +71,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "31852ec6f87b0bf9ed9182e41632b30aa4f02bb8686e0f5150ade99be0114d2c",
-      "size": 10442,
+      "sha256": "73883c626dee1b641d3892492e619df5d5db5a89be86329db3af3fef70e7d6ef",
+      "size": 10554,
       "mode": "100644"
     },
     {
@@ -161,14 +161,20 @@
     },
     {
       "path": "include/weapp/desktop.hpp",
-      "sha256": "a1ac488fd56138881ef694d486c52fa8b5e549e24ddfb1ccfd9d935f26caa83c",
-      "size": 6472,
+      "sha256": "198fe2fdb358da15b909b4f6f2b7a698c429cb9244996160b6ee287177efadde",
+      "size": 6521,
       "mode": "100644"
     },
     {
       "path": "include/weapp/device_apis.hpp",
       "sha256": "157068a7fc055c5ec2e76cd9733da95b15d148ddd671cf5b33981edd3e02362f",
       "size": 1971,
+      "mode": "100644"
+    },
+    {
+      "path": "include/weapp/host_services.hpp",
+      "sha256": "d7faa11e4ca81db3666c51d3de2c73071ebb20eb65bd5d20745d5c7bd106c6de",
+      "size": 7739,
       "mode": "100644"
     },
     {
@@ -209,8 +215,8 @@
     },
     {
       "path": "src/desktop.cpp",
-      "sha256": "861d1c313513abb2b4e7a6baf2dc0ae2d1b9d1df004216b563b59759ac29345e",
-      "size": 39745,
+      "sha256": "60cab98d8a72cd8d1106f6d1f47a5e78ba560bd5e70b56a522ba1e35a1bc9410",
+      "size": 41632,
       "mode": "100644"
     },
     {
@@ -328,9 +334,45 @@
       "mode": "100644"
     },
     {
+      "path": "src/host_services.cpp",
+      "sha256": "b5183fe8efc6637029e6d79677a915a523fe67725ced61d94bce9a462804251c",
+      "size": 25470,
+      "mode": "100644"
+    },
+    {
+      "path": "src/host_services_adapter.cpp",
+      "sha256": "3b4a0e0b56980bc66af4de89eff3393dcbc6c9356243d0e5ed43705b0cb593aa",
+      "size": 30809,
+      "mode": "100644"
+    },
+    {
+      "path": "src/host_services_internal.hpp",
+      "sha256": "05b5b60554e463ab0f36469796abcfb52ba4832f85371cea8ad0d5862371df3c",
+      "size": 662,
+      "mode": "100644"
+    },
+    {
+      "path": "src/host_services_linux.cpp",
+      "sha256": "48ec51841ac941ffc8d2eda9e8c55c8d1ded8c370c77d16dff5f8d3346dadec9",
+      "size": 9549,
+      "mode": "100644"
+    },
+    {
+      "path": "src/host_services_macos.mm",
+      "sha256": "e0ceaaa144f8addf1858324204162039b52e61252d270b5378b8a95d852e04a3",
+      "size": 8313,
+      "mode": "100644"
+    },
+    {
+      "path": "src/host_services_windows.cpp",
+      "sha256": "30ca30dbe9408427e38ae52a169b31c47ecf6553decb892304a6d06851386917",
+      "size": 13308,
+      "mode": "100644"
+    },
+    {
       "path": "src/internal.hpp",
-      "sha256": "c207cded81cb0cdd7ec58af1eaa3693f09b88be37a65b5b1a2b94c7fa4e4fdbb",
-      "size": 3555,
+      "sha256": "abd37a720c6871a1d1be033dce1791221d6e5295b82eab7a3a0042a89d043fb5",
+      "size": 3694,
       "mode": "100644"
     },
     {
@@ -454,9 +496,21 @@
       "mode": "100644"
     },
     {
+      "path": "test/host_services_reference.cpp",
+      "sha256": "7337e99e4d7232eb546cb0181ee4b93a2a4882a0701fed06b55529ba40792731",
+      "size": 19201,
+      "mode": "100644"
+    },
+    {
       "path": "test/make-account-fixture.mjs",
       "sha256": "7dae325fc83eb65dd1b21bfb9127a0d81137272a6e2f501c6d46f7b1e136e632",
       "size": 2320,
+      "mode": "100644"
+    },
+    {
+      "path": "test/make-host-services-fixture.mjs",
+      "sha256": "395d6c30e52bd2efbf9bd39c19eebbc0cdaf585cadf0c6938792b3e292901791",
+      "size": 3430,
       "mode": "100644"
     },
     {
@@ -473,8 +527,8 @@
     },
     {
       "path": "test/native-sources/CMakeLists.txt",
-      "sha256": "7ab0d292cf0307420f62c06b5dac070a027737b5741bb3881f04605927051303",
-      "size": 2493,
+      "sha256": "810258fec3da25dc095a8a300d20b96968de07f7a3a23b37012f313e3298150e",
+      "size": 3614,
       "mode": "100644"
     },
     {
@@ -493,6 +547,12 @@
       "path": "test/provenance.test.mjs",
       "sha256": "5b915d104f9151121b3f5a857c448a604dc8160a547b08eb30b4f6410859c633",
       "size": 2462,
+      "mode": "100644"
+    },
+    {
+      "path": "test/run-host-services-reference.mjs",
+      "sha256": "a0fcaa93ef2266731cfb1bfe674db83e00a5c645541bcc4cf589c82ea598eed7",
+      "size": 6905,
       "mode": "100644"
     },
     {

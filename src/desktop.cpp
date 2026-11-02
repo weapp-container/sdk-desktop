@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "internal.hpp"
+#include "weapp/host_services.hpp"
 
 namespace weapp::desktop::detail {
 Status Buffer::read(int32_t rc, Json* out) {
@@ -25,6 +26,7 @@ Status Buffer::read(int32_t rc, Json* out) {
 Core::~Core() {
   if (owner != std::this_thread::get_id()) std::terminate();
   loop.reset();
+  if (services) report(services->retire());
   if (devices) report(devices->retire());
   devices.reset();
   if (handle && owns_handle) {
@@ -125,6 +127,20 @@ Status Core::create_native() {
       reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), &handle,
       &b.value));
   if (!s) return s;
+  if (!config.host_services.empty()) {
+    Json capabilities;
+    auto negotiated = call("capabilities", Json::object(), &capabilities);
+    if (negotiated && capabilities.value("hostServices", Json::object())
+                          .value("protocolVersion", "") != "1.0")
+      negotiated = Status::error("ERR_PROTOCOL_VERSION",
+                                  "runtime lacks host services protocol 1.0");
+    if (!negotiated) {
+      Buffer destroyed;
+      auto cleanup = destroyed.read(
+          weapp_container_sdk_session_destroy(&handle, &destroyed.value));
+      return cleanup ? negotiated : cleanup;
+    }
+  }
   if(auto status=prepare_devices();!status)return status;
   for (const auto& name : methods)
     if (auto e = call("registerHostMethod", {{"name", name}}); !e) return e;
@@ -213,6 +229,7 @@ void Core::retry_account_cleanup() {
         account_cleanup_future.wait_for(std::chrono::seconds(0));
     if (progress == std::future_status::timeout) return;
     const auto operation = account_cleanup_future_operation;
+    const bool services_preflight = account_cleanup_future_services;
     AccountCleanupResult result;
     try {
       if (progress == std::future_status::deferred)
@@ -229,10 +246,15 @@ void Core::retry_account_cleanup() {
     }
     account_cleanup_future = {};
     account_cleanup_future_operation.clear();
+    account_cleanup_future_services = false;
     // An obsolete task must finish before its successor may start, but its
     // snapshots and errors cannot authorize or fail the successor's owner.
     if (operation == account_cleanup_operation || close_requested) {
       cleanup = result.status;
+      // A backend preflight has no outstanding native resource once its
+      // cancelled request terminates. Closing does not require new identity.
+      if (close_requested && services_preflight &&
+          cleanup.code == "ERR_CANCELLED") cleanup = {};
       if (cleanup && !close_requested && !result.sync_values.empty()) {
         cleanup = call("prepareAccountHostServiceSnapshots",
                        {{"operationId", operation},
@@ -265,7 +287,8 @@ void Core::retry_account_cleanup() {
       (close_requested && !account_cleanup_retry_on_close))
     return;
   if (cleanup && !account_cleanup_native_done) {
-    if (devices) cleanup = devices->retire();
+    if (services) cleanup = services->retire();
+    if (cleanup && devices) cleanup = devices->retire();
     if (cleanup && presenter) cleanup = presenter->detach();
     if (cleanup) {
       devices.reset();
@@ -279,6 +302,7 @@ void Core::retry_account_cleanup() {
       try {
         account_cleanup_future =
             account_cleanup_handler(account_cleanup_context);
+        account_cleanup_future_services = false;
         if (!account_cleanup_future.valid())
           cleanup = Status::error(
               "ERR_ACCOUNT_CLEANUP",
@@ -296,6 +320,14 @@ void Core::retry_account_cleanup() {
       else
         return;
     }
+  }
+  if (cleanup && account_cleanup_hook_done && services &&
+      !account_cleanup_services_started && !close_requested) {
+    account_cleanup_future = services->prepare_account(account_cleanup_context);
+    account_cleanup_future_operation = account_cleanup_operation;
+    account_cleanup_services_started = true;
+    account_cleanup_future_services = true;
+    return;
   }
   if (cleanup && account_cleanup_hook_done && !close_requested) {
     cleanup = call("acknowledgeAccountCleanup",
@@ -349,6 +381,7 @@ Status Core::drain() {
           config.host_services["syncValues"] = account_cleanup_snapshots;
           account_cleanup_native_done = false;
           account_cleanup_hook_done = false;
+          account_cleanup_services_started = false;
           account_cleanup_failed = false;
           account_cleanup_last_error = {};
         } else if (phase == "awaitingPresentation" && !close_requested) {
@@ -361,6 +394,7 @@ Status Core::drain() {
       e.type = event_type(j.value("type", ""));
       j.erase("type");
       e.fields = std::get<Value::Object>(decode(j).data);
+      if(services && services->dispatch(e)) continue;
       if(devices && (e.type==EventType::HostCall || e.type==EventType::HostCallCancelled)) {
         try {if(devices->dispatch(e))continue;}
         catch(const std::exception& error){report(Status::error("ERR_NATIVE_DEVICES",error.what()));}
@@ -712,6 +746,7 @@ Status Session::retry_account_cleanup() {
     return Status::error("ERR_INVALID_ARGUMENT",
                          "no failed account cleanup to retry");
   core_->account_cleanup_failed = false;
+  core_->account_cleanup_services_started = false;
   core_->account_cleanup_last_error = {};
   core_->account_cleanup_retry_on_close = true;
   core_->retry_account_cleanup();
@@ -758,6 +793,7 @@ Status Session::close() {
   core_->close_requested = true;
   core_->input_enabled = false;
   core_->touches.clear();
+  if(core_->services) {auto status=core_->services->retire();if(!status)return status;}
   core_->retry_account_cleanup();
   if (core_->account_cleanup_failed) return core_->account_cleanup_last_error;
   if (core_->account_cleanup_future.valid())
@@ -802,6 +838,7 @@ Status Session::pump() {
     if (!draw && s) s = draw;
   }
   auto events = core_->drain();
+  if(core_->services){auto status=core_->services->pump();if(!status&&s)s=status;}
   if(core_->devices) {
     auto status=core_->update_device_components();if(!status&&s)s=status;
     if(core_->state.status==SessionState::Ready){status=core_->devices->pump();if(!status&&s)s=status;}
