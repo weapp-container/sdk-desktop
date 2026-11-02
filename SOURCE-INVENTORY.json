@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "40a080843d93031dd4bfb3bbd37d8da6866701f6",
-  "review": "Require release-mode owner-thread cancellation regression to remain active",
+  "sourceBaseCommit": "2c5211c3b06b45fbc0c7d727782563f2779efeb7",
+  "review": "Review standalone HostCancellation source shared by production library and Linux owner-thread regression",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -47,8 +47,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "944a7d0bb57941225ee96ef7811d9838b2d951f22ee39bf9a78a02626e525d2c",
-      "size": 14835,
+      "sha256": "c4b5f16571abb02d24ac1d3bc63326e6ed840db58719bba4973abc60bdb5cf77",
+      "size": 14861,
       "mode": "100644"
     },
     {
@@ -334,9 +334,15 @@
       "mode": "100644"
     },
     {
+      "path": "src/host_cancellation.cpp",
+      "sha256": "0256bef13c6bd92775cc2ff3d1d4d99dee9fb2d0f13b27ab621403bfe34b153a",
+      "size": 1020,
+      "mode": "100644"
+    },
+    {
       "path": "src/host_services.cpp",
-      "sha256": "b5183fe8efc6637029e6d79677a915a523fe67725ced61d94bce9a462804251c",
-      "size": 25470,
+      "sha256": "825ef250163cebca6c4da01ea863e630278f49455bf14e779fc7aa9cc9c59614",
+      "size": 24573,
       "mode": "100644"
     },
     {
@@ -533,8 +539,8 @@
     },
     {
       "path": "test/native-sources/CMakeLists.txt",
-      "sha256": "82d0a853d7e29d3c214e25015e0ea027513ac1757162611a1fed109add91ca00",
-      "size": 4100,
+      "sha256": "1f02d27f28adc99d7287587f46c5abed7c624dda8d65ccd33e7a80a84cd10828",
+      "size": 4132,
       "mode": "100644"
     },
     {

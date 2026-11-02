@@ -21,7 +21,7 @@ endif()
 add_library(WeappContainer::Core STATIC IMPORTED GLOBAL)
 set_target_properties(WeappContainer::Core PROPERTIES IMPORTED_LOCATION "${WEAPP_CORE_DIR}/${WEAPP_CORE_FILE}")
 add_library(weapp_container_desktop STATIC src/desktop.cpp src/value.cpp src/c_api.cpp src/native_preview.cpp
-  src/host_services.cpp src/host_services_adapter.cpp)
+  src/host_cancellation.cpp src/host_services.cpp src/host_services_adapter.cpp)
 add_library(WeappContainer::Desktop ALIAS weapp_container_desktop)
 set_target_properties(weapp_container_desktop PROPERTIES EXPORT_NAME Desktop POSITION_INDEPENDENT_CODE ON)
 target_compile_features(weapp_container_desktop PUBLIC cxx_std_17)
