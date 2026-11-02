@@ -185,16 +185,19 @@ struct ConsentWindow {
   std::atomic<HWND> window{nullptr};
   HostCancellation cancellation;
   std::function<void(HostResult<bool>)> complete;
-  bool done = false;
-  void finish(int decision) {
+  bool done = false, window_owned = false;
+  void finish_with(HostResult<bool> result) {
     if (done) return;
     done = true;
+    if (auto hwnd = window.load()) DestroyWindow(hwnd);
+    complete(std::move(result));
+  }
+  void finish(int decision) {
     if (cancellation.cancelled() || decision < 0)
-      complete(
+      finish_with(
           {Status::error("ERR_CANCELLED", "Consent cancelled"), false, {}});
     else
-      complete({{}, decision == 1, {}});
-    if (auto hwnd = window.load()) DestroyWindow(hwnd);
+      finish_with({{}, decision == 1, {}});
   }
   static LRESULT CALLBACK procedure(HWND hwnd, UINT message, WPARAM w,
                                     LPARAM l) {
@@ -205,6 +208,7 @@ struct ConsentWindow {
           reinterpret_cast<CREATESTRUCTW*>(l)->lpCreateParams);
       SetWindowLongPtrW(hwnd, GWLP_USERDATA,
                         reinterpret_cast<LONG_PTR>(pointer));
+      (*pointer)->window_owned = true;
       (*pointer)->window.store(hwnd);
     }
     if (!pointer) return DefWindowProcW(hwnd, message, w, l);
@@ -281,8 +285,10 @@ class WindowsHostConsent final : public HostConsentPresenter {
                         parent.left + 20, parent.top + 20, 600, 330, parent_,
                         nullptr, GetModuleHandleW(nullptr), retained);
     if (!hwnd) {
-      delete retained;
-      state->complete(
+      // CreateWindow may already have sent WM_NCDESTROY after WM_NCCREATE.
+      // Only the side that acquired userdata may release its retained pointer.
+      if (!state->window_owned) delete retained;
+      state->finish_with(
           {Status::error("ERR_NATIVE_UI", "Cannot create host consent window"),
            false,
            {}});
@@ -307,6 +313,13 @@ class WindowsHostConsent final : public HostConsentPresenter {
                                  WS_CHILD | WS_VISIBLE | WS_TABSTOP, 465, 245,
                                  100, 30, hwnd, reinterpret_cast<HMENU>(1),
                                  GetModuleHandleW(nullptr), nullptr);
+    if (!label || !deny || !allow) {
+      state->finish_with({Status::error("ERR_NATIVE_UI",
+                                        "Cannot create host consent controls"),
+                          false,
+                          {}});
+      return;
+    }
     for (auto control : {label, deny, allow})
       SendMessageW(control, WM_SETFONT,
                    reinterpret_cast<WPARAM>(GetStockObject(DEFAULT_GUI_FONT)),

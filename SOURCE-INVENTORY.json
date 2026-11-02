@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "04fd9a9b6ede59a76687e47465d5ac257e78076d",
-  "review": "Review typed native host identity/payment client, bounded transport, consent UI and account lifecycle",
+  "sourceBaseCommit": "0d3b66577e02fdb4ffefb246eae1e32ca8478842",
+  "review": "Review Win32 consent ownership on partial native window creation failure",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -365,8 +365,8 @@
     },
     {
       "path": "src/host_services_windows.cpp",
-      "sha256": "30ca30dbe9408427e38ae52a169b31c47ecf6553decb892304a6d06851386917",
-      "size": 13308,
+      "sha256": "8cadc59c90e1c605da0a2437ec8b3c0a73a23e1805c2d782affc64fa9fcd792b",
+      "size": 13902,
       "mode": "100644"
     },
     {
