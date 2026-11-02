@@ -8,7 +8,7 @@
 #include <iphlpapi.h>
 #include <shellapi.h>
 #include "device_socket_winhttp.hpp"
-#include "device_sensor_common.hpp"
+#include "device_audio_common.hpp"
 #if defined(WEAPP_DEVICE_WINRT_LOCATION)
 #include "device_location_winrt.hpp"
 #endif
@@ -17,6 +17,9 @@
 #endif
 #if defined(WEAPP_DEVICE_WINRT_SENSORS)
 #include "device_sensor_winrt.hpp"
+#endif
+#if defined(WEAPP_DEVICE_WINRT_AUDIO)
+#include "device_audio_winrt.hpp"
 #endif
 #include <cmath>
 #include <cstdio>
@@ -39,7 +42,7 @@ ParsedUrl parse_url(const std::string& value) {
   ParsedUrl parsed;parsed.host.assign(parts.lpszHostName,parts.dwHostNameLength);parsed.path.assign(parts.lpszUrlPath,parts.dwUrlPathLength);parsed.path.append(parts.lpszExtraInfo,parts.dwExtraInfoLength);if(parsed.path.empty())parsed.path=L"/";parsed.port=parts.nPort;auto host=utf8(parsed.host);std::transform(host.begin(),host.end(),host.begin(),[](unsigned char c){return std::tolower(c);});if(host.find(':')!=std::string::npos)host="["+host+"]";parsed.origin="https://"+host+(parsed.port!=443?":"+std::to_string(parsed.port):"");return parsed;
 }
 }
-class WindowsDeviceApis final:public DeviceSensors {
+class WindowsDeviceApis final:public DeviceAudio {
   std::map<std::string,std::shared_ptr<WinTransfer>> transfers_;
   HANDLE wlan_=nullptr;std::map<std::string,GUID> wifi_interfaces_;std::string wifi_connect_call_,wifi_connect_ssid_;GUID wifi_connect_interface_{};std::chrono::steady_clock::time_point wifi_connect_deadline_;
   static std::string guid_text(const GUID& guid){wchar_t text[40]{};StringFromGUID2(guid,text,40);return utf8(text);}
@@ -97,7 +100,7 @@ class WindowsDeviceApis final:public DeviceSensors {
     }));
   }
   bool platform_call(const std::string& call,const std::string& api,const Json& payload,const Json&) override {
-    if(sensor_call(call,api,payload)||bluetooth_call(call,api,payload)||location_call(call,api,payload)||socket_call(call,api,payload)||system_call(call,api,payload))return true;
+    if(audio_call(call,api,payload)||sensor_call(call,api,payload)||bluetooth_call(call,api,payload)||location_call(call,api,payload)||socket_call(call,api,payload)||system_call(call,api,payload))return true;
     if(api=="wx.request"||api=="wx.downloadFile"||api=="wx.uploadFile"){request(call,api,payload);return true;}
     if(api=="object:RequestTask.abort"||api=="object:DownloadTask.abort"||api=="object:UploadTask.abort"){auto found=transfers_.find(payload.value("objectId",""));if(found==transfers_.end())throw std::invalid_argument("native task is unavailable");found->second->cancel();done(call,api);return true;}
     if(api=="wx.getBatteryInfo"){done(call,api,windows_battery());return true;}
@@ -107,10 +110,10 @@ class WindowsDeviceApis final:public DeviceSensors {
     if(api=="wx.showActionSheet"){if(!parent())throw std::invalid_argument("native dialog requires an attached HWND");auto items=payload.at("itemList");if(!items.is_array()||items.empty()||items.size()>6)throw std::invalid_argument("action sheet needs one to six items");std::vector<std::wstring> labels;std::vector<TASKDIALOG_BUTTON> buttons;for(auto& item:items)labels.push_back(wide(item.get<std::string>()));for(size_t index=0;index<labels.size();++index)buttons.push_back({int(index)+100,labels[index].c_str()});TASKDIALOGCONFIG config{};config.cbSize=sizeof(config);config.hwndParent=parent();config.dwFlags=TDF_ALLOW_DIALOG_CANCELLATION;config.dwCommonButtons=TDCBF_CANCEL_BUTTON;config.pszWindowTitle=L"Choose an action";config.cButtons=UINT(buttons.size());config.pButtons=buttons.data();int selected=0;HRESULT status=TaskDialogIndirect(&config,&selected,nullptr,nullptr);if(FAILED(status))throw std::runtime_error("native action sheet failed");if(selected>=100)done(call,api,{{"tapIndex",selected-100}});else fail(call,api,"user cancelled");return true;}
     return false;
   }
-  void permissions_reset() override {DeviceSensors::permissions_reset();stop_wifi();}
-  void retire_platform() override {DeviceSensors::retire_platform();stop_wifi();for(auto& entry:transfers_)entry.second->cancel();transfers_.clear();SetThreadExecutionState(ES_CONTINUOUS);}
+  void permissions_reset() override {DeviceAudio::permissions_reset();stop_wifi();}
+  void retire_platform() override {DeviceAudio::retire_platform();stop_wifi();for(auto& entry:transfers_)entry.second->cancel();transfers_.clear();SetThreadExecutionState(ES_CONTINUOUS);}
  public:
-  WindowsDeviceApis(const DeviceApiOptions& options,Command command):DeviceSensors(options,std::move(command)) {
+  WindowsDeviceApis(const DeviceApiOptions& options,Command command):DeviceAudio(options,std::move(command)) {
     install_socket_runner(run_winhttp_socket);
 #if defined(WEAPP_DEVICE_WINRT_LOCATION)
     install_location_factory(win_location_factory());
@@ -121,11 +124,14 @@ class WindowsDeviceApis final:public DeviceSensors {
 #if defined(WEAPP_DEVICE_WINRT_SENSORS)
     install_sensor_factory(win_sensor_factory());
 #endif
+#if defined(WEAPP_DEVICE_WINRT_AUDIO)
+    install_audio_factory(win_audio_factory());
+#endif
     for(auto api:{"wx.getNetworkType","wx.openLocation","wx.openAppAuthorizeSetting","wx.openSystemBluetoothSetting","wx.startWifi","wx.stopWifi","wx.getConnectedWifi","wx.getWifiList","wx.connectWifi","wx.request","wx.downloadFile","wx.uploadFile","object:RequestTask.abort","object:DownloadTask.abort","object:UploadTask.abort","wx.getBatteryInfo","wx.setKeepScreenOn","wx.getClipboardData","wx.setClipboardData","wx.showModal","wx.showActionSheet"})add(api);
     add_event("wx.onGetWifiList","wx.offGetWifiList","GetWifiList");add_event("wx.onWifiConnected","wx.offWifiConnected","WifiConnected");
     for(auto type:{"RequestTask","DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onHeadersReceived","object:"+std::string(type)+".offHeadersReceived","HeadersReceived");add_event("object:RequestTask.onChunkReceived","object:RequestTask.offChunkReceived","ChunkReceived");for(auto type:{"DownloadTask","UploadTask"})add_event("object:"+std::string(type)+".onProgressUpdate","object:"+std::string(type)+".offProgressUpdate","ProgressUpdate");
   }
-  Status pump() override {auto status=DeviceSensors::pump();if(!status||queue_->closed)return status;if(!wifi_connect_call_.empty()&&std::chrono::steady_clock::now()>=wifi_connect_deadline_){auto call=std::move(wifi_connect_call_);wifi_connect_call_.clear();if(calls_.count(call))fail(call,"wx.connectWifi","OS Wi-Fi connection timed out","timeout");}return {};}
+  Status pump() override {auto status=DeviceAudio::pump();if(!status||queue_->closed)return status;if(!wifi_connect_call_.empty()&&std::chrono::steady_clock::now()>=wifi_connect_deadline_){auto call=std::move(wifi_connect_call_);wifi_connect_call_.clear();if(calls_.count(call))fail(call,"wx.connectWifi","OS Wi-Fi connection timed out","timeout");}return {};}
   ~WindowsDeviceApis() override {retire();}
 };
 }
