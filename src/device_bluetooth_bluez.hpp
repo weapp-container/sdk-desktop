@@ -199,7 +199,7 @@ class BluezBackend final : public BleBackend {
         auto found = connections_.find(device.at("deviceId").get<std::string>()); if (found == connections_.end() || !found->second.connected) continue;
         bool matches = filters.empty();
         if (!matches) for (const auto& object : bluez_objects(bus_)) if (object.interface == "org.bluez.GattService1" && bluez_string(object.fields.get(), "Device") == found->second.path)
-          for (const auto& expected : filters) if (ble_uuid(bluez_string(object.fields.get(), "UUID")) == expected) matches = true;
+          for (const auto& expected : filters) if (ble_uuid(bluez_string(object.fields.get(), "UUID")) == expected.get_ref<const std::string&>()) matches = true;
         if (matches) result.push_back(device);
       }
       return {{"devices", result}};

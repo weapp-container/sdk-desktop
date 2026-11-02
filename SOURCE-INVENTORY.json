@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "0d3b66577e02fdb4ffefb246eae1e32ca8478842",
-  "review": "Review Win32 consent ownership on partial native window creation failure",
+  "sourceBaseCommit": "d835795caed88f085951d8da376cb4574db06927",
+  "review": "Review explicit BlueZ UUID string comparison for GCC 13 C++20 native source compilation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -263,8 +263,8 @@
     },
     {
       "path": "src/device_bluetooth_bluez.hpp",
-      "sha256": "b953827e90b3395020c8b57dd4b3ced04a7626be089d8a36ddb5b63f13f88be9",
-      "size": 28595,
+      "sha256": "33426dc1b4db61dc37fd318cc383aa3b9d446af87f64bae58ed508f24615a878",
+      "size": 28625,
       "mode": "100644"
     },
     {
