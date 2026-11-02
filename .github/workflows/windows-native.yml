@@ -1,6 +1,8 @@
 name: Windows native source build
 on:
   workflow_dispatch:
+  push:
+    branches: [codex/host-services-integration]
 permissions:
   contents: read
 jobs:

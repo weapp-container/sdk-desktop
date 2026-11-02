@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "a0af6ca2bc6f2573381ae18a6f15ead567157102",
-  "review": "Review native Windows sensor ownership, finite lifecycle checks, UTF-8 paths, and Windows SDK source compilation workflow",
+  "sourceBaseCommit": "fc0404bdfa3d53b850d70c3e56eefda677d8758c",
+  "review": "Enable real Windows source validation on the integration branch while preserving historical runtime artifacts",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -23,8 +23,8 @@
     },
     {
       "path": ".github/workflows/windows-native.yml",
-      "sha256": "4b00f7a8a9d92a718b797a66546b1adb194abd7b6a37b8ab3866e39d00f6ce78",
-      "size": 1403,
+      "sha256": "032f1c95a69403fd2a534e7eca7a50e51417d20308faca7e1cabd556062f57f1",
+      "size": 1459,
       "mode": "100644"
     },
     {
