@@ -5,7 +5,7 @@ using namespace weapp::desktop::detail;
 namespace {
 void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct Control {
-  std::atomic<bool> created{false}, allow_acquire{true}, acquired{false}, closed{false}, fail_cleanup{false}, fail_start{false};
+  std::atomic<bool> created{false}, allow_acquire{true}, acquired{false}, announced{false}, closed{false}, fail_cleanup{false}, fail_start{false};
   std::atomic<unsigned> cleanup_attempts{0}, emit{0}, produced{0};
 };
 class FakeSource final : public SensorSource {
@@ -17,7 +17,7 @@ class FakeSource final : public SensorSource {
     while (!control_->allow_acquire) std::this_thread::sleep_for(std::chrono::milliseconds(1));
     control_->acquired = true;
     if (control_->fail_start) throw std::system_error(std::error_code(5, std::generic_category()), "native start denied");
-    state->announce_started();
+    state->announce_started(); control_->announced = true;
     while (!state->stopping()) {
       if (control_->emit.exchange(0)) { state->sample(state->kind == SensorKind::Compass ? sensor_heading(270, "high") : sensor_vector(1, 2, 3)); ++control_->produced; }
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -108,7 +108,7 @@ void late_acquire_and_cancelled_receipt() {
   fixture.call("duplicate", "wx.startGyroscope"); fixture.until([&] { return fixture.receipts.count("duplicate"); }); require(fixture.receipts.at("duplicate").contains("error"), "pending native acquisition acknowledged active sensor");
   fixture.call("stop", "wx.stopGyroscope"); fixture.pump(); require(!fixture.receipts.count("stop"), "pending acquisition counted as drained");
   fixture.control()->allow_acquire = true; fixture.until([&] { return fixture.receipts.count("stop") && fixture.receipts.count("pending"); }); require(fixture.control()->closed && fixture.receipts.at("pending").contains("error"), "late acquire survived stop");
-  Fixture queued; queued.call("queued", "wx.startCompass"); queued.until([&] { return queued.control()->acquired.load(); }, false); queued.pump();
+  Fixture queued; queued.call("queued", "wx.startCompass"); queued.until([&] { return queued.control()->announced.load(); }, false); queued.pump();
   queued.devices->dispatch({EventType::HostCallCancelled, Fixture::object({{"callId", "queued"}})}); queued.pump(); queued.until([&] { return queued.control()->closed.load(); }); require(!queued.receipts.count("queued"), "cancelled queued startup receipt reached guest");
 }
 void duplicate_and_changed_interval() {

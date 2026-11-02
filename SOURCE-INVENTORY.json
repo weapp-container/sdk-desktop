@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "2009069cee88dd9088bccfdde3d036399d086d90",
-  "review": "Fix actual Windows target compilation: explicit Foundation projection, wide cursor resource, and UTF-8 source encoding",
+  "sourceBaseCommit": "f3a2231df9d530bdaddd191477f729ac3e843de5",
+  "review": "Use explicit WinRT characteristic insertion verified by Windows compiler; make queued sensor cancellation deterministic",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -239,8 +239,8 @@
     },
     {
       "path": "src/device_bluetooth_winrt.hpp",
-      "sha256": "7ad2e331d22abef5b2c23dc303a484c5a94da7eff825b0e5849b4ef60c8b7d87",
-      "size": 47581,
+      "sha256": "3f0bead57abbd518e9e9553bc66bc776f0c69bc56425c1331330d804a8714d18",
+      "size": 47597,
       "mode": "100644"
     },
     {
@@ -389,8 +389,8 @@
     },
     {
       "path": "test/device_sensor.cpp",
-      "sha256": "bf1060ce96d61fe59c1ed6bde876ec9ce1490d353dc933774c9aa4607ef99ff2",
-      "size": 13005,
+      "sha256": "0dfa99282777c1b64d57f3b5240ee8616dccb970117876d1813528e05a66273b",
+      "size": 13052,
       "mode": "100644"
     },
     {

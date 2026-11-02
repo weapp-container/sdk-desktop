@@ -263,7 +263,7 @@ class WinBluetoothBackend final : public BleBackend {
           throw std::invalid_argument("device exposes ambiguous duplicate characteristic UUIDs");
         }
         if (!connection.characteristics.count(key) && connection.characteristics.size() >= 256) throw std::invalid_argument("Windows Bluetooth characteristic limit exceeded");
-        connection.characteristics[key] = characteristic;
+        connection.characteristics.insert_or_assign(key, characteristic);
       }
     }
     result.require();
