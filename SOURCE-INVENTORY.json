@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "33ecf20491a8b0da83f9c9e151ca41e1d69be4a3",
-  "review": "Review exactly-once Windows audio source Error events for preflight, package and WAVE failures; preserve original native failures and fence cancelled-source events with an eighth finite regression group. Official SDK source compilation and physical/runtime acceptance remain separately bound.",
+  "sourceBaseCommit": "4e14566dae45818112b86801c3fe1216e40fd052",
+  "review": "Review eager release of retired queued package audio snapshots during source replacement, owner cancellation and fault; the active writer still retains exact native buffers through terminal completion. Eight finite audio groups cover the ownership boundary; hardware/runtime acceptance remains pending.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -71,8 +71,8 @@
     },
     {
       "path": "WINDOWS-AUDIO.md",
-      "sha256": "5ce23e9c4946f2767604e8c8e402eb0e64f20a47e3db7641ac07874f3a4736e2",
-      "size": 6477,
+      "sha256": "f1e21064ebcc2bc35c3f6015a0746f719101fabf6b6fca23c8ab5cbe1c7df31e",
+      "size": 6619,
       "mode": "100644"
     },
     {
@@ -233,8 +233,8 @@
     },
     {
       "path": "src/device_audio_common.hpp",
-      "sha256": "7e7f26ad3bb8a553af14c4680f841e7f1b62d5047490b9b738bc7636341cb174",
-      "size": 22969,
+      "sha256": "dfc8ff60bda955972e9ff5ad6b7e6379b185f914c65ce330428a2dc0cc3c985c",
+      "size": 23486,
       "mode": "100644"
     },
     {
@@ -389,8 +389,8 @@
     },
     {
       "path": "test/device_audio.cpp",
-      "sha256": "726640dfbe5703faf262f84d9969a2f740b9152e9799d163695290b2a1d78754",
-      "size": 20559,
+      "sha256": "19bde985b6f128beb7c1c6c86fbc38607443519b44e68a34338d0de90f592d05",
+      "size": 21620,
       "mode": "100644"
     },
     {

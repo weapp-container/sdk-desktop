@@ -41,7 +41,9 @@ claiming playback remains healthy.
 
 Replacing `src`, permission reset and backgrounding immediately revoke the
 previous source's event and receipt delivery tokens. Previously queued
-successful results also become cancellation failures. A fresh source cannot
+successful results also become cancellation failures. Revoked queued package
+payloads are released under the queue lock; active native writes retain their
+exact buffers until terminal completion. A fresh source cannot
 acquire until old event registrations, player, source, stream and asynchronous
 writes are acknowledged closed. The stable public context survives source
 reset. Playback in the background is unavailable in this implementation.

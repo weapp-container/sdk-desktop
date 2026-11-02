@@ -57,13 +57,14 @@ struct NativeAudio {
   bool stopping() const { return cancelled || failed; }
   void cancel() {
     cancelled = true; *delivery = false;
-    { std::lock_guard<std::mutex> guard(mutex); *source_delivery = false; for (auto& token : receipt_tokens) if (auto value = token.lock()) *value = false; for (auto& command : commands) command->cancel(); }
+    { std::lock_guard<std::mutex> guard(mutex); *source_delivery = false; for (auto& token : receipt_tokens) if (auto value = token.lock()) *value = false; for (auto& command : commands) { command->cancel(); std::vector<uint8_t>().swap(command->resource); } }
     changed.notify_all();
   }
   void fault(std::string message, std::string category = "invalid_request", int64_t native = 0) {
     { std::lock_guard<std::mutex> guard(mutex);
       if (!failed) failure = device_failure("wx.createInnerAudioContext", socket_terminal_text(message, 512), category, native);
       failed = true; *source_delivery = false; for (auto& token : receipt_tokens) if (auto value = token.lock()) *value = false;
+      for (auto& command : commands) std::vector<uint8_t>().swap(command->resource);
     }
     *delivery = false; changed.notify_all();
   }
@@ -73,6 +74,11 @@ struct NativeAudio {
   uint64_t retire_source() {
     std::lock_guard<std::mutex> guard(mutex);
     *source_delivery = false; for (auto& token : receipt_tokens) if (auto value = token.lock()) *value = false; receipt_tokens.clear();
+    // next() removes the active command under this same lock. Only queued
+    // source snapshots can be freed here; an in-flight write keeps its exact
+    // buffer until native terminal completion. Repeated replacements cannot
+    // pin 32 obsolete package payloads behind a draining decoder.
+    for (auto& command : commands) std::vector<uint8_t>().swap(command->resource);
     source_delivery = std::make_shared<std::atomic<bool>>(true); auto value = ++generation;
     changed.notify_all(); return value;
   }

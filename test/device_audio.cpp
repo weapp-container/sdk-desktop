@@ -118,6 +118,15 @@ void format_and_catalog() {
     bool rejected = false; try { validate_audio_wave(bytes); } catch (...) { rejected = true; } require(rejected, "unsafe or invalid WAVE accepted");
   }
   bool rejected = false; try { audio_property("src", "https://host/song.wav"); } catch (...) { rejected = true; } require(rejected, "unconfigured remote audio accepted");
+  auto native = std::make_shared<NativeAudio>(std::make_shared<DeviceQueue>(), "audio", "create");
+  auto queued = std::make_shared<AudioCommand>(); queued->delivery = std::make_shared<std::atomic<bool>>(true); queued->resource.assign(1048576, 1);
+  require(native->enqueue(queued), "source resource fixture was not accepted"); native->retire_source();
+  require(queued->resource.empty(), "retired queued package payload survived source replacement");
+  queued->resource.assign(1048576, 1); native->cancel(); require(queued->resource.empty(), "owner cancellation retained queued package payload");
+  auto faulted = std::make_shared<NativeAudio>(std::make_shared<DeviceQueue>(), "audio", "create");
+  auto failed = std::make_shared<AudioCommand>(); failed->delivery = std::make_shared<std::atomic<bool>>(true); failed->resource.assign(1048576, 1);
+  require(faulted->enqueue(failed), "fault source resource fixture was not accepted"); faulted->fault("native queue pressure");
+  require(failed->resource.empty(), "faulted owner retained queued package payload");
   Fixture fixture; auto apis = encode(fixture.devices->configuration()).at("apis"); unsigned audio_count = 0;
   for (const auto& api : apis) if (api.get<std::string>().find("InnerAudioContext") != std::string::npos) ++audio_count;
   require(audio_count == 36, "audio catalog advertises missing or unavailable properties");
