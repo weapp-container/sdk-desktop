@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "122d562330d2aaa3972e5015d3b81a2b6ed372bb",
-  "review": "Make each shared device header declare its optional dependency and compile every header first in an isolated C++17 unit; actual Linux g++ regression, no PCH or unity include ordering.",
+  "sourceBaseCommit": "1bb832c567e7e4539e30d9d239d4099743cc60ba",
+  "review": "Initialize the actual GTK host event loop for native account and reference-service test consumers; preserve production event-loop requirements and require an owned X11 or Wayland display.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -413,8 +413,8 @@
     },
     {
       "path": "test/account_lifecycle.cpp",
-      "sha256": "6a83e969e857b8e97668221a29fdde535447a14e60f2c474f2773c36dbc945bf",
-      "size": 23899,
+      "sha256": "fba479c4355ec127c5c30e3b412303753e209ba47845ecc2e47a31515deb7729",
+      "size": 24070,
       "mode": "100644"
     },
     {
@@ -503,8 +503,8 @@
     },
     {
       "path": "test/host_services_reference.cpp",
-      "sha256": "1951f1c17c532c027358f1f511605522a284b96e6ddef59431a72dc9099e5117",
-      "size": 20792,
+      "sha256": "ac372d8cb858e685780ef9dde141cc4097ac41fe85b5804efb1641afc79151fc",
+      "size": 20963,
       "mode": "100644"
     },
     {
@@ -553,6 +553,12 @@
       "path": "test/native-sources/winrt_sensors.cpp",
       "sha256": "fb7457a4d72ae91aeb6db3eaf743859aa9c94efc64f8bda0e6b918f136abe536",
       "size": 301,
+      "mode": "100644"
+    },
+    {
+      "path": "test/native_test_host.hpp",
+      "sha256": "bd94bfa0f3a8ef2fb8ba8b5b78141ff2bba8ee6f1f32079b9ee47060c39e7388",
+      "size": 542,
       "mode": "100644"
     },
     {

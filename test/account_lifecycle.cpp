@@ -3,6 +3,8 @@
 #include <iostream>
 #include <thread>
 
+#include "native_test_host.hpp"
+
 #include "internal.hpp"
 #include "weapp/desktop.h"
 using namespace weapp::desktop;
@@ -504,6 +506,8 @@ void original_c_abi_numbers_and_closed_event_remain_stable() {
 }  // namespace
 int main(int argc, char** argv) {
   try {
+    require(weapp::desktop::test::initialize_native_host(),
+            "Native SDK test host requires an initialized platform display");
     require(argc == 2, "usage: account_lifecycle PACK");
     std::ifstream file(std::filesystem::path(argv[1]) / "manifest.json");
     Json manifest;

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <thread>
 
+#include "native_test_host.hpp"
+
 #include "host_services_internal.hpp"
 using namespace weapp::desktop;
 using namespace weapp::desktop::detail;
@@ -465,6 +467,8 @@ void identity_and_payment(const std::string& pack, const Json& input) {
 int main(int argc, char** argv) {
   std::cout.setf(std::ios::unitbuf);
   try {
+    require(weapp::desktop::test::initialize_native_host(),
+            "Native SDK test host requires an initialized platform display");
     require(argc == 3,
             "Expected authored pack and private native fixture input");
     std::ifstream stream(argv[2]);
