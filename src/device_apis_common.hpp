@@ -12,6 +12,7 @@
 #include <fstream>
 #include <future>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <system_error>
 #if defined(_WIN32)

@@ -1,6 +1,7 @@
 #pragma once
 #include "device_location_common.hpp"
 #include <cctype>
+#include <optional>
 #include <system_error>
 
 namespace weapp::desktop::detail {

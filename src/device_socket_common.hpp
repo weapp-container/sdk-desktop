@@ -1,6 +1,7 @@
 #pragma once
 #include "device_apis_common.hpp"
 #include <condition_variable>
+#include <optional>
 
 namespace weapp::desktop::detail {
 constexpr size_t socket_message_limit = 1048576;

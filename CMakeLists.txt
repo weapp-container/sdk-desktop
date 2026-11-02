@@ -102,6 +102,18 @@ endif()
 option(WEAPP_DESKTOP_BUILD_TESTS "Build owner-thread native service contract regressions" OFF)
 if(WEAPP_DESKTOP_BUILD_TESTS)
   enable_testing()
+  # Each shared device header is the first include in its own C++17 unit.
+  # No platform SDK, PCH or unity-build include may hide a missing dependency.
+  set(WEAPP_DEVICE_HEADER_UNITS)
+  foreach(device_header device_apis_common device_socket_common device_location_common device_bluetooth_common)
+    set(header_unit "${CMAKE_CURRENT_BINARY_DIR}/header-contract-${device_header}.cpp")
+    file(WRITE "${header_unit}" "#include \"${device_header}.hpp\"\n")
+    list(APPEND WEAPP_DEVICE_HEADER_UNITS "${header_unit}")
+  endforeach()
+  add_library(weapp_device_headers_compile OBJECT ${WEAPP_DEVICE_HEADER_UNITS})
+  target_include_directories(weapp_device_headers_compile PRIVATE src include third_party "${WEAPP_CORE_DIR}")
+  set_target_properties(weapp_device_headers_compile PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON
+    CXX_EXTENSIONS OFF DISABLE_PRECOMPILE_HEADERS ON UNITY_BUILD OFF)
   find_program(WEAPP_NODE_EXECUTABLE node REQUIRED)
   set(WEAPP_DESKTOP_ACCOUNT_PACK "${CMAKE_CURRENT_BINARY_DIR}/account-fixture")
   execute_process(COMMAND "${WEAPP_NODE_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test/make-account-fixture.mjs" "${WEAPP_DESKTOP_ACCOUNT_PACK}"

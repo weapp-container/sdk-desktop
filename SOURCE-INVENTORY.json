@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "93b108b80bdff64c55eb0f7134b4fd3cc089c4c3",
-  "review": "Bind asynchronous snapshot refreshes to negotiated native owner context, retain merged values across recreation, and freeze macOS permission updates with the proper values envelope.",
+  "sourceBaseCommit": "122d562330d2aaa3972e5015d3b81a2b6ed372bb",
+  "review": "Make each shared device header declare its optional dependency and compile every header first in an isolated C++17 unit; actual Linux g++ regression, no PCH or unity include ordering.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -47,8 +47,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "c4b5f16571abb02d24ac1d3bc63326e6ed840db58719bba4973abc60bdb5cf77",
-      "size": 14861,
+      "sha256": "ed5863698dfadd444d455b7d0147d716ed479f296beb04860fc46e444c09078f",
+      "size": 15759,
       "mode": "100644"
     },
     {
@@ -221,8 +221,8 @@
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "ca28e987cbb8399ed46fd28a99690d63628a607b17fc7aded73b8e36facb66c1",
-      "size": 35621,
+      "sha256": "30be16651857743dac0bf957ee5b69bd8aad4c41d45bf44fa86c0d57fa7306cc",
+      "size": 35641,
       "mode": "100644"
     },
     {
@@ -269,8 +269,8 @@
     },
     {
       "path": "src/device_bluetooth_common.hpp",
-      "sha256": "a2633dcfcd439f64c53cfbb7d02b810914aff3097314bafa9edc1e350a6aaa57",
-      "size": 21972,
+      "sha256": "8aac9f0e8ba1605f26ae2e80b8910f5c928784f8b410318f4e2e2ae9dd8d1698",
+      "size": 21992,
       "mode": "100644"
     },
     {
@@ -287,8 +287,8 @@
     },
     {
       "path": "src/device_location_common.hpp",
-      "sha256": "ee5620b72a6967e8a88ffde518b1379acb9f438ff745fc584cda3ddbd2a7fb39",
-      "size": 12145,
+      "sha256": "8cc30aca910bf7cc18d632d0354088cef689da88b66f63c79dcab76a11ad21d2",
+      "size": 12165,
       "mode": "100644"
     },
     {
@@ -317,8 +317,8 @@
     },
     {
       "path": "src/device_socket_common.hpp",
-      "sha256": "3001184530ddcb843bf0ec3d36dcd48617d62f394a0f18495de688268ad9daf0",
-      "size": 15731,
+      "sha256": "64cffcbc6f3ac14e1762a929dd50c102140bec9df2b89b74bdb9a78c9c2a2422",
+      "size": 15751,
       "mode": "100644"
     },
     {

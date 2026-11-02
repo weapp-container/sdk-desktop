@@ -1,6 +1,7 @@
 #pragma once
 #include "device_socket_common.hpp"
 #include <cmath>
+#include <optional>
 
 namespace weapp::desktop::detail {
 struct LocationOptions {
