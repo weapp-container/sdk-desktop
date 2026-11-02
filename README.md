@@ -47,7 +47,7 @@ Exact runtime distributions retain the producer's original `build.json` and bind
 
 ## Build and embed
 
-Requirements: CMake 3.21+, a C++17 compiler and the target UI SDK. macOS 12+ uses NSView/Metal. Dev Player uses a child HWND/WGL OpenGL 3.3 preview on Windows 10 x64 and GtkGLArea/OpenGL 3.3 on Linux (Ubuntu 22.04/glibc 2.35/GTK 3.24 baseline). These GPU integrations require platform execution evidence. Existing software embedding paths remain separate; they cannot satisfy the Player GPU requirement.
+Requirements: CMake 3.21+, a C++17 compiler (C++20 for the Windows C++/WinRT adapters) and the target UI SDK. macOS 12+ uses NSView/Metal. Dev Player uses a child HWND/WGL OpenGL 3.3 preview on Windows 10 x64 and GtkGLArea/OpenGL 3.3 on Linux (Ubuntu 22.04/glibc 2.35/GTK 3.24 baseline). These GPU integrations require platform execution evidence. Existing software embedding paths remain separate; they cannot satisfy the Player GPU requirement.
 
 ```sh
 node tools/prepare-runtime.mjs --target macos-universal
@@ -78,6 +78,12 @@ npm test
 ```
 
 These are wrapper input-contract tests, not runtime, GPU, device, performance or WeChat parity results. This split starts with a new version: historical preview.1 results are not attributed to preview.2. Platform build/UI reports must be regenerated against the exact pinned runtime before claiming that scope passed. Native IME, complete accessibility and advanced gestures remain separate limitations.
+
+[Windows sensors](WINDOWS-SENSORS.md) documents the native accelerometer,
+compass, and gyroscope APIs, ownership rules, and finite lifecycle target. The
+Windows source workflow compiles the actual Windows/C++/WinRT adapters with the
+official SDK without linking a fabricated runtime archive. Hardware and
+packaged-runtime acceptance require separate evidence.
 
 The 2026-10-27 preview.2 report for wrapper source `360e789` records a universal macOS package, independent C/C++ build/link and arm64 native execution with actual Metal presentation. The consumer uses synthetic Cocoa event dispatch to exercise two views, input/scrolling, navigation, resize, hidden completion pumping, window visibility, owner-thread enforcement and durable reopening. It does not establish physical OS input. macOS x86_64 execution, Windows/Linux execution, performance and WeChat parity remain unmeasured; their unavailable runtime pins fail explicitly.
 

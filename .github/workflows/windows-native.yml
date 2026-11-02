@@ -18,6 +18,8 @@ jobs:
           node-version: '24'
       - name: Verify reviewed source and public ABI copy
         run: node tools/check-origin.mjs
+      - name: Verify Windows source provenance behavior
+        run: node --test test/source-inventory.test.mjs
       - name: Configure native source compilation
         run: cmake -S test/native-sources -B build/native-sources -A x64
       - name: Compile actual Windows and C++/WinRT translation units

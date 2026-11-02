@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "f3a2231df9d530bdaddd191477f729ac3e843de5",
-  "review": "Use explicit WinRT characteristic insertion verified by Windows compiler; make queued sensor cancellation deterministic",
+  "sourceBaseCommit": "b6e29ac9bd466287bc27eba33f7f36ed164fbdf1",
+  "review": "Document Windows sensor embedding and exercise tracked executable-mode provenance on real Windows",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -29,8 +29,8 @@
     },
     {
       "path": ".github/workflows/windows-native.yml",
-      "sha256": "66b93415390b3247d94fbdd19ee473a2322c17cbebad10e90de53a8afc2283a8",
-      "size": 1536,
+      "sha256": "b1fc0c0eb03d70eb9dc43ebba425e197233411657f01e394a014d576b9280db6",
+      "size": 1648,
       "mode": "100644"
     },
     {
@@ -65,8 +65,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "00bbfa03b1c40cc68174aeda0a327d2a8720e71df496f08f32e9a628b2088ae8",
-      "size": 9574,
+      "sha256": "5bb607890eb7e50837dcb5b657a61d04e57bb27ebaad3cb3e79eb481914a710a",
+      "size": 9978,
       "mode": "100644"
     },
     {
@@ -443,8 +443,8 @@
     },
     {
       "path": "test/source-inventory.test.mjs",
-      "sha256": "fab8ff7803d0e56b89bbac22ce397a9d53daa202e47d705ae2e39039ced7d373",
-      "size": 4335,
+      "sha256": "0e62d5969b10c4f7812a35b734018f12b41e3f5a58cae0cc5eb4efbc16ce0fd7",
+      "size": 4434,
       "mode": "100644"
     },
     {
