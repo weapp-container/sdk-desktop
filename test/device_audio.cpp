@@ -5,7 +5,7 @@ using namespace weapp::desktop::detail;
 namespace {
 void require(bool value, const char* message) { if (!value) throw std::runtime_error(message); }
 struct Control {
-  std::atomic<bool> created{false}, allow_open{true}, opened{false}, fail_open{false}, fail_command{false}, closed{false}, fail_cleanup{false}, block_command{false}, entered{false}, block_reset{false}, resetting{false};
+  std::atomic<bool> created{false}, allow_open{true}, opened{false}, fail_open{false}, fail_command{false}, native_reported{false}, late_error{false}, closed{false}, fail_cleanup{false}, block_command{false}, entered{false}, block_reset{false}, resetting{false};
   std::atomic<unsigned> cleanup_attempts{0}, executed{0}, emit{0}, produced{0};
   std::atomic<size_t> resource_bytes{0};
 };
@@ -30,9 +30,16 @@ class ControlledBackend final : public AudioBackend {
   }
   Json execute(const std::shared_ptr<NativeAudio>& state, const std::shared_ptr<AudioCommand>& command) override {
     control_->entered = true;
-    while (control_->block_command && state->current(command->generation) && !command->cancelled) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    while (control_->block_command && state->current(command->generation) && !command->cancelled) {
+      if (control_->late_error.exchange(false)) { state->sample(command->generation, Json::object(), "Error", {{"errMsg", "late native error"}}); ++control_->produced; }
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
     if (!state->current(command->generation) || command->cancelled) throw AudioFailure("retired native operation", "cancelled");
-    if (control_->fail_command) throw AudioFailure("native media failed", "invalid_request", -1, {{"errMsg", "original media error"}, {"nativeMediaError", 3}, {"nativeErrorMessage", "raw message"}});
+    if (control_->fail_command) {
+      Json detail = {{"errMsg", "original media error"}, {"nativeMediaError", 3}, {"nativeErrorMessage", "raw message"}};
+      if (control_->native_reported) { state->sample(command->generation, Json::object(), "Error", detail); command->error_reported = true; }
+      throw AudioFailure("native media failed", "invalid_request", -1, detail);
+    }
     ++control_->executed; control_->resource_bytes = command->resource.size(); return {{"nativeSequence", control_->executed.load()}};
   }
   bool cleanup(const std::shared_ptr<NativeAudio>&) override { ++control_->cleanup_attempts; return !control_->fail_cleanup; }
@@ -55,7 +62,7 @@ struct Fixture {
   Json account = {{"principalId", "alice"}, {"epoch", "1"}};
   std::shared_ptr<Control> control = std::make_shared<Control>();
   std::map<std::string, Json> receipts; std::vector<Json> events, resource_contexts;
-  bool resource_support = true, inconsistent_resource = false; size_t resource_reads = 0;
+  bool resource_support = true, inconsistent_resource = false, resource_cancelled = false; size_t resource_reads = 0;
   std::unique_ptr<TestAudio> devices;
   static Value::Object object(const Json& value) { return std::get<Value::Object>(decode(value).data); }
   Fixture() {
@@ -69,6 +76,7 @@ struct Fixture {
       else if (operation == "capabilities") *output = decode(resource_support ? Json{{"hostServices", {{"apiResourceChunks", "1.0"}}}} : Json::object());
       else if (operation == "hostApiResource") {
         auto request = encode(fields); resource_contexts.push_back(request.at("context")); ++resource_reads;
+        if (resource_cancelled) return Status::error("ERR_CANCELLED", "package call was retired");
         require(request.size() == 3 && request.at("length") == 1048576, "native resource request selected an untrusted file or exceeded chunk limit");
         size_t total = 1048580, offset = request.at("offset"); auto length = std::min<size_t>(total - offset, 1048576);
         *output = decode(Json{{"totalBytes", total + ((inconsistent_resource && offset) ? 1 : 0)}, {"bytes", std::vector<uint8_t>(length, 7)}});
@@ -93,6 +101,7 @@ struct Fixture {
     require(predicate(), "audio fixture timed out");
   }
   void create() { call("create", "wx.createInnerAudioContext", {{"objectId", "audio"}}, true); until([&] { return receipts.count("create"); }); require(receipts.at("create").contains("result"), "native audio was not created"); }
+  void errors() { call("errors", "object:InnerAudioContext.onError", {{"subscriptionId", "errors"}, {"objectId", "audio"}, {"action", "subscribe"}}, true); }
   void subscribe() { call("listen", "object:InnerAudioContext.onTimeUpdate", {{"subscriptionId", "time"}, {"objectId", "audio"}, {"action", "subscribe"}}, true); }
 };
 std::vector<uint8_t> wave(uint16_t codec = 1, uint16_t bits = 16) {
@@ -165,9 +174,29 @@ void package_chunks_and_negotiation() {
   Fixture legacy; legacy.create(); legacy.resource_support = false; legacy.set("legacy", "src", "audio.wav"); legacy.until([&] { return legacy.receipts.count("legacy"); }); require(legacy.receipts.at("legacy").contains("error") && !legacy.resource_reads, "old runtime silently accepted package source");
   Fixture corrupt; corrupt.create(); corrupt.inconsistent_resource = true; corrupt.set("bad", "src", "audio.wav"); corrupt.until([&] { return corrupt.receipts.count("bad"); }); require(corrupt.receipts.at("bad").contains("error") && !corrupt.control->executed, "inconsistent resource bytes reached native decoder");
 }
+void source_errors_once_and_cancelled_fence() {
+  Fixture preflight; preflight.create(); preflight.errors(); preflight.set("remote", "src", "https://remote/audio.wav");
+  preflight.until([&] { return preflight.receipts.count("remote"); }); require(preflight.events.size() == 1 && preflight.events.at(0).at("event") == "Error", "source validation did not emit exactly one object error");
+  Fixture legacy; legacy.create(); legacy.errors(); legacy.resource_support = false; legacy.set("legacy", "src", "audio.wav");
+  legacy.until([&] { return legacy.receipts.count("legacy"); }); require(legacy.events.size() == 1, "package negotiation failure lacked one object error");
+  Fixture integrity; integrity.create(); integrity.errors(); integrity.inconsistent_resource = true; integrity.set("invalid", "src", "audio.wav");
+  integrity.until([&] { return integrity.receipts.count("invalid"); }); require(integrity.events.size() == 1 && !integrity.control->executed, "package read failure lacked one object error or reached decoder");
+  for (bool native : {false, true}) {
+    Fixture worker; worker.create(); worker.errors(); worker.control->fail_command = true; worker.control->native_reported = native;
+    worker.set("wave", "src", "wxfile://user/invalid.wav"); worker.until([&] { return worker.receipts.count("wave"); });
+    require(worker.events.size() == 1 && worker.events.at(0).at("value").at("nativeMediaError") == 3, "native/pre-native source failure duplicated or lost public error");
+  }
+  Fixture cancelled; cancelled.create(); cancelled.errors(); cancelled.resource_cancelled = true; cancelled.set("retired", "src", "audio.wav");
+  cancelled.until([&] { return cancelled.receipts.count("retired"); }); require(cancelled.events.empty() && cancelled.receipts.at("retired").at("error").at("code") == "cancelled", "retired package call fabricated a decoder error");
+  Fixture late; late.create(); late.errors(); late.control->block_command = true; late.set("late", "src", "wxfile://user/a.wav");
+  late.until([&] { return late.control->entered.load(); }, false); late.control->late_error = true; late.until([&] { return late.control->produced == 1; }, false);
+  late.devices->dispatch({EventType::HostCallCancelled, Fixture::object({{"callId", "late"}})}); late.control->block_command = false;
+  late.member("after", "pause"); late.until([&] { return late.receipts.count("after"); });
+  require(late.events.empty() && !late.receipts.count("late"), "cancelled source delivered a queued late error or receipt");
+}
 }
 int main() {
-  try { format_and_catalog(); destroy_waits_and_revokes(); queued_receipt_fencing(); background_and_reset(); late_acquire_and_raw_errors(); budget_backpressure_retirement(); package_chunks_and_negotiation();
-    std::cout << "Audio lifecycle: 7 groups passed (controlled backend, no hardware or runtime acceptance)\n"; return 0;
+  try { format_and_catalog(); destroy_waits_and_revokes(); queued_receipt_fencing(); background_and_reset(); late_acquire_and_raw_errors(); budget_backpressure_retirement(); package_chunks_and_negotiation(); source_errors_once_and_cancelled_fence();
+    std::cout << "Audio lifecycle: 8 groups passed (controlled backend, no hardware or runtime acceptance)\n"; return 0;
   } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 1; }
 }

@@ -34,7 +34,7 @@ struct AudioCommand {
   Json payload, result = Json::object(), failure;
   uint64_t generation = 0;
   std::atomic<bool> cancelled{false}, finished{false};
-  bool settled = false;
+  bool settled = false, error_reported = false;
   std::shared_ptr<std::atomic<bool>> delivery;
   void cancel() { cancelled = true; if (delivery) *delivery = false; }
 };
@@ -169,6 +169,10 @@ class DeviceAudio : public DeviceSensors {
               catch (const std::system_error& error) { command->failure = device_failure(command->api, error.what(), "invalid_request", error.code().value()); }
               catch (const std::exception& error) { command->failure = device_failure(command->api, error.what()); }
               catch (...) { command->failure = device_failure(command->api, "native audio command failed"); }
+            if (!command->failure.is_null() && command->member == "src" && !command->error_reported && !command->cancelled && state->current(command->generation) &&
+                command->failure.value("code", "") != "cancelled") {
+              command->error_reported = true; state->sample(command->generation, Json::object(), "Error", command->failure.at("details"));
+            }
             command->finished = true;
           }
         } catch (const AudioFailure& error) { state->fault(error.what(), error.category, error.native); }
@@ -190,6 +194,7 @@ class DeviceAudio : public DeviceSensors {
     if (member == "destroy") {
       state->cancel(); cancelled(state->call); objects_.erase(id); audio_.erase(found); audio_destroy_.push_back({call, api, state}); return true;
     }
+    try {
     const bool setting = payload.value("action", "") == "set";
     if (setting) {
       audio_property(member, payload.at("value"));
@@ -217,7 +222,10 @@ class DeviceAudio : public DeviceSensors {
         do {
           Value output; auto fields = std::get<Value::Object>(decode(Json{{"context", calls_.at(call).context}, {"offset", command->resource.size()}, {"length", chunk}}).data);
           auto read = command_("hostApiResource", fields, &output);
-          if (!read) throw std::invalid_argument("verified package audio read failed: " + read.message);
+          if (!read) {
+            auto category = read.code == "ERR_CANCELLED" || read.code == "cancelled" ? "cancelled" : read.code == "ERR_TIMEOUT" || read.code == "timeout" ? "timeout" : "invalid_request";
+            throw AudioFailure("verified package audio read failed: " + read.message, category);
+          }
           auto result = encode(output);
           auto integer = [](const Json& value, uint64_t maximum) {
             if (!value.is_number()) throw std::invalid_argument("package audio count is not numeric");
@@ -235,7 +243,23 @@ class DeviceAudio : public DeviceSensors {
       }
     }
     if (!state->enqueue(command)) throw std::invalid_argument("native audio owner is unavailable");
-    audio_commands_.push_back({state, command}); calls_.at(call).cancel = [command, state] { command->cancel(); state->changed.notify_all(); }; return true;
+    audio_commands_.push_back({state, command}); calls_.at(call).cancel = [command, state] {
+      command->cancel();
+      if (command->member == "src" && state->current(command->generation)) state->retire_source();
+      state->changed.notify_all();
+    }; return true;
+    } catch (const AudioFailure& error) {
+      auto failure = device_failure(api, error.what(), error.category, error.native); failure["details"].update(error.public_fields);
+      if (member == "src" && error.category != "cancelled" && error.category != "timeout") state->sample(state->generation, Json::object(), "Error", failure.at("details"));
+      queue_failure(weak_queue(), call, std::move(failure)); return true;
+    } catch (const std::system_error& error) {
+      auto failure = device_failure(api, error.what(), "invalid_request", error.code().value());
+      if (member == "src") state->sample(state->generation, Json::object(), "Error", failure.at("details"));
+      queue_failure(weak_queue(), call, std::move(failure)); return true;
+    } catch (const std::exception& error) {
+      if (member == "src") state->sample(state->generation, Json::object(), "Error", device_failure(api, error.what()).at("details"));
+      throw;
+    }
   }
   void permissions_reset() override { for (auto& state : audio_owners_) if (!state->stopping()) state->retire_source(); DeviceSensors::permissions_reset(); }
   void retire_platform() override { cancel_audio(); DeviceSensors::retire_platform(); }

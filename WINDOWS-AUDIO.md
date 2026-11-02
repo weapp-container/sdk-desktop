@@ -69,15 +69,19 @@ so these private players do not take over host-wide transport controls.
 `MediaFailed` preserves its original `ExtendedErrorCode`, `ErrorMessage`, and
 public `nativeMediaError` enum; activation/operation HRESULTs retain their raw
 signed code and permission-denial category. Decode failure leaves the public
-context available for another source. Default credentials or fabricated
+context available for another source. Preflight/package/WAVE source failures also emit exactly one object `Error`;
+a native `MediaFailed` already reported by the decoder is not duplicated.
+Container cancellation/deadline failures do not masquerade as decoder errors,
+and cancelling an accepted source revokes its queued events as well as receipts.
+Default credentials or fabricated
 playback results are never substituted.
 
 ## Verification and remaining acceptance
 
-`test/device_audio.cpp` has seven finite groups for WAVE validation/catalog,
+`test/device_audio.cpp` has eight finite groups for WAVE validation/catalog,
 exact destroy drain, late receipt fencing, background/reset, delayed native
 acquisition/raw failure, bounded commands/backpressure/retirement, and exact
-package chunk context/negotiation/progress. Its controlled backend verifies
+package chunk context/negotiation/progress, plus exactly-once source Error events and cancelled-source fencing. Its controlled backend verifies
 ownership and scheduling, not an operating-system decoder or actual JS.
 
 `test/native-sources` additionally compiles every Windows wrapper translation

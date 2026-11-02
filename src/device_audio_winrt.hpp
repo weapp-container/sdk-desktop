@@ -104,6 +104,7 @@ class Backend final : public AudioBackend {
     if (!source_error_.is_null() || (signal_ && signal_->failed)) {
       Json detail = source_error_; if (detail.is_null()) { std::lock_guard<std::mutex> guard(signal_->mutex); detail = signal_->error; }
       if (!error_sent_) { state->sample(generation_, Json::object(), "Error", detail); error_sent_ = true; }
+      command->error_reported = true;
       throw AudioFailure(detail.value("errMsg", "Windows media decode failed"), "invalid_request", detail.value("errCode", int64_t(0)), detail);
     }
   }
