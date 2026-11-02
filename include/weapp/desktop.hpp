@@ -98,6 +98,7 @@ struct Event {
 };
 struct Capabilities {
   bool quickjs = false, skia_cpu = false, metal = false;
+  bool snapshot_owner_context = false;
   bool gpu_presented = false;
   std::string renderer;
   std::vector<std::string> native_apis;

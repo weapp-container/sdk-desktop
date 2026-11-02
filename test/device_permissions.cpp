@@ -20,6 +20,8 @@ struct Fixture {
       {"environment", "test"}, {"version", "1"}, {"packRoot", std::string(64, 'a')}};
   Json account = {{"principalId", "alice"}, {"epoch", "1"}};
   std::vector<Json> completions;
+  std::vector<Json> snapshots;
+  std::string session = "session-1";
   Fixture() {
     std::filesystem::create_directories(directory / "user");
     std::filesystem::create_directories(directory / "native");
@@ -39,6 +41,12 @@ struct Fixture {
             {"application", application}, {"account", account}});
       } else if (name == "completeHostCall") {
         completions.push_back(encode(fields));
+      } else if (name == "state") {
+        *result = decode(Json{{"sessionId",session}});
+      } else if (name == "capabilities") {
+        *result = decode(Json{{"hostServices",{{"snapshotOwnerContext","1.0"}}}});
+      } else if (name == "updateHostServiceSnapshots") {
+        snapshots.push_back(encode(fields));
       } else {
         return Status::error("ERR_TEST_COMMAND", "unexpected command: " + name);
       }
@@ -77,6 +85,7 @@ class FakeDevices : public DeviceBase {
     add("test.retire");
   }
   void reset() { reset_permissions(); }
+  Status publish_snapshot() { return queue_snapshot_values({{"wx.getAppAuthorizeSetting",{{"cameraAuthorized","authorized"}}}}); }
   bool has_consent() const { return consents_.count("scope.contacts") != 0; }
   bool has_object(const std::string& id) const { return objects_.count(id) != 0; }
   void expect_empty_file() const {
@@ -196,6 +205,20 @@ void retirement_retries_only_unacknowledged_cleanup() {
   require(bool(devices.retire()) && first == 1 && second == 1, "successful retirement repeated native cleanup");
 }
 
+void queued_snapshot_freezes_owner_and_preserves_values_envelope() {
+  Fixture fixture;FakeDevices devices(fixture);
+  require(bool(devices.publish_snapshot()),"snapshot was not queued");
+  fixture.session="replacement-session";
+  fixture.account={{"principalId","bob"},{"epoch","2"}};
+  devices.pump_checked();
+  require(fixture.snapshots.size()==1,"snapshot was not delivered exactly once");
+  const auto& update=fixture.snapshots.front();
+  require(update.at("context").at("sessionId")=="session-1","snapshot was relabeled with a later owner");
+  require(update.at("context").at("account").at("principalId")=="alice","snapshot lost its source account");
+  require(update.at("context").at("application")==fixture.application,"snapshot lost its installed application");
+  require(update.at("values").at("wx.getAppAuthorizeSetting").at("cameraAuthorized")=="authorized","snapshot values envelope was lost");
+}
+
 }  // namespace
 
 int main() {
@@ -205,7 +228,8 @@ int main() {
     queued_success_becomes_one_failure_and_disposes_retained_object();
     native_failure_disposes_retained_object();
     retirement_retries_only_unacknowledged_cleanup();
-    std::cout << "DeviceBase permission lifecycle: 4 cases passed (fake OS callbacks; no hardware acceptance)\n";
+    queued_snapshot_freezes_owner_and_preserves_values_envelope();
+    std::cout << "DeviceBase permission lifecycle: 6 cases passed (fake OS callbacks; no hardware acceptance)\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

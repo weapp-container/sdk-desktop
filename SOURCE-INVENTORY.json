@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "b10410706d745e1af5f58f2c96e5d32a62595961",
-  "review": "Fix GLib owner-context cancellation source to release callback data exactly once",
+  "sourceBaseCommit": "93b108b80bdff64c55eb0f7134b4fd3cc089c4c3",
+  "review": "Bind asynchronous snapshot refreshes to negotiated native owner context, retain merged values across recreation, and freeze macOS permission updates with the proper values envelope.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -41,8 +41,8 @@
     },
     {
       "path": "ACCOUNT-SERVICES.md",
-      "sha256": "2115474747686d51e0a296770247924b05e06820ea03a3dde3d456fba79a05a4",
-      "size": 11653,
+      "sha256": "a2804ceb76143adc7b697ee91cf42b617da059f802a9ed83e50c3196ae982665",
+      "size": 12459,
       "mode": "100644"
     },
     {
@@ -161,8 +161,8 @@
     },
     {
       "path": "include/weapp/desktop.hpp",
-      "sha256": "198fe2fdb358da15b909b4f6f2b7a698c429cb9244996160b6ee287177efadde",
-      "size": 6521,
+      "sha256": "c6636614b048a8c8f87a7e1c84c41a1604aafff7988241c3e95a640d97d131d7",
+      "size": 6560,
       "mode": "100644"
     },
     {
@@ -215,14 +215,14 @@
     },
     {
       "path": "src/desktop.cpp",
-      "sha256": "60cab98d8a72cd8d1106f6d1f47a5e78ba560bd5e70b56a522ba1e35a1bc9410",
-      "size": 41632,
+      "sha256": "69cd81c624d1d82847bd52a0cd361a94e6c04611cd83e32bed8515e2b5666321",
+      "size": 42375,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "852653c8acf5261b2c7a7f3112eaded48373e05b0925f77e6afca8840044b347",
-      "size": 34597,
+      "sha256": "ca28e987cbb8399ed46fd28a99690d63628a607b17fc7aded73b8e36facb66c1",
+      "size": 35621,
       "mode": "100644"
     },
     {
@@ -233,8 +233,8 @@
     },
     {
       "path": "src/device_apis_macos.mm",
-      "sha256": "5e133acb12d9e8683d22d043128f6c6d1655dbd969883b15122dc586d0cfe50e",
-      "size": 97096,
+      "sha256": "00bed405ad3ed0699d2737325adfb970914f0426946f62f73ca498c700405340",
+      "size": 97058,
       "mode": "100644"
     },
     {
@@ -347,8 +347,8 @@
     },
     {
       "path": "src/host_services_adapter.cpp",
-      "sha256": "c88c63351d1785ba130d1bdd53265932e9d56436226fb10f79360e5ca5c9e85b",
-      "size": 31004,
+      "sha256": "ba6941afd958ddd8765c7ad20aadac948b46b0cd60d2941de589f67576fa3409",
+      "size": 31790,
       "mode": "100644"
     },
     {
@@ -467,8 +467,8 @@
     },
     {
       "path": "test/device_permissions.cpp",
-      "sha256": "5db3f89d70e93e48c31d030908b9eef6242a46f09b66792d725f2babaa504d43",
-      "size": 9608,
+      "sha256": "9eb110afe92d6f085d2e2b79de3ba7cf2e1d26c121f74791f6d3c3c92826ca6e",
+      "size": 11104,
       "mode": "100644"
     },
     {

@@ -89,6 +89,11 @@ struct HostServices::Impl {
     auto s = session.lock();
     return s ? s->host_services_command(operation, object(body)) : cancelled();
   }
+  Status require_snapshot_owner_context() {
+    auto s=session.lock();if(!s)return cancelled();Capabilities capabilities;
+    auto status=s->capabilities(capabilities);if(!status)return status;
+    return capabilities.snapshot_owner_context?Status{}:Status::error("ERR_UNSUPPORTED_CAPABILITY","runtime lacks native snapshot owner context 1.0");
+  }
   bool current(const std::shared_ptr<Call>& call) const {
     const auto found = calls.find(call->context.call_id);
     auto s = session.lock();
@@ -482,6 +487,7 @@ struct HostServices::Impl {
         });
   }
   void invoke(const std::shared_ptr<Call>& call) {
+    if(auto status=require_snapshot_owner_context();!status){fail(call,status);return;}
     const auto& api = call->context.api;
     if (payment_apis.count(api)) {
       payment(call);
@@ -618,6 +624,7 @@ Status HostServices::install(const std::shared_ptr<Session>& session) {
 }
 Status HostServices::current_context(HostApiContext& context) {
   if (auto status = impl_->check(); !status) return status;
+  if (auto status = impl_->require_snapshot_owner_context(); !status) return status;
   auto session = impl_->session.lock();
   if (!session) return cancelled();
   Json state;
@@ -713,6 +720,9 @@ std::shared_future<HostResult<HostIdentityState>> HostServices::refresh(
     promise->set_value({status, {}, {}});
     return future;
   }
+  if (auto status = impl_->require_snapshot_owner_context(); !status) {
+    promise->set_value({status, {}, {}});return future;
+  }
   if (impl_->retiring || !impl_->matches || !impl_->matches(context)) {
     promise->set_value({cancelled(), {}, {}});
     return future;
@@ -742,6 +752,9 @@ std::shared_future<HostResult<Value::Object>> HostServices::revoke(
   if (auto status = impl_->check(); !status) {
     promise->set_value({status, {}, {}});
     return future;
+  }
+  if (auto status = impl_->require_snapshot_owner_context(); !status) {
+    promise->set_value({status, {}, {}});return future;
   }
   if (impl_->retiring || !impl_->matches || !impl_->matches(context)) {
     promise->set_value({cancelled(), {}, {}});

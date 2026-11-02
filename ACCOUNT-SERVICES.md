@@ -92,6 +92,15 @@ SDK 再按同一订单轮询
 
 ## 异步清理与身份快照
 
+异步身份刷新要求 runtime 提供 `hostServices.snapshotOwnerContext == "1.0"`；
+SDK 在发起后端工作前检查，旧 runtime 明确返回 `ERR_UNSUPPORTED_CAPABILITY`。
+`current_context` 在请求前冻结完整应用、账号/epoch 和内部 session；`refresh`、
+`revoke` 及 API 回调沿用其原始 context，不给迟到结果附加新 owner。核心也会校验
+已接受包和完整应用信息。换号、应用退出和同账号重载后的旧结果返回 `ERR_CANCELLED`。
+带 context 的通用快照命令同样要求该协商；既有 owner 线程同步生成的快照可省略。
+成功快照会合并保留到 controller 配置，preflight 重建时重放。macOS 权限变化排队时
+一并冻结 owner，并通过 `values` 提交，不把权限字段放在命令顶层。
+
 在加载前调用 `set_account_cleanup_handler`。SDK 先排空自身设备并解绑 GPU，然后在
 创建该 session 的 UI 线程调用宿主 hook 一次。hook 返回
 `std::shared_future<AccountCleanupResult>`，宿主在自己的执行器完成剩余资源清理和

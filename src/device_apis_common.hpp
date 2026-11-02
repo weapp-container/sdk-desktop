@@ -216,6 +216,17 @@ class DeviceBase : public DeviceApis {
   }
   void add(const std::string& api) {apis_[api]=true;}
   void snapshot(const std::string& api,Json value) {add(api);snapshots_[api]=std::move(value);}
+  Status queue_snapshot_values(Json values) {
+    Value capabilities;auto negotiated=command_("capabilities",{},&capabilities);if(!negotiated)return negotiated;
+    if(encode(capabilities).value("hostServices",Json::object()).value("snapshotOwnerContext","")!="1.0")return Status::error("ERR_UNSUPPORTED_CAPABILITY","runtime lacks native snapshot owner context 1.0");
+    Value observed;auto status=command_("state",{},&observed);if(!status)return status;
+    auto state=encode(observed);
+    if(!state.contains("sessionId")||!state["sessionId"].is_string())return Status::error("ERR_NOT_LOADED","native snapshot requires a live session");
+    DeviceQueued update;update.kind=DeviceQueued::Snapshots;
+    update.value={{"context",{{"application",encode(options_.application)},{"account",encode(options_.account)},{"sessionId",state["sessionId"]}}},{"values",std::move(values)}};
+    if(!queue_->push(std::move(update)))return Status::error("ERR_EVENT_OVERFLOW","native snapshot queue is full or closed");
+    return {};
+  }
   void add_event(const std::string& on,const std::string& off,const std::string& event) {apis_[on]=event;if(!off.empty())apis_[off]=event;}
   std::weak_ptr<DeviceQueue> weak_queue() const {return queue_;}
   void done(const std::string& id,const std::string& api,Json value=Json::object()) {queue_complete(queue_,id,device_ok(api,std::move(value)));}

@@ -758,11 +758,20 @@ Status Session::host_services_command(const std::string& operation,const Value::
   static const std::set<std::string> allowed={"hostApiEvent","hostComponentEvent","hostComponents","hostComponentFrame","managedFileScope","authorizePhoneButton","acknowledgeAccountCleanup","prepareAccountHostServiceSnapshots","updateHostServiceSnapshots","switchAccount","queryAccountSwitch","updateAccountSwitchLaunch","retryAccountSwitch","cancelAccountSwitch","createHostBinary","readHostBinary","retainHostBinary","releaseHostBinary","completeHostCall","authorizeInstalledPack","migrateLegacyStorage","deleteAccountData"};
   if(!allowed.count(operation)) return Status::error("ERR_INVALID_ARGUMENT","unknown host services command");
   try {
+    if(operation=="updateHostServiceSnapshots" && payload.count("context")) {
+      Json negotiated;auto checked=core_->call("capabilities",Json::object(),&negotiated);if(!checked)return checked;
+      if(negotiated.value("hostServices",Json::object()).value("snapshotOwnerContext","")!="1.0")
+        return Status::error("ERR_UNSUPPORTED_CAPABILITY","runtime lacks native snapshot owner context 1.0");
+    }
     Json value;
     auto status=core_->call(operation.c_str(),detail::encode(payload),&value);
     if(status && result) *result=detail::decode(value);
-    if(status && operation=="prepareAccountHostServiceSnapshots") {
-      auto data=detail::encode(payload);if(data.contains("values"))core_->config.host_services["syncValues"]=detail::decode(data["values"]);
+    if(status && (operation=="prepareAccountHostServiceSnapshots" || operation=="updateHostServiceSnapshots")) {
+      auto data=detail::encode(payload),configured=detail::encode(core_->config.host_services);
+      if(data.contains("values")) {
+        auto snapshots=configured.value("syncValues",Json::object());snapshots.update(data["values"]);
+        core_->config.host_services["syncValues"]=detail::decode(snapshots);
+      }
     }
     return status;
   } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
@@ -871,6 +880,7 @@ Status Session::capabilities(Capabilities& c) {
   if (!s) return s;
   auto b = j.at("build");
   c.quickjs = b.value("quickjs", false);
+  c.snapshot_owner_context = j.value("hostServices",Json::object()).value("snapshotOwnerContext","")=="1.0";
   c.skia_cpu = b.value("skiaCpu", false);
   c.metal = b.value("metal", false);
   auto r = j.at("runtime");
