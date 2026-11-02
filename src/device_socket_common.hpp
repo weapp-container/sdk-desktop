@@ -246,7 +246,7 @@ class DeviceSockets : public DeviceBase {
     socket_runner_ = runner;
     for (auto api : {"wx.connectSocket", "object:SocketTask.send", "object:SocketTask.close"}) add(api);
     for (auto event : {"Open", "Message", "Error", "Close"})
-      add_event(std::string("object:SocketTask.on") + event, std::string("object:SocketTask.off") + event, event);
+      add_event(std::string("object:SocketTask.on") + event, "", event);
   }
   bool socket_call(const std::string& call, const std::string& api, const Json& payload) {
     if (!socket_runner_) return false;

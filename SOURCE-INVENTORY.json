@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "c37b2eb455f7d832cf941f6aafa3e3a4654cafa8",
-  "review": "Add bounded Windows WinHTTP and optional libcurl 8.16+ WSS SocketTask source routes, owner-thread lifecycle and protocol regressions, and installed dependency gates; local macOS archive plus fake-OS CTest and real libcurl header compilation are separate from pending Windows/Linux target and live TLS acceptance",
+  "sourceBaseCommit": "1bb81b5d404c7a7dab1598b38b917e77c2a51be3",
+  "review": "Match desktop SocketTask and macOS RecorderManager event registrations to the locked catalog; add actual C ABI configureHostServices acceptance/rejection and transaction-recovery regression alongside fake-OS lifecycle coverage",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -107,8 +107,8 @@
     },
     {
       "path": "docs/EMBEDDING.md",
-      "sha256": "04f2b6bc08a5135e9e935ff5ad38215c60cdbf918f56d7817ebb49021e202c31",
-      "size": 13785,
+      "sha256": "1c443a3109e1f3a721ce727cf1e908bf0187d3c3cf16d62892e367a7b791a54c",
+      "size": 14172,
       "mode": "100644"
     },
     {
@@ -173,8 +173,8 @@
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "4930cf14eac3bbd70d1832b2decf60705c53cd528e2978e9e48a933cac11f5c5",
-      "size": 32915,
+      "sha256": "e930b960de340ed0d87f2531b8522493e5f41cca23ab97740c7969d41f136312",
+      "size": 32931,
       "mode": "100644"
     },
     {
@@ -185,8 +185,8 @@
     },
     {
       "path": "src/device_apis_macos.mm",
-      "sha256": "cae8265be57ada1afc3507d573d72dd4fda7a9c70243d1f475ee870f1f80df4d",
-      "size": 87855,
+      "sha256": "842f22d2eac4b84e8ca42048d4c1af424cbaf6b8cb6ded244928f93a6a0b89e4",
+      "size": 87810,
       "mode": "100644"
     },
     {
@@ -197,8 +197,8 @@
     },
     {
       "path": "src/device_socket_common.hpp",
-      "sha256": "5f388f496e5cb4a88509135bf2c234110bd5934d1a056fd6af7c56e4386bccad",
-      "size": 15773,
+      "sha256": "3001184530ddcb843bf0ec3d36dcd48617d62f394a0f18495de688268ad9daf0",
+      "size": 15731,
       "mode": "100644"
     },
     {
@@ -275,8 +275,8 @@
     },
     {
       "path": "test/device_socket.cpp",
-      "sha256": "38b32276ac077f1cb6d2655d1292b4891ca2e1a82dbfaa4c5bbe04398484bd70",
-      "size": 6621,
+      "sha256": "99400f0f0fcd59d8bcccbe333e5eaf1b4e0e9feef499e8e89a697093f1cebd20",
+      "size": 8744,
       "mode": "100644"
     },
     {

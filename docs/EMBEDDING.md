@@ -208,6 +208,11 @@ checks strict inputs, fragments, binary bytes, quotas, terminal queue capacity
 and UTF-8 handling without linking a runtime or contacting a server.
 `weapp_device_socket_test` links the SDK and exercises its actual dispatcher,
 owner delivery, cancellation bounds and worker drain with a fake OS transport.
+It also submits the adapter's complete configuration to the actual runtime
+through `configureHostServices`, checks rejection of an API absent from the
+locked catalog, and checks that a rejected update preserves valid configuration.
+SocketTask and RecorderManager expose only catalogued `on` events; the runtime
+releases subscriptions through their lifecycle without invented `off` APIs.
 On UNIX with libcurl 8.16+, `weapp_curl_socket_compile` compiles the actual
 optional transport against real headers, and `weapp_curl_socket_headers_test`
 executes the bounded C callback with malformed and duplicate response headers.

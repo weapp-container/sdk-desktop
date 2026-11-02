@@ -42,10 +42,46 @@ class TestDevices : public DeviceSockets {
   void request_permission(const std::string&, std::function<void(bool)>) override {}
   bool platform_call(const std::string& call, const std::string& api, const Json& payload, const Json&) override { return socket_call(call, api, payload); }
 };
+class CoreSession {
+  weapp_container_sdk_session* session_ = nullptr;
+  static Json consume(weapp_container_sdk_buffer& buffer) {
+    auto result = Json::parse(buffer.data, buffer.data + buffer.len);
+    weapp_container_sdk_buffer_free(&buffer); return result;
+  }
+ public:
+  CoreSession() {
+    const std::string config = R"({"engine":"quickjs","gpuRequired":false})";
+    weapp_container_sdk_buffer buffer{};
+    auto code = weapp_container_sdk_session_new(reinterpret_cast<const uint8_t*>(config.data()), config.size(), &session_, &buffer);
+    auto result = consume(buffer);
+    if (code != WEAPP_CONTAINER_SDK_OK || !session_) throw std::runtime_error("core test session: " + result.dump());
+  }
+  ~CoreSession() {
+    if (session_) { weapp_container_sdk_buffer buffer{}; weapp_container_sdk_session_destroy(&session_, &buffer); weapp_container_sdk_buffer_free(&buffer); }
+  }
+  Json configure(const Json& config) {
+    const std::string operation = "configureHostServices", payload = config.dump();
+    weapp_container_sdk_buffer buffer{};
+    weapp_container_sdk_session_command(session_, reinterpret_cast<const uint8_t*>(operation.data()), operation.size(),
+        reinterpret_cast<const uint8_t*>(payload.data()), payload.size(), &buffer);
+    return consume(buffer);
+  }
+};
+void configure_actual_core_catalog(const TestDevices& devices, const Json& application, const Json& account) {
+  auto configuration = encode(devices.configuration());
+  configuration["application"] = application; configuration["account"] = account;
+  CoreSession core;
+  auto accepted = core.configure(configuration);
+  if (!accepted.value("ok", false)) throw std::runtime_error("native socket configuration rejected by core: " + accepted.dump());
+  auto unknown = configuration;
+  unknown["apis"].push_back("object:SocketTask.offOpen");
+  require(!core.configure(unknown).value("ok", false), "core accepted an API absent from its locked catalog");
+  require(core.configure(configuration).value("ok", false), "rejected catalog update corrupted the previous configuration");
+}
 void close_receipt_waits_for_worker_and_delivery_stays_on_owner() {
   control = std::make_shared<WorkerControl>();
   TestRoot fixture; const auto& root = fixture.path;
-  const Json app = {{"hostAppId", "host"}, {"tenantId", "tenant"}, {"publisherId", "publisher"}, {"appId", "socket"}, {"environment", "test"}, {"version", "1"}, {"packRoot", std::string(64, 'a')}};
+  const Json app = {{"hostAppId", "host"}, {"tenantId", "tenant"}, {"publisherId", "publisher"}, {"appId", "socket"}, {"environment", "develop"}, {"version", "1"}, {"packRoot", std::string(64, 'a')}};
   const Json account = {{"principalId", "alice"}, {"epoch", "1"}};
   auto object = [](const Json& json) { return std::get<Value::Object>(decode(json).data); };
   DeviceApiOptions options; options.application = object(app); options.account = object(account); options.allowed_network_origins = {"https://example.com"};
@@ -63,6 +99,7 @@ void close_receipt_waits_for_worker_and_delivery_stays_on_owner() {
       return Status{};
     });
     struct Release { ~Release() { control->release = true; } } release_on_failure;
+    configure_actual_core_catalog(devices, app, account);
     auto call = [&](const char* id, const char* api, Json payload) {
       return devices.dispatch({EventType::HostCall, object(Json{{"callId", id}, {"method", api}, {"payload", payload}, {"context", {{"application", app}, {"account", account}, {"sessionId", "session"}, {"callId", id}, {"api", api}}}})});
     };

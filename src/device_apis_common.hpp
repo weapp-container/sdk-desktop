@@ -209,7 +209,7 @@ class DeviceBase : public DeviceApis {
   }
   void add(const std::string& api) {apis_[api]=true;}
   void snapshot(const std::string& api,Json value) {add(api);snapshots_[api]=std::move(value);}
-  void add_event(const std::string& on,const std::string& off,const std::string& event) {apis_[on]=event;apis_[off]=event;}
+  void add_event(const std::string& on,const std::string& off,const std::string& event) {apis_[on]=event;if(!off.empty())apis_[off]=event;}
   std::weak_ptr<DeviceQueue> weak_queue() const {return queue_;}
   void done(const std::string& id,const std::string& api,Json value=Json::object()) {queue_complete(queue_,id,device_ok(api,std::move(value)));}
   void fail(const std::string& id,const std::string& api,const std::string& message,const std::string& code="invalid_request",int64_t native=0) {queue_failure(queue_,id,device_failure(api,message,code,native));}
