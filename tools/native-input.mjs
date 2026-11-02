@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 
-export const SDK_VERSION = '0.1.0-preview.5.7';
+export const SDK_VERSION = '0.1.0-preview.6.0';
 export const HEADER_SHA256 = '2a4761c0650c72ccd8d0a791fb66ee48888e1ce182ba99f0c92673a2c44a8e9b';
 export const sha256 = path => createHash('sha256').update(readFileSync(path)).digest('hex');
 

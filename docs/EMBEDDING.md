@@ -100,3 +100,61 @@ The internal codec is nlohmann/json 3.11.3 (MIT), vendored from its upstream tag
 single header. Its license ships with the installation. Native distribution
 license inventory is copied by the packager when present; release packaging must
 retain the full third-party inventory produced by `the private runtime distribution`.
+
+
+## Native device services
+
+C++ hosts opt in before session creation with `Config.native_device_apis =
+std::make_shared<DeviceApiOptions>()` from `weapp/device_apis.hpp`. Configure
+`allowed_network_origins` with exact HTTPS origins; an empty list denies native
+network access. `private_root` selects the SDK's durable managed file store.
+The core supplies the application/account lease and real native directory;
+guest modules see only the protected `wx.env.USER_DATA_PATH` value
+`wxfile://user`. Do not supply a filesystem root from guest options.
+
+The SDK installs platform handlers before module evaluation and handles their
+completions on the creating UI thread. The reusable `DeviceApis` interface also
+supports a borrowed native session (for example Flutter): its command callback
+must use that session, its platform view must supply `set_native_parent`, and
+its owner loop must call `pump`, `update_components`, `set_foreground` and
+`retire`. It must not create a second session for device operations.
+
+Managed synchronous filesystem calls perform real disk operations inside the
+current JavaScript turn. Asynchronous filesystem operations and native media
+publication use the same scope lock, quotas and atomic replacement. Individual
+binary/read/write chunks are limited to one MiB, the managed scope to 32 MiB,
+and directory enumeration to 4096 entries. Saved settings and permission
+consent live in the core's private auxiliary directory. Account changes retire
+native resources before the core acknowledges cleanup and releases its file
+lease. Native callbacks cannot publish files after that acknowledgement.
+
+On macOS the driver uses NSURLSession HTTPS/WSS, AppKit dialogs/clipboard,
+CoreLocation, CoreWLAN, CoreBluetooth central/GATT, AVFoundation audio/camera,
+Contacts and EventKit. The containing app must declare camera, microphone,
+location, Bluetooth, contacts and calendar usage descriptions for the services
+it enables, plus normal sandbox/network/device entitlements when sandboxed.
+Recording requires explicit AAC or WAV; encoded frame callbacks are currently
+unavailable. Native video/audio sources must be managed files, downloaded
+through the trusted networking policy first. Camera/video pixels enter the
+normal Skia paint order with clipping and transforms. No child overlay view
+bypasses composition. Application permission denials persist until the user
+resets them in application settings; reset stops sensitive active resources.
+Biometric support/enrollment detection is native, while SOTER signature
+production remains unsupported because LocalAuthentication cannot produce a
+WeChat SOTER proof.
+
+Windows uses WinHTTP, system clipboard/dialogs/power information, native WLAN
+scan/connection notifications and system settings/map handlers. Wi-Fi connection
+supports open or WPA2 personal networks with a temporary profile; accepted OS
+connection attempts may finish after cancellation, while their canceled guest
+continuations remain retired. Linux uses GTK/GIO, optional libcurl 7.85+,
+NetworkManager Wi-Fi discovery/current access points, the freedesktop screen
+inhibitor and sysfs backlight control. Linux services may reject unavailable
+hardware, missing daemons or insufficient OS permissions. NetworkManager lists
+its observed access-point cache after requesting a scan. Other desktop device
+families remain unsupported unless a host adds its own registered handlers.
+
+The macOS source has a local CMake archive-build check. This is not camera,
+Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
+Windows/Linux target builds and physical device verification remain separate
+requirements; available source routes do not establish OS parity.

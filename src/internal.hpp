@@ -5,6 +5,7 @@
 
 #include "nlohmann/json.hpp"
 #include "weapp/desktop.hpp"
+#include "weapp/device_apis.hpp"
 #include "weapp_container_sdk.h"
 
 namespace weapp::desktop::detail {
@@ -31,9 +32,11 @@ struct Core {
   std::function<void(const Status&)> error_sink;
   std::unique_ptr<Loop> loop;
   Presenter* presenter = nullptr;
+  std::unique_ptr<DeviceApis> devices;
   State state;
   bool requested_foreground = true, surface_visible = true, delivering = false;
   bool presentation_required = false;
+  bool presentation_enabled = false;
   bool input_enabled = false;
   std::set<std::string> methods;
   std::function<void(const Event&)> listener;
@@ -47,6 +50,8 @@ struct Core {
   ~Core();
   Status check() const;
   Status create_native();
+  Status prepare_devices();
+  Status update_device_components();
   Status call(const char*, const Json& = Json::object(), Json* = nullptr);
   Status read_state();
   Status acknowledge_presentation(uint64_t generation, uint64_t revision);

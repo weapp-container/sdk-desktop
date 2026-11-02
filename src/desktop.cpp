@@ -62,6 +62,8 @@ Status Buffer::read(int32_t rc, Json* out) {
 Core::~Core() {
   if (owner != std::this_thread::get_id()) std::terminate();
   loop.reset();
+  if (devices) report(devices->retire());
+  devices.reset();
   if (handle && owns_handle) {
     Buffer b;
     b.read(weapp_container_sdk_session_destroy(&handle, &b.value));
@@ -86,9 +88,44 @@ static Json display(const Metrics& m) {
           {"deviceOrientation",
            m.screen_width >= m.screen_height ? "landscape" : "portrait"}};
 }
+Status Core::prepare_devices() {
+  if(devices || !config.native_device_apis) return {};
+  try {
+    auto trusted=encode(config.host_services);
+    if(!trusted.contains("application")||!trusted.contains("account"))
+      return Status::error("ERR_HOST_SERVICES","native devices require trusted application and account configuration");
+    auto options=*config.native_device_apis;
+    options.application=std::get<Value::Object>(decode(trusted.at("application")).data);
+    options.account=std::get<Value::Object>(decode(trusted.at("account")).data);
+    if(options.private_root.empty()) options.private_root=config.storage_root;
+    if(presenter) options.native_parent=presenter->native_handle();
+    Status status;
+    auto driver=DeviceApis::create(options,[this](const std::string& operation,const Value::Object& payload,Value* result){
+      Json value;auto status=call(operation.c_str(),encode(payload),result?&value:nullptr);
+      if(status&&result)*result=decode(value);return status;
+    },status);
+    if(!status||!driver) return status ? Status::error("ERR_NATIVE_DEVICES","native device driver was not created") : status;
+    auto native=encode(driver->configuration());
+    if(!trusted.contains("apis")) trusted["apis"]=Json::array();
+    for(const auto& api:native.at("apis")) if(std::find(trusted["apis"].begin(),trusted["apis"].end(),api)==trusted["apis"].end()) trusted["apis"].push_back(api);
+    if(!trusted.contains("syncValues"))trusted["syncValues"]=Json::object();
+    for(auto item=native["syncValues"].begin();item!=native["syncValues"].end();++item)trusted["syncValues"][item.key()]=item.value();
+    config.host_services=std::get<Value::Object>(decode(trusted).data);
+    if(handle && state.status==SessionState::Empty) {
+      auto configured=call("configureHostServices",trusted);if(!configured)return configured;
+    }
+    devices=std::move(driver);return {};
+  }catch(const std::exception& error){return Status::error("ERR_NATIVE_DEVICES",error.what());}
+}
+Status Core::update_device_components() {
+  if(!devices||!handle)return {};
+  Json nodes;if(auto status=call("hostComponents",Json::object(),&nodes);!status)return status;
+  if(!nodes.is_array())return Status::error("ERR_ABI","hostComponents did not return an array");
+  return devices->update_components(std::get<Value::Array>(decode(nodes).data));
+}
 Status Core::create_native() {
   if (auto s = check(); !s) return s;
-  if (handle) return {};
+  if (handle) return prepare_devices();
   if (state.status == SessionState::Closed)
     return Status::error("ERR_CLOSED", "session is closed");
   auto& m = config.metrics;
@@ -109,6 +146,11 @@ Status Core::create_native() {
   // macOS keeps its historical Metal default unless GPU is required explicitly.
   if (config.require_gpu || std::string(platform_name()) != "macos")
     j["gpuRequired"] = config.require_gpu;
+  if (!config.host_services.empty()) j["hostServices"] = encode(config.host_services);
+  if(config.native_device_apis) {
+    auto root=config.native_device_apis->private_root.empty()?config.storage_root:config.native_device_apis->private_root;
+    if(!root.empty())j["managedFilesRoot"]=root;
+  }
   if (!config.session_id.empty()) j["sessionId"] = config.session_id;
   if (!config.storage_key.empty() || !config.storage_root.empty()) {
     j["storageKey"] = config.storage_key;
@@ -120,6 +162,7 @@ Status Core::create_native() {
       reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), &handle,
       &b.value));
   if (!s) return s;
+  if(auto status=prepare_devices();!status)return status;
   for (const auto& name : methods)
     if (auto e = call("registerHostMethod", {{"name", name}}); !e) return e;
   return {};
@@ -143,15 +186,22 @@ Status Core::call(const char* op, const Json& payload, Json* result) {
       state.status = status == "closed"    ? SessionState::Closed
                      : status == "closing" ? SessionState::Closing
                      : status == "ready"   ? SessionState::Ready
+                     : status == "identitySwitching" ? SessionState::IdentitySwitching
                                            : SessionState::Empty;
       state.revision = value.value("frameRevision", uint64_t(0));
       state.generation = value.value("generation", uint64_t(0));
       presentation_required = value.value("presentationRequired", false);
+      presentation_enabled = value.value("presentationEnabled", false);
       input_enabled = value.value("inputEnabled", false);
       state.foreground = value.value("foreground", false);
       state.route = value.contains("page") && value["page"].is_object()
                         ? value["page"].value("route", "")
                         : "";
+    }
+    if(value.is_object()&&value.contains("hostServicesState")&&value["hostServicesState"].is_object()) {
+      auto trusted=value["hostServicesState"];
+      if(trusted.contains("application"))config.host_services["application"]=decode(trusted["application"]);
+      if(trusted.contains("account"))config.host_services["account"]=decode(trusted["account"]);
     }
     if (result) *result = std::move(value);
     return {};
@@ -184,6 +234,7 @@ static EventType event_type(const std::string& t) {
       {"message", EventType::Message},
       {"hostCall", EventType::HostCall},
       {"hostCallCancelled", EventType::HostCallCancelled},
+      {"accountSwitch", EventType::AccountSwitch},
       {"error", EventType::Error},
       {"storageFlushed", EventType::StorageFlushed},
       {"closed", EventType::Closed}};
@@ -200,10 +251,37 @@ Status Core::drain() {
     auto s = call("takeEvents", Json::object(), &a);
     if (!s) return s;
     for (auto& j : a) {
+      if (j.value("type", "") == "accountSwitch") {
+        if (j.contains("account") && j["account"].is_object())
+          config.host_services["account"] = decode(j["account"]);
+        if(j.contains("syncValues")&&j["syncValues"].is_object())
+          config.host_services["syncValues"]=decode(j["syncValues"]);
+        auto phase = j.value("receipt",Json::object()).value("phase","");
+        if (phase == "revoking") {input_enabled=false;touches.clear();}
+        if (phase == "stoppingResources") {
+          input_enabled=false;touches.clear();
+          Status cleanup;
+          if(devices) cleanup=devices->retire();
+          if(cleanup && presenter) cleanup=presenter->detach();
+          if(cleanup) {
+            devices.reset();
+            cleanup=call("acknowledgeAccountCleanup",{{"operationId",j.at("receipt").at("operationId")}});
+          }
+          if(!cleanup) report(cleanup);
+        } else if (phase == "awaitingPresentation") {
+          auto status=prepare_devices();
+          if(status && presenter)status=presenter->attach();
+          if(!status)report(status);
+        }
+      }
       Event e;
       e.type = event_type(j.value("type", ""));
       j.erase("type");
       e.fields = std::get<Value::Object>(decode(j).data);
+      if(devices && (e.type==EventType::HostCall || e.type==EventType::HostCallCancelled)) {
+        try {if(devices->dispatch(e))continue;}
+        catch(const std::exception& error){report(Status::error("ERR_NATIVE_DEVICES",error.what()));}
+      }
       events.push_back(std::move(e));
     }
   }
@@ -227,6 +305,7 @@ Status Core::foreground() {
   if (!owns_handle) return {};
   if (state.status != SessionState::Ready) return {};
   bool visible = requested_foreground && surface_visible;
+  if(devices){auto status=devices->set_foreground(visible);if(!status)return status;}
   if (visible == state.foreground) return {};
   if (!visible) cancel_touches();
   return call("lifecycle", {{"event", visible ? "show" : "hide"}});
@@ -455,6 +534,8 @@ Status Session::load(const std::string& path, const LoadOptions& options) {
     auto result = core_->call("load", payload);
     core_->read_state();
     if (core_->state.status == SessionState::Ready) {
+      if(core_->devices){auto cleanup=core_->devices->retire();if(!cleanup)return cleanup;core_->devices.reset();}
+      if(auto native=core_->prepare_devices();!native)return native;
       auto visibility = core_->foreground();
       if (!visibility && result) result = visibility;
       if (core_->presenter) {
@@ -506,6 +587,43 @@ Status Session::register_host_method(const std::string& name) {
   core_->methods.insert(name);
   return {};
 }
+Status Session::configure_host_services(const Value::Object& configuration) {
+  if (auto s=core_->check();!s) return s;
+  if (core_->state.status!=SessionState::Empty) return Status::error("ERR_INVALID_ARGUMENT","configure host services before load");
+  try {
+    if (core_->handle) {
+      Json capabilities;
+      if (auto s=core_->call("capabilities",Json::object(),&capabilities);!s) return s;
+      if (capabilities.value("hostServices",Json::object()).value("protocolVersion","")!="1.0") return Status::error("ERR_PROTOCOL_VERSION","runtime lacks host services protocol 1.0");
+      if (auto s=core_->call("configureHostServices",detail::encode(configuration));!s) return s;
+    }
+    core_->config.host_services=configuration;
+    return {};
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
+Status Session::register_api_handler(const std::string& name) {
+  if (auto s=core_->check();!s) return s;
+  if(core_->state.status!=SessionState::Empty || core_->config.host_services.empty()) return Status::error("ERR_INVALID_ARGUMENT","configure trusted host services before registering APIs and loading");
+  try {
+    auto config=detail::encode(core_->config.host_services);
+    if(!config.contains("apis")) config["apis"]=Json::array();
+    if(std::find(config["apis"].begin(),config["apis"].end(),Json(name))==config["apis"].end()) config["apis"].push_back(name);
+    return configure_host_services(std::get<Value::Object>(detail::decode(config).data));
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
+Status Session::host_services_command(const std::string& operation,const Value::Object& payload,Value* result) {
+  static const std::set<std::string> allowed={"hostApiEvent","hostComponentEvent","hostComponents","hostComponentFrame","managedFileScope","authorizePhoneButton","acknowledgeAccountCleanup","prepareAccountHostServiceSnapshots","updateHostServiceSnapshots","switchAccount","queryAccountSwitch","updateAccountSwitchLaunch","retryAccountSwitch","cancelAccountSwitch","createHostBinary","readHostBinary","retainHostBinary","releaseHostBinary","completeHostCall","authorizeInstalledPack","migrateLegacyStorage","deleteAccountData"};
+  if(!allowed.count(operation)) return Status::error("ERR_INVALID_ARGUMENT","unknown host services command");
+  try {
+    Json value;
+    auto status=core_->call(operation.c_str(),detail::encode(payload),&value);
+    if(status && result) *result=detail::decode(value);
+    if(status && operation=="prepareAccountHostServiceSnapshots") {
+      auto data=detail::encode(payload);if(data.contains("values"))core_->config.host_services["syncValues"]=detail::decode(data["values"]);
+    }
+    return status;
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
 Status Session::complete_host_call(const std::string& id, const Value& result) {
   try {
     return core_->call("completeHostCall",
@@ -529,6 +647,7 @@ Status Session::flush_storage() { return core_->call("flushStorage"); }
 Status Session::close() {
   if (auto s = core_->check(); !s) return s;
   if (core_->state.status == SessionState::Closed) return {};
+  if(core_->devices) {auto status=core_->devices->retire();if(!status)return status;core_->devices.reset();}
   if (core_->presenter) {
     auto detached = core_->presenter->detach();
     if (!detached) return detached;
@@ -548,16 +667,23 @@ Status Session::pump() {
   if (auto s = core_->check(); !s) return s;
   if (core_->presenter) core_->presenter->refresh();
   Status s;
+  if(core_->handle)s=core_->read_state();
+  if(core_->devices && core_->state.status==SessionState::Ready) {auto native=core_->devices->pump();if(!native&&s)s=native;}
   if (core_->handle) {
-    s = core_->call("pump");
+    auto status=core_->call("pump");if(!status&&s)s=status;
     core_->read_state();
   }
-  if (core_->presenter && core_->state.status == SessionState::Ready &&
+  if (core_->presenter && core_->presentation_enabled &&
+      (core_->state.status == SessionState::Ready || core_->state.status == SessionState::IdentitySwitching) &&
       core_->state.foreground) {
     auto draw = core_->presenter->present();
     if (!draw && s) s = draw;
   }
   auto events = core_->drain();
+  if(core_->devices) {
+    auto status=core_->update_device_components();if(!status&&s)s=status;
+    if(core_->state.status==SessionState::Ready){status=core_->devices->pump();if(!status&&s)s=status;}
+  }
   return !s ? s : events;
 }
 Status Session::snapshot(Frame& out) {
@@ -637,6 +763,7 @@ std::unique_ptr<View> View::create(std::shared_ptr<Session> s, void* parent,
   auto p = detail::create_presenter(c);
   c.presenter = p.get();
   status = p->initialize(parent, bounds);
+  if(status && c.devices)status=c.devices->set_native_parent(p->native_handle());
   if (status && c.state.status == SessionState::Ready) status = p->attach();
   if (!status) {
     c.report(p->detach());
@@ -647,6 +774,7 @@ std::unique_ptr<View> View::create(std::shared_ptr<Session> s, void* parent,
 }
 View::~View() {
   if (auto s = session_->core_->check(); !s) std::terminate();
+  if(session_->core_->devices)session_->core_->report(session_->core_->devices->set_native_parent(nullptr));
   session_->core_->report(presenter_->detach());
   session_->core_->presenter = nullptr;
   presenter_.reset();
