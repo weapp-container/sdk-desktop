@@ -208,3 +208,7 @@ Old-size observations during staging cannot resize the new session backwards.
 The native wrapper's transform-only `prepareHostChrome` must use the Flutter-root
 to-screen transform, rather than aligning the prospective rectangle to the old
 content view origin; preparing it never mutates the accepted runtime.
+
+## Account cleanup and C ABI
+
+Account revocation starts native cleanup at the `revoking` event. The optional pre-load account cleanup handler returns a shared task; only the UI-thread pump applies operation-bound snapshots and acknowledges cleanup. Pending or failed cleanup keeps identity input blocked; explicit retry never restores the old owner. See [ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md). The C API appends identity-switching/account-switch values and explicitly maps C++ enums, preserving every original numeric value and the original configuration layout.

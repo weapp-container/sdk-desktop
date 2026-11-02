@@ -10,6 +10,7 @@ typedef struct weapp_desktop_session weapp_desktop_session;
 typedef struct weapp_desktop_view weapp_desktop_view;
 typedef struct weapp_desktop_value weapp_desktop_value;
 typedef struct weapp_desktop_frame weapp_desktop_frame;
+typedef struct weapp_desktop_account_cleanup weapp_desktop_account_cleanup;
 typedef struct {
   char code[64];
   char message[1024];
@@ -31,7 +32,9 @@ typedef enum {
   WEAPP_DESKTOP_EMPTY,
   WEAPP_DESKTOP_READY,
   WEAPP_DESKTOP_CLOSING,
-  WEAPP_DESKTOP_CLOSED
+  WEAPP_DESKTOP_CLOSED,
+  // Appended: the numeric values of the original states remain ABI stable.
+  WEAPP_DESKTOP_IDENTITY_SWITCHING
 } weapp_desktop_state_kind;
 typedef struct {
   weapp_desktop_state_kind status;
@@ -49,7 +52,8 @@ typedef enum {
   WEAPP_DESKTOP_EVENT_ERROR,
   WEAPP_DESKTOP_EVENT_STORAGE_FLUSHED,
   WEAPP_DESKTOP_EVENT_CLOSED,
-  WEAPP_DESKTOP_EVENT_UNKNOWN
+  WEAPP_DESKTOP_EVENT_UNKNOWN,
+  WEAPP_DESKTOP_EVENT_ACCOUNT_SWITCH
 } weapp_desktop_event_type;
 // Event fields are a borrowed typed object valid only during the callback.
 // Clone if retaining. Callbacks run on the creating UI thread, outside runtime
@@ -115,6 +119,33 @@ int weapp_desktop_session_send_message(weapp_desktop_session*,
 int weapp_desktop_session_register_host_method(weapp_desktop_session*,
                                                const char*,
                                                weapp_desktop_error*);
+// Host capability configuration and registration must precede load. Values
+// retain the same typed-tree ownership rules as the original C surface.
+int weapp_desktop_session_configure_host_services(weapp_desktop_session*,
+                                                  const weapp_desktop_value*,
+                                                  weapp_desktop_error*);
+int weapp_desktop_session_register_api_handler(weapp_desktop_session*,
+                                               const char*,
+                                               weapp_desktop_error*);
+int weapp_desktop_session_host_services_command(
+    weapp_desktop_session*, const char* operation,
+    const weapp_desktop_value* payload, weapp_desktop_value** result,
+    weapp_desktop_error*);
+// Fields are borrowed during the callback. The callback owns completion and
+// must settle it exactly once, even on cancellation. Settlement may occur on
+// another thread; it only fulfills a task which the UI-thread pump consumes.
+typedef void (*weapp_desktop_account_cleanup_callback)(
+    void*, const char* operation_id, const weapp_desktop_value* application,
+    const weapp_desktop_value* account,
+    weapp_desktop_account_cleanup* completion);
+int weapp_desktop_session_set_account_cleanup_handler(
+    weapp_desktop_session*, weapp_desktop_account_cleanup_callback, void*,
+    weapp_desktop_error*);
+int weapp_desktop_account_cleanup_complete(
+    weapp_desktop_account_cleanup**, const weapp_desktop_value* sync_values,
+    const char* error_code, const char* error_message, weapp_desktop_error*);
+int weapp_desktop_session_retry_account_cleanup(weapp_desktop_session*,
+                                                weapp_desktop_error*);
 int weapp_desktop_session_complete_host_call(weapp_desktop_session*,
                                              const char* call_id,
                                              const weapp_desktop_value*,

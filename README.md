@@ -102,7 +102,7 @@ After reviewing an update, stage all intended new source files, refresh explicit
 
 ```sh
 git add <reviewed-files>
-node tools/source-inventory.mjs --write --version 0.1.0-preview.5.3 --reason "Describe the reviewed changes"
+node tools/source-inventory.mjs --write --version 0.1.0-preview.6.0 --reason "Describe the reviewed changes"
 git add SOURCE-INVENTORY.json
 node tools/check-origin.mjs
 npm test
@@ -110,6 +110,8 @@ npm test
 
 Commit source and inventory together before building distributable packages. `sourceBaseCommit` identifies the checkout used to prepare the source review; it does not bind subsequent build evidence to that earlier commit. Never rewrite historical receipts or fabricate runtime archive lock hashes to make this check pass.
 
-## preview.5.3 source status
+## Historical preview.5.3 source status
 
-Current wrapper metadata, native-input checks and consumer tools require preview.5.3, and the default lock now selects the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution remain blocked; all prior release bytes and evidence retain their original source identities.
+At preview.5.3, wrapper metadata, native-input checks and consumer tools required preview.5.3, and the default lock selected the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution were blocked in that record; all prior release bytes and evidence retain their original source identities.
+
+账号切换的异步清理、身份快照、C ABI 兼容与验收范围见 [ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md)。

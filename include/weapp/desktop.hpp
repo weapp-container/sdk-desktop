@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <string>
@@ -35,6 +36,20 @@ struct Status {
     return {std::move(code), std::move(message)};
   }
 };
+struct AccountCleanupContext {
+  std::string operation_id;
+  Value::Object application, account;
+};
+struct AccountCleanupResult {
+  Status status;
+  // Prepared under this cleanup operation, before replacement JS starts.
+  Value::Object sync_values;
+};
+// Called once on the creating UI thread after native devices and GPU work
+// drain. The task may finish elsewhere; only pump() applies its result.
+using AccountCleanupHandler =
+    std::function<std::shared_future<AccountCleanupResult>(
+        const AccountCleanupContext&)>;
 struct Metrics {
   uint32_t width = 0, height = 0;
   double pixel_ratio = 1;
@@ -143,6 +158,8 @@ class Session final : public std::enable_shared_from_this<Session> {
   Status register_host_method(const std::string&);
   Status configure_host_services(const Value::Object&);
   Status register_api_handler(const std::string&);
+  Status set_account_cleanup_handler(AccountCleanupHandler);
+  Status retry_account_cleanup();
   Status host_services_command(const std::string& operation, const Value::Object&, Value* result = nullptr);
   Status complete_host_call(const std::string& call_id, const Value&);
   Status fail_host_call(const std::string& call_id, const std::string& message);

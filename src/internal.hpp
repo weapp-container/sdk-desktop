@@ -43,6 +43,16 @@ struct Core {
   std::vector<Event> pending;
   std::string account_cleanup_operation;
   Status account_cleanup_last_error;
+  AccountCleanupHandler account_cleanup_handler;
+  AccountCleanupContext account_cleanup_context;
+  Value::Object account_cleanup_snapshots;
+  std::shared_future<AccountCleanupResult> account_cleanup_future;
+  std::string account_cleanup_future_operation;
+  bool account_cleanup_native_done = false;
+  bool account_cleanup_hook_done = false;
+  bool account_cleanup_failed = false;
+  bool account_cleanup_retry_on_close = false;
+  bool close_requested = false;
   struct Touch {
     double x, y, start_x, start_y;
     std::chrono::steady_clock::time_point start;

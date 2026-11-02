@@ -205,25 +205,118 @@ static EventType event_type(const std::string& t) {
   return i == types.end() ? EventType::Unknown : i->second;
 }
 void Core::retry_account_cleanup() {
-  if(account_cleanup_operation.empty())return;
+  if (account_cleanup_operation.empty() && !account_cleanup_future.valid())
+    return;
   Status cleanup;
-  if(devices)cleanup=devices->retire();
-  if(cleanup&&presenter)cleanup=presenter->detach();
-  if(cleanup){
-    devices.reset();
-    cleanup=call("acknowledgeAccountCleanup",{{"operationId",account_cleanup_operation}});
-    if(cleanup){account_cleanup_operation.clear();account_cleanup_last_error={};return;}
+  if (account_cleanup_future.valid()) {
+    const auto progress =
+        account_cleanup_future.wait_for(std::chrono::seconds(0));
+    if (progress == std::future_status::timeout) return;
+    const auto operation = account_cleanup_future_operation;
+    AccountCleanupResult result;
+    try {
+      if (progress == std::future_status::deferred)
+        result.status = Status::error(
+            "ERR_ACCOUNT_CLEANUP",
+            "deferred cleanup tasks cannot execute on the UI thread");
+      else
+        result = account_cleanup_future.get();
+    } catch (const std::exception& error) {
+      result.status = Status::error("ERR_ACCOUNT_CLEANUP", error.what());
+    } catch (...) {
+      result.status =
+          Status::error("ERR_ACCOUNT_CLEANUP", "account cleanup task failed");
+    }
+    account_cleanup_future = {};
+    account_cleanup_future_operation.clear();
+    // An obsolete task must finish before its successor may start, but its
+    // snapshots and errors cannot authorize or fail the successor's owner.
+    if (operation == account_cleanup_operation || close_requested) {
+      cleanup = result.status;
+      if (cleanup && !close_requested && !result.sync_values.empty()) {
+        cleanup = call("prepareAccountHostServiceSnapshots",
+                       {{"operationId", operation},
+                        {"values", encode(result.sync_values)}});
+        if (cleanup) {
+          // Bind replay to the runtime's sanitized baseline for this operation.
+          auto values = encode(account_cleanup_snapshots);
+          const auto prepared = encode(result.sync_values);
+          for (auto item = prepared.begin(); item != prepared.end(); ++item)
+            values[item.key()] = item.value();
+          account_cleanup_snapshots =
+              std::get<Value::Object>(decode(values).data);
+          config.host_services["syncValues"] = decode(values);
+        }
+      }
+      if (cleanup)
+        account_cleanup_hook_done = true;
+      else
+        account_cleanup_failed = true;
+    }
   }
-  // A pending drain is normal progress. Report persistent failures only when
-  // their diagnostic changes; each owner-loop turn still retries the resource.
-  if(cleanup.code!="ERR_RESOURCE_CLEANUP_PENDING"&&
-      (cleanup.code!=account_cleanup_last_error.code||cleanup.message!=account_cleanup_last_error.message))report(cleanup);
-  account_cleanup_last_error=cleanup;
+  if (account_cleanup_failed) {
+    if (!cleanup) {
+      report(cleanup);
+      account_cleanup_last_error = cleanup;
+    }
+    return;
+  }
+  if (account_cleanup_operation.empty() ||
+      (close_requested && !account_cleanup_retry_on_close))
+    return;
+  if (cleanup && !account_cleanup_native_done) {
+    if (devices) cleanup = devices->retire();
+    if (cleanup && presenter) cleanup = presenter->detach();
+    if (cleanup) {
+      devices.reset();
+      account_cleanup_native_done = true;
+    }
+  }
+  if (cleanup && !account_cleanup_hook_done) {
+    if (!account_cleanup_handler)
+      account_cleanup_hook_done = true;
+    else {
+      try {
+        account_cleanup_future =
+            account_cleanup_handler(account_cleanup_context);
+        if (!account_cleanup_future.valid())
+          cleanup = Status::error(
+              "ERR_ACCOUNT_CLEANUP",
+              "account cleanup handler returned no terminal task");
+        else
+          account_cleanup_future_operation = account_cleanup_operation;
+      } catch (const std::exception& error) {
+        cleanup = Status::error("ERR_ACCOUNT_CLEANUP", error.what());
+      } catch (...) {
+        cleanup = Status::error("ERR_ACCOUNT_CLEANUP",
+                                "account cleanup handler threw");
+      }
+      if (!cleanup)
+        account_cleanup_failed = true;
+      else
+        return;
+    }
+  }
+  if (cleanup && account_cleanup_hook_done && !close_requested) {
+    cleanup = call("acknowledgeAccountCleanup",
+                   {{"operationId", account_cleanup_operation}});
+    if (cleanup) {
+      account_cleanup_operation.clear();
+      account_cleanup_last_error = {};
+      return;
+    }
+  }
+  // A pending native drain is progress. Real failures stay visible without
+  // repeating an identical diagnostic every owner-loop turn.
+  if (cleanup.code != "ERR_RESOURCE_CLEANUP_PENDING" &&
+      (cleanup.code != account_cleanup_last_error.code ||
+       cleanup.message != account_cleanup_last_error.message))
+    report(cleanup);
+  account_cleanup_last_error = cleanup;
 }
 Status Core::drain() {
   if (delivering)
     return {};  // nested host event loops cannot recursively drain callbacks
-  retry_account_cleanup();
   std::vector<Event> events;
   events.swap(pending);
   if (handle) {
@@ -234,15 +327,31 @@ Status Core::drain() {
       if (j.value("type", "") == "accountSwitch") {
         if (j.contains("account") && j["account"].is_object())
           config.host_services["account"] = decode(j["account"]);
-        if(j.contains("syncValues")&&j["syncValues"].is_object())
-          config.host_services["syncValues"]=decode(j["syncValues"]);
-        auto phase = j.value("receipt",Json::object()).value("phase","");
-        if (phase == "revoking") {input_enabled=false;touches.clear();}
-        if (phase == "stoppingResources") {
-          input_enabled=false;touches.clear();
-          account_cleanup_operation=j.at("receipt").at("operationId").get<std::string>();
-          retry_account_cleanup();
-        } else if (phase == "awaitingPresentation") {
+        if (j.contains("syncValues") && j["syncValues"].is_object())
+          config.host_services["syncValues"] = decode(j["syncValues"]);
+        auto phase = j.value("receipt", Json::object()).value("phase", "");
+        if (phase == "revoking") {
+          input_enabled = false;
+          touches.clear();
+          account_cleanup_operation =
+              j.at("receipt").at("operationId").get<std::string>();
+          account_cleanup_context = {
+              account_cleanup_operation,
+              std::get<Value::Object>(
+                  config.host_services.at("application").data),
+              std::get<Value::Object>(config.host_services.at("account").data)};
+          // Replace the whole cache with the runtime's sanitized baseline.
+          // Missing metadata fails closed instead of retaining old snapshots.
+          account_cleanup_snapshots =
+              j.contains("syncValues") && j["syncValues"].is_object()
+                  ? std::get<Value::Object>(decode(j["syncValues"]).data)
+                  : Value::Object{};
+          config.host_services["syncValues"] = account_cleanup_snapshots;
+          account_cleanup_native_done = false;
+          account_cleanup_hook_done = false;
+          account_cleanup_failed = false;
+          account_cleanup_last_error = {};
+        } else if (phase == "awaitingPresentation" && !close_requested) {
           auto status=prepare_devices();
           if(status && presenter)status=presenter->attach();
           if(!status)report(status);
@@ -259,6 +368,9 @@ Status Core::drain() {
       events.push_back(std::move(e));
     }
   }
+  // Observe the newest revocation before accepting an asynchronous cleanup
+  // completion. The Rust operation check is still the final authority.
+  retry_account_cleanup();
   delivering = true;
   for (const auto& e : events) {
     auto callback = listener;
@@ -585,6 +697,28 @@ Status Session::register_api_handler(const std::string& name) {
     return configure_host_services(std::get<Value::Object>(detail::decode(config).data));
   } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
 }
+Status Session::set_account_cleanup_handler(AccountCleanupHandler handler) {
+  if (auto status = core_->check(); !status) return status;
+  if (core_->state.status != SessionState::Empty ||
+      !core_->account_cleanup_operation.empty())
+    return Status::error("ERR_INVALID_ARGUMENT",
+                         "register account cleanup before load");
+  core_->account_cleanup_handler = std::move(handler);
+  return {};
+}
+Status Session::retry_account_cleanup() {
+  if (auto status = core_->check(); !status) return status;
+  if (!core_->account_cleanup_failed)
+    return Status::error("ERR_INVALID_ARGUMENT",
+                         "no failed account cleanup to retry");
+  core_->account_cleanup_failed = false;
+  core_->account_cleanup_last_error = {};
+  core_->account_cleanup_retry_on_close = true;
+  core_->retry_account_cleanup();
+  core_->account_cleanup_retry_on_close = false;
+  return core_->account_cleanup_failed ? core_->account_cleanup_last_error
+                                       : Status{};
+}
 Status Session::host_services_command(const std::string& operation,const Value::Object& payload,Value* result) {
   static const std::set<std::string> allowed={"hostApiEvent","hostComponentEvent","hostComponents","hostComponentFrame","managedFileScope","authorizePhoneButton","acknowledgeAccountCleanup","prepareAccountHostServiceSnapshots","updateHostServiceSnapshots","switchAccount","queryAccountSwitch","updateAccountSwitchLaunch","retryAccountSwitch","cancelAccountSwitch","createHostBinary","readHostBinary","retainHostBinary","releaseHostBinary","completeHostCall","authorizeInstalledPack","migrateLegacyStorage","deleteAccountData"};
   if(!allowed.count(operation)) return Status::error("ERR_INVALID_ARGUMENT","unknown host services command");
@@ -621,6 +755,14 @@ Status Session::flush_storage() { return core_->call("flushStorage"); }
 Status Session::close() {
   if (auto s = core_->check(); !s) return s;
   if (core_->state.status == SessionState::Closed) return {};
+  core_->close_requested = true;
+  core_->input_enabled = false;
+  core_->touches.clear();
+  core_->retry_account_cleanup();
+  if (core_->account_cleanup_failed) return core_->account_cleanup_last_error;
+  if (core_->account_cleanup_future.valid())
+    return Status::error("ERR_RESOURCE_CLEANUP_PENDING",
+                         "account cleanup task is still draining");
   if(core_->devices) {auto status=core_->devices->retire();if(!status)return status;core_->devices.reset();}
   if (core_->presenter) {
     auto detached = core_->presenter->detach();
@@ -639,6 +781,12 @@ Status Session::close() {
 Status Session::pump() {
   auto keep = shared_from_this();
   if (auto s = core_->check(); !s) return s;
+  if (core_->close_requested && core_->state.status != SessionState::Closing &&
+      core_->state.status != SessionState::Closed) {
+    auto closing = close();
+    if (!closing && closing.code != "ERR_RESOURCE_CLEANUP_PENDING")
+      return closing;
+  }
   if (core_->presenter) core_->presenter->refresh();
   Status s;
   if(core_->handle)s=core_->read_state();
@@ -758,8 +906,9 @@ View::~View() {
 void* View::native_handle() const { return presenter_->native_handle(); }
 bool View::input_enabled() const {
   const auto& core = *session_->core_;
-  return bool(core.check()) && core.state.status == SessionState::Ready &&
-         core.state.foreground && core.surface_visible && core.input_enabled;
+  return bool(core.check()) && !core.close_requested &&
+         core.state.status == SessionState::Ready && core.state.foreground &&
+         core.surface_visible && core.input_enabled;
 }
 Status View::set_bounds(const Rect& r) {
   if (!valid_rect(r))
