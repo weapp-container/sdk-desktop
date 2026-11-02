@@ -28,7 +28,9 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          Get-Content build/native-sources/CMakeCache.txt | Select-String 'CMAKE_(CXX_COMPILER|VS_WINDOWS_TARGET_PLATFORM_VERSION|SYSTEM_VERSION|GENERATOR)'
+          if (Test-Path build/native-sources/CMakeCache.txt) {
+            Get-Content build/native-sources/CMakeCache.txt | Select-String 'CMAKE_(CXX_COMPILER|VS_WINDOWS_TARGET_PLATFORM_VERSION|SYSTEM_VERSION|GENERATOR)'
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:

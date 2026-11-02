@@ -48,7 +48,16 @@ function checkedBytes(root, path) {
   if (!stat.isFile() || !realpathSync(absolute).startsWith(`${root}${sep}`)) fail(`not a contained regular file: ${path}`);
   const bytes = readFileSync(absolute);
   if (bytes.includes(0)) fail(`binary source bytes are forbidden: ${path}`);
-  return { bytes, mode: (stat.mode & 0o111) ? '100755' : '100644' };
+  // Windows filesystem modes have no Unix executable bit. Preserve the
+  // reviewed tracked Git mode there; Unix still checks the actual file mode.
+  let mode = (stat.mode & 0o111) ? '100755' : '100644';
+  if (process.platform === 'win32') {
+    const stage = git(root, ['ls-files', '--stage', '--', path]);
+    const match = /^(100644|100755) [a-f0-9]+ 0\t/.exec(stage);
+    if (!match || stage.trimEnd().split('\n').length !== 1) fail(`invalid tracked file mode: ${path}`);
+    mode = match[1];
+  }
+  return { bytes, mode };
 }
 function entriesFor(root, files) {
   return files.filter(path => path !== INVENTORY_FILE).map(path => {

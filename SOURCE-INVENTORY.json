@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "fc0404bdfa3d53b850d70c3e56eefda677d8758c",
-  "review": "Enable real Windows source validation on the integration branch while preserving historical runtime artifacts",
+  "sourceBaseCommit": "b526d81ef865a9048d588b61f10738928137646e",
+  "review": "Preserve reviewed source bytes and tracked executable modes on real Windows checkouts",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -16,6 +16,12 @@
       "mode": "100644"
     },
     {
+      "path": ".gitattributes",
+      "sha256": "7d6c713413233514d90b6b47c1d5857c16b33b5ecfa251ce701479b4fe7d14ff",
+      "size": 89,
+      "mode": "100644"
+    },
+    {
       "path": ".github/workflows/checks.yml",
       "sha256": "1c18982a507217a8bbac7e65279383e5df5c6460689d5d92ad3e3332658eff00",
       "size": 483,
@@ -23,8 +29,8 @@
     },
     {
       "path": ".github/workflows/windows-native.yml",
-      "sha256": "032f1c95a69403fd2a534e7eca7a50e51417d20308faca7e1cabd556062f57f1",
-      "size": 1459,
+      "sha256": "66b93415390b3247d94fbdd19ee473a2322c17cbebad10e90de53a8afc2283a8",
+      "size": 1536,
       "mode": "100644"
     },
     {
@@ -503,8 +509,8 @@
     },
     {
       "path": "tools/source-inventory.mjs",
-      "sha256": "e648d5631263c47b2b2565deb4d10ddc45fdaef76599dbd6929431492400ecf7",
-      "size": 6698,
+      "sha256": "03c69cd9ccfa03e010ec388703f5dda63d6ccf6f051015b85481de46be10ff30",
+      "size": 7158,
       "mode": "100644"
     },
     {
