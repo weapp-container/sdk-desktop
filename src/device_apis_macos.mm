@@ -36,6 +36,7 @@ std::string origin(NSURL* url) {
 struct Transfer {
   std::weak_ptr<DeviceQueue> queue;std::string call,api,object;Json payload;std::filesystem::path root;
   std::vector<uint8_t> bytes;Json headers=Json::object();int64_t status=0;std::string mime;bool too_large=false;
+  std::shared_ptr<std::atomic<bool>> cancelled=std::make_shared<std::atomic<bool>>(false);
 };
 struct NetworkState {
   std::mutex mutex;std::map<NSUInteger,std::shared_ptr<Transfer>> transfers;std::vector<std::string> origins;
@@ -73,12 +74,13 @@ struct NetworkState {
 - (void)URLSession:(NSURLSession*)session task:(NSURLSessionTask*)task didCompleteWithError:(NSError*)error {
   std::shared_ptr<Transfer> transfer;{std::lock_guard<std::mutex> lock(state->mutex);auto found=state->transfers.find(task.taskIdentifier);if(found!=state->transfers.end()){transfer=found->second;state->transfers.erase(found);}}
   if(!transfer)return;
+  DeviceSideEffect publication(transfer->queue,transfer->cancelled.get());if(!publication)return;
   if(error||transfer->too_large){queue_failure(transfer->queue,transfer->call,device_failure(transfer->api,transfer->too_large?"response exceeds native byte budget":utf(error.localizedDescription),"invalid_request",error.code));return;}
   try {
     Json result={{"objectId",transfer->object},{"statusCode",transfer->status},{"header",transfer->headers},{"cookies",Json::array()}};
     if(transfer->api=="wx.downloadFile") {
       auto relative=transfer->payload.value("filePath",std::string("wxfile://user/download-")+utf(NSUUID.UUID.UUIDString));
-      DeviceSideEffect publication(transfer->queue);if(!publication)return;managed_write(transfer->root,managed_path(transfer->root,relative),transfer->bytes);result["tempFilePath"]=relative;result["filePath"]=relative;
+      managed_write(transfer->root,managed_path(transfer->root,relative),transfer->bytes);result["tempFilePath"]=relative;result["filePath"]=relative;
     }else if(transfer->payload.value("responseType","")=="arraybuffer")result["data"]=inline_binary(transfer->bytes);
     else {auto text=std::string(transfer->bytes.begin(),transfer->bytes.end());
       if(transfer->api=="wx.request"&&transfer->payload.value("dataType","json")=="json") {auto parsed=Json::parse(text,nullptr,false);result["data"]=parsed.is_discarded()?Json(text):parsed;}
@@ -151,7 +153,7 @@ void media_pixels(const std::weak_ptr<DeviceQueue>& weak,const std::shared_ptr<M
   auto completion=std::shared_ptr<void>(nullptr,[done=finished](void*){if(done)*done=true;});if(cancelled&&cancelled->load())return;
   if(error){queue_failure(queue,call,device_failure(api,utf(error.localizedDescription),"invalid_request",error.code));return;}
   try{NSData* data=photo.fileDataRepresentation;if(!data||data.length>32*1024*1024)throw std::runtime_error("captured photo exceeds native file budget");
-    DeviceSideEffect publication(queue);if(!publication||(cancelled&&cancelled->load()))return;auto begin=(const uint8_t*)data.bytes;managed_write(root,managed_path(root,path),std::vector<uint8_t>(begin,begin+data.length));queue_complete(queue,call,device_ok(api,{{"tempImagePath",path}}));
+    DeviceSideEffect publication(queue,cancelled.get());if(!publication)return;auto begin=(const uint8_t*)data.bytes;managed_write(root,managed_path(root,path),std::vector<uint8_t>(begin,begin+data.length));queue_complete(queue,call,device_ok(api,{{"tempImagePath",path}}));
   }catch(const std::exception& exception){queue_failure(queue,call,device_failure(api,exception.what()));}
 }
 @end
@@ -188,7 +190,7 @@ void media_pixels(const std::weak_ptr<DeviceQueue>& weak,const std::shared_ptr<M
 
 namespace weapp::desktop::detail {
 class MacDeviceApis final : public DeviceBase {
-  WCDeviceNetwork* network_;NSURLSession* session_;std::map<std::string,NSURLSessionTask*> tasks_;
+  WCDeviceNetwork* network_;NSURLSession* session_;std::map<std::string,NSURLSessionTask*> tasks_;std::map<std::string,std::shared_ptr<std::atomic<bool>>> network_cancellations_;
   WCDeviceLocation* location_delegate_;CLLocationManager* location_;std::set<std::string> location_calls_;bool continuous_location_=false;
   struct Audio {AVPlayer* player=nil;id timer=nil,ended=nil;Json properties=Json::object();};std::map<std::string,Audio> audio_;
   struct Mount {AVCaptureSession* capture=nil;AVCapturePhotoOutput* photo=nil;AVCaptureVideoDataOutput* output=nil;WCDeviceFrames* capture_delegate=nil;AVPlayer* player=nil;AVPlayerItemVideoOutput* video_output=nil;Json snapshot;std::string source;uint64_t sequence=0,incarnation=0;bool permission_pending=false,permission_denied=false;};std::map<std::string,Mount> mounts_;
@@ -362,9 +364,9 @@ class MacDeviceApis final : public DeviceBase {
       if(prefix.size()+bytes.size()+suffix.size()>32*1024*1024)throw std::invalid_argument("multipart upload exceeds byte budget");NSMutableData* body=[NSMutableData dataWithBytes:prefix.data() length:prefix.size()];[body appendBytes:bytes.data() length:bytes.size()];[body appendBytes:suffix.data() length:suffix.size()];request.HTTPBody=body;[request setValue:ns("multipart/form-data; boundary="+boundary) forHTTPHeaderField:@"Content-Type"];
     }else if(payload.contains("data")) {std::vector<uint8_t> bytes;auto data=payload.at("data");if(data.is_object()&&data.contains("__weappBinary"))bytes=binary_bytes(data);else {auto value=data.is_string()?data.get<std::string>():data.dump();bytes.assign(value.begin(),value.end());}if(bytes.size()>1048576)throw std::invalid_argument("request body exceeds one MiB limit");request.HTTPBody=[NSData dataWithBytes:bytes.data() length:bytes.size()];}
     auto transfer=std::make_shared<Transfer>();transfer->queue=weak_queue();transfer->call=call;transfer->api=api;transfer->object=object;transfer->payload=payload;transfer->root=root_;
-    NSURLSessionDataTask* task=[session_ dataTaskWithRequest:request];tasks_[object]=task;{std::lock_guard<std::mutex> lock(network_->state->mutex);network_->state->transfers[task.taskIdentifier]=transfer;}
+    NSURLSessionDataTask* task=[session_ dataTaskWithRequest:request];tasks_[object]=task;network_cancellations_[object]=transfer->cancelled;{std::lock_guard<std::mutex> lock(network_->state->mutex);network_->state->transfers[task.taskIdentifier]=transfer;}
     auto type=api=="wx.request"?"RequestTask":api=="wx.downloadFile"?"DownloadTask":"UploadTask";
-    retain_object(object,call,type,[this,task,object]{[task cancel];tasks_.erase(object);});[task resume];
+    retain_object(object,call,type,[this,task,object,cancelled=transfer->cancelled]{cancel_device_work(weak_queue(),*cancelled);[task cancel];tasks_.erase(object);network_cancellations_.erase(object);});[task resume];
   }
   void component_event(Mount& mount,const std::string& event,Json value) {
     auto data=Json{{"sessionId",mount.snapshot.at("sessionId")},{"accountEpoch",mount.snapshot.at("accountEpoch")},{"nodeId",mount.snapshot.at("nodeId")},{"event",event},{"sequence",std::to_string(++mount.sequence)},{"value",std::move(value)}};
@@ -424,7 +426,7 @@ class MacDeviceApis final : public DeviceBase {
     if(bluetooth_call(call,api,payload)||recorder_call(call,api,payload)||system_call(call,api,payload))return true;
     if(api=="wx.request"||api=="wx.downloadFile"||api=="wx.uploadFile"||api=="wx.connectSocket"){network(call,api,payload);return true;}
     if(api.rfind("object:",0)==0 && api.find("Task.")!=std::string::npos){auto id=payload.value("objectId","");auto found=tasks_.find(id);if(found==tasks_.end())throw std::invalid_argument("native task is unavailable");auto task=found->second;
-      if(api.find(".abort")!=std::string::npos){[task cancel];done(call,api);return true;}
+      if(api.find(".abort")!=std::string::npos){if(network_cancellations_.count(id))cancel_device_work(weak_queue(),*network_cancellations_.at(id));[task cancel];done(call,api);return true;}
       if(api=="object:SocketTask.close"){auto code=payload.value("code",1000);auto text=payload.value("reason","");[(NSURLSessionWebSocketTask*)task cancelWithCloseCode:(NSURLSessionWebSocketCloseCode)code reason:[ns(text)dataUsingEncoding:NSUTF8StringEncoding]];done(call,api);return true;}
       if(api=="object:SocketTask.send"){auto data=payload.at("data");NSURLSessionWebSocketMessage* message;if(data.is_string())message=[[NSURLSessionWebSocketMessage alloc]initWithString:ns(data.get<std::string>())];else{auto bytes=binary_bytes(data);message=[[NSURLSessionWebSocketMessage alloc]initWithData:[NSData dataWithBytes:bytes.data() length:bytes.size()]];}auto weak=weak_queue();[(NSURLSessionWebSocketTask*)task sendMessage:message completionHandler:^(NSError* error){if(error)queue_failure(weak,call,device_failure(api,utf(error.localizedDescription),"invalid_request",error.code));else queue_complete(weak,call,device_ok(api));}];return true;}}
     if(api=="wx.getClipboardData"){permit("scope.clipboard",api,call,[this,call,api]{done(call,api,{{"data",utf([NSPasteboard.generalPasteboard stringForType:NSPasteboardTypeString])}});});return true;}
@@ -459,7 +461,7 @@ class MacDeviceApis final : public DeviceBase {
       else if(member=="destroy")dispose_audio(id);else return false;done(call,api);return true;
     }
     if(api=="wx.createCameraContext"||api=="wx.createVideoContext"){auto object=payload.at("objectId").get<std::string>();auto target=context.at("componentTarget");auto node=target.at("nodeId").get<std::string>();auto found=mounts_.find(node);auto tag=api=="wx.createCameraContext"?"camera":"video";if(found==mounts_.end()||found->second.snapshot.value("tag","")!=tag||found->second.snapshot.at("pageId")!=target.at("pageId")||found->second.snapshot.at("ownerScopeId")!=target.at("ownerScopeId"))throw std::invalid_argument("trusted native component target is no longer mounted");if(api=="wx.createCameraContext")camera_nodes_[object]=node;else video_nodes_[object]=node;retain_object(object,call,api=="wx.createCameraContext"?"CameraContext":"VideoContext",[this,object]{camera_nodes_.erase(object);video_nodes_.erase(object);});done(call,api,{{"objectId",object}});return true;}
-    if(api=="object:CameraContext.takePhoto"){require_object(payload,"CameraContext");auto& mount=mounts_.at(camera_nodes_.at(payload.at("objectId").get<std::string>()));if(!mount.capture.running||!mount.photo)throw std::runtime_error("camera capture is not authorized or ready");auto delegate=[WCDevicePhoto new];delegate->queue=weak_queue();delegate->call=call;delegate->api=api;delegate->path="wxfile://user/photo-"+utf(NSUUID.UUID.UUIDString)+".jpg";delegate->root=root_;delegate->cancelled=std::make_shared<std::atomic<bool>>(false);delegate->finished=std::make_shared<std::atomic<bool>>(false);calls_.at(call).cancel=[cancelled=delegate->cancelled]{*cancelled=true;};photos_.push_back(delegate);[mount.photo capturePhotoWithSettings:[AVCapturePhotoSettings photoSettings] delegate:delegate];return true;}
+    if(api=="object:CameraContext.takePhoto"){require_object(payload,"CameraContext");auto& mount=mounts_.at(camera_nodes_.at(payload.at("objectId").get<std::string>()));if(!mount.capture.running||!mount.photo)throw std::runtime_error("camera capture is not authorized or ready");auto delegate=[WCDevicePhoto new];delegate->queue=weak_queue();delegate->call=call;delegate->api=api;delegate->path="wxfile://user/photo-"+utf(NSUUID.UUID.UUIDString)+".jpg";delegate->root=root_;delegate->cancelled=std::make_shared<std::atomic<bool>>(false);delegate->finished=std::make_shared<std::atomic<bool>>(false);calls_.at(call).cancel=[weak=weak_queue(),cancelled=delegate->cancelled]{cancel_device_work(weak,*cancelled);};photos_.push_back(delegate);[mount.photo capturePhotoWithSettings:[AVCapturePhotoSettings photoSettings] delegate:delegate];return true;}
     if(api.rfind("object:VideoContext.",0)==0){require_object(payload,"VideoContext");auto& mount=mounts_.at(video_nodes_.at(payload.at("objectId").get<std::string>()));auto member=api.substr(api.find_last_of('.')+1);if(member=="play"){if(!foreground_)throw std::invalid_argument("video playback requires a foreground application");[mount.player play];}else if(member=="pause")[mount.player pause];else if(member=="stop"){[mount.player pause];[mount.player seekToTime:kCMTimeZero];}else if(member=="seek"){auto args=payload.value("args",Json::array());double seconds=payload.value("position",args.empty()?0.0:args[0].get<double>());if(!std::isfinite(seconds)||seconds<0)throw std::invalid_argument("invalid video seek time");[mount.player seekToTime:CMTimeMakeWithSeconds(seconds,600)];}else return false;done(call,api);return true;}
     return false;
   }
@@ -473,7 +475,7 @@ class MacDeviceApis final : public DeviceBase {
   void retire_platform() override {
     close_bluetooth();stop_recorder(false);recorder_managers_.clear();for(LAContext* context:authentication_)[context invalidate];authentication_.clear();
     [location_ stopUpdatingLocation];location_delegate_->update={};location_delegate_->authorization={};location_calls_.clear();continuous_location_=false;
-    [session_ invalidateAndCancel];tasks_.clear();while(!audio_.empty())dispose_audio(audio_.begin()->first);
+    [session_ invalidateAndCancel];tasks_.clear();network_cancellations_.clear();while(!audio_.empty())dispose_audio(audio_.begin()->first);
     for(auto& entry:mounts_)destroy_mount(entry.second);mounts_.clear();{std::lock_guard<std::mutex> lock(media_->mutex);media_->targets.clear();media_->latest.clear();media_->sequences.clear();media_->incarnations.clear();}camera_nodes_.clear();video_nodes_.clear();photos_.clear();
     for(NSWindow* dialog:dialogs_){if(dialog.sheetParent)[dialog.sheetParent endSheet:dialog returnCode:NSModalResponseCancel];[dialog orderOut:nil];}dialogs_.clear();
     if(wake_!=kIOPMNullAssertionID){IOPMAssertionRelease(wake_);wake_=kIOPMNullAssertionID;}

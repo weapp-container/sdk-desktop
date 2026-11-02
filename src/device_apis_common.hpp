@@ -81,11 +81,17 @@ struct DeviceQueue {
 // Retirement waits for bounded native disk publications already in progress;
 // a late OS callback cannot start a new write after cleanup acknowledgement.
 class DeviceSideEffect {
-  std::shared_ptr<DeviceQueue> owner_;std::unique_lock<std::mutex> lock_;
+  std::shared_ptr<DeviceQueue> owner_;std::unique_lock<std::mutex> lock_;const std::atomic<bool>* cancelled_;
  public:
-  explicit DeviceSideEffect(const std::weak_ptr<DeviceQueue>& weak):owner_(weak.lock()),lock_(owner_?std::unique_lock<std::mutex>(owner_->side_effects):std::unique_lock<std::mutex>()){}
-  explicit operator bool() const{return owner_&&!owner_->closed;}
+  explicit DeviceSideEffect(const std::weak_ptr<DeviceQueue>& weak,const std::atomic<bool>* cancelled=nullptr):owner_(weak.lock()),lock_(owner_?std::unique_lock<std::mutex>(owner_->side_effects):std::unique_lock<std::mutex>()),cancelled_(cancelled){}
+  explicit operator bool() const{return owner_&&!owner_->closed&&(!cancelled_||!cancelled_->load());}
 };
+// Cancellation and publication have one order: cancellation wins before any
+// write starts, or waits for an already accepted bounded write and completion.
+inline void cancel_device_work(const std::weak_ptr<DeviceQueue>& weak,std::atomic<bool>& cancelled) {
+  if(auto queue=weak.lock()){std::lock_guard<std::mutex> barrier(queue->side_effects);cancelled=true;}
+  else cancelled=true;
+}
 inline bool queue_complete(const std::weak_ptr<DeviceQueue>& weak,const std::string& id,Json value) {
   if(auto queue=weak.lock()) return queue->push({DeviceQueued::Complete,id,"","",std::move(value)});return false;
 }

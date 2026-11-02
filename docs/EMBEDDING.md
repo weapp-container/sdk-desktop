@@ -166,3 +166,12 @@ owner queue and retained-object cleanup with fake OS consent callbacks. Pending
 application grants, delayed OS grants and queued successful completions cannot
 escape a permission reset; fresh authorization can recover afterward. This is
 an executable lifecycle contract check, not hardware or privacy-dialog acceptance.
+
+Native request cancellation and managed-file publication share a completion
+barrier on macOS, Windows and Linux. Cancellation before publication prevents
+the download file and result enqueue. A write already accepted by that barrier
+finishes its bounded file publication and result enqueue before cancellation
+returns; cancellation does not roll back an accepted file. The optional
+`weapp_device_publication_test` executable checks both orderings using real
+managed files and controlled worker timing, plus rejection after owner retirement.
+It does not establish WinHTTP, libcurl, NSURLSession or hardware acceptance.
