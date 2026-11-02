@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <gio/gio.h>
 #include "device_location_geoclue.hpp"
+#include "device_bluetooth_bluez.hpp"
 #if defined(WEAPP_DEVICE_CURL_WEBSOCKET)
 #include "device_socket_curl.hpp"
 #endif
@@ -40,7 +41,7 @@ Json linux_battery() {
 }
 }
 
-class LinuxDeviceApis final:public DeviceLocations {
+class LinuxDeviceApis final:public DeviceBluetooth {
   bool wifi_active_=false;uint64_t wifi_generation_=0;Bus screen_bus_;guint32 screen_cookie_=0;
   GNetworkMonitor* network_=nullptr;gulong network_signal_=0;std::set<GtkWidget*> dialogs_;
   std::map<std::string,std::shared_ptr<std::atomic<bool>>> transfers_;
@@ -103,7 +104,7 @@ class LinuxDeviceApis final:public DeviceLocations {
     return false;
   }
   bool platform_call(const std::string& call,const std::string& api,const Json& payload,const Json&) override {
-    if(location_call(call,api,payload)||socket_call(call,api,payload)||system_call(call,api,payload))return true;
+    if(bluetooth_call(call,api,payload)||location_call(call,api,payload)||socket_call(call,api,payload)||system_call(call,api,payload))return true;
 #if defined(WEAPP_DEVICE_CURL)
     if(api=="wx.request"||api=="wx.downloadFile"||api=="wx.uploadFile"){request(call,api,payload);return true;}
     if(api=="object:RequestTask.abort"||api=="object:DownloadTask.abort"||api=="object:UploadTask.abort"){auto found=transfers_.find(payload.value("objectId",""));if(found==transfers_.end())throw std::invalid_argument("native task is unavailable");cancel_device_work(weak_queue(),*found->second);done(call,api);return true;}
@@ -115,11 +116,12 @@ class LinuxDeviceApis final:public DeviceLocations {
     if(api=="wx.showModal"||api=="wx.showActionSheet"){std::vector<std::string> buttons;if(api=="wx.showModal"){buttons.push_back(payload.value("confirmText","OK"));if(payload.value("showCancel",true))buttons.push_back(payload.value("cancelText","Cancel"));}else{auto items=payload.at("itemList");if(!items.is_array()||items.empty()||items.size()>6)throw std::invalid_argument("action sheet needs one to six items");for(auto& item:items)buttons.push_back(item.get<std::string>());buttons.push_back("Cancel");}auto weak=weak_queue();auto count=buttons.size();dialog(payload.value("title",""),payload.value("content",""),buttons,[weak,call,api,count](int response){if(api=="wx.showModal")queue_complete(weak,call,device_ok(api,{{"confirm",response==0},{"cancel",response!=0}}));else if(response>=0&&size_t(response)<count-1)queue_complete(weak,call,device_ok(api,{{"tapIndex",response}}));else queue_failure(weak,call,device_failure(api,"user cancelled"));});return true;}
     return false;
   }
-  void permissions_reset() override {DeviceLocations::permissions_reset();++wifi_generation_;wifi_active_=false;}
-  void retire_platform() override {DeviceLocations::retire_platform();++wifi_generation_;release_screen();if(network_signal_){g_signal_handler_disconnect(network_,network_signal_);network_signal_=0;}auto dialogs=std::move(dialogs_);for(auto widget:dialogs)gtk_widget_destroy(widget);for(auto& transfer:transfers_)cancel_device_work(weak_queue(),*transfer.second);transfers_.clear();}
+  void permissions_reset() override {DeviceBluetooth::permissions_reset();++wifi_generation_;wifi_active_=false;}
+  void retire_platform() override {DeviceBluetooth::retire_platform();++wifi_generation_;release_screen();if(network_signal_){g_signal_handler_disconnect(network_,network_signal_);network_signal_=0;}auto dialogs=std::move(dialogs_);for(auto widget:dialogs)gtk_widget_destroy(widget);for(auto& transfer:transfers_)cancel_device_work(weak_queue(),*transfer.second);transfers_.clear();}
  public:
-  LinuxDeviceApis(const DeviceApiOptions& options,Command command):DeviceLocations(options,std::move(command)) {
+  LinuxDeviceApis(const DeviceApiOptions& options,Command command):DeviceBluetooth(options,std::move(command)) {
     install_location_factory(geo_location_factory(options));
+    install_bluetooth_platform(bluez_bluetooth_platform(options));
     network_=g_network_monitor_get_default();
     for(auto api:{"wx.startWifi","wx.stopWifi","wx.getWifiList","wx.getConnectedWifi","wx.openLocation","wx.setKeepScreenOn","wx.getScreenBrightness","wx.setScreenBrightness","wx.getNetworkType","wx.getBatteryInfo","wx.getClipboardData","wx.setClipboardData","wx.showModal","wx.showActionSheet"})add(api);
     add_event("wx.onGetWifiList","wx.offGetWifiList","GetWifiList");

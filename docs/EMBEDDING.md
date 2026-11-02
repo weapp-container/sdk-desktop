@@ -196,6 +196,57 @@ Reset, background and retirement revoke both queued delivery and pending grants;
 returning to foreground requires a fresh start. Other desktop device families
 remain unsupported unless a host adds its own registered handlers.
 
+Windows BLE central uses C++/WinRT when the Bluetooth SDK headers and runtime
+activation are available. Windows native implementation and SDK header probes
+use C++20 for the projection's standard coroutine support; public wrapper headers
+remain compatible with C++17 consumers. Native discovery supplies device identity and address
+type; guest parameters cannot replace that metadata. Connection permission
+preparation runs on the attached foreground host UI thread. Async operations
+remain owned through terminal completion, including late connection results after
+cancellation, and cleanup releases the exact watcher, event registrations, GATT
+services/session and device references. `wx.getBLEMTU` reports the native GATT
+session's maximum PDU size; pairing, peripheral/server mode and MTU mutation are
+not registered by these desktop backends.
+
+Linux BLE uses BlueZ over a private system D-Bus connection. The default exposes
+adapter state, LE discovery and observed devices. Discovery filters and sessions
+belong to that private client; cleanup never powers the global adapter on/off or
+removes paired devices. Central connection/GATT APIs require the trusted host to
+set `DeviceApiOptions::linux_bluetooth_exclusive=true` (Flutter host option
+`linuxBluetoothExclusive`). This asserts that the deployment fences other clients
+from the target devices: BlueZ Device1 Connect/Disconnect operate globally, and
+Disconnect can terminate all profiles. This option is therefore a deployment
+contract, not OS-enforced isolation. The SDK also rejects already connected
+devices and conflicting leases in the same SDK instance. It retains each lease
+until Disconnect and a false Connected property acknowledge cleanup; losing the
+private D-Bus peer is never substituted for that device acknowledgement.
+
+BlueZ GATT discovery rejects ambiguous duplicate UUIDs, bounds each device to
+64 services and the owner to 256 characteristics, uses actual ReadValue/
+WriteValue operations, and observes notification Value signals. BlueZ writes
+are limited to 512 bytes. Neither BlueZ nor Windows registers a synthetic
+`wx.getBLEDeviceRSSI`; advertised RSSI remains part of observed device records
+where native discovery supplies it. BlueZ also leaves `wx.getBLEMTU` absent
+because this backend has no general client MTU query. Unsupported routes stay
+unregistered.
+
+The shared Windows/Linux BLE owner permits eight native owners, including
+cancelled owners still draining, 32 outstanding commands, 256 observed devices
+and 256 notification delivery tokens. Close adapter waits for every prior native
+owner. Stop discovery invalidates a queued start; notification disable and device
+close revoke queued characteristic delivery before their native release finishes.
+Read events carry their request cancellation token. Reset/background/retirement
+revoke the adapter and pending grants; a foreground return requires a fresh open.
+Native disconnection revokes queued notification delivery; an invalidated BlueZ
+service database retires the owner before cached attribute paths can be reused.
+Ingress saturation terminates collection through the bounded owner queue;
+rejected command receipts retain an error completion until the owner can drain it.
+The `weapp_device_bluetooth_test` executable checks these boundaries using a fake
+OS backend and actual linked core catalog configuration. Isolated compilation of
+the real BlueZ source against local GIO headers checks C++/GIO compatibility;
+it does not execute BlueZ. Windows target compilation, complete Linux GTK builds,
+physical radio/GATT behavior and OS consent remain separate acceptance work.
+
 The macOS source has a local CMake archive-build check. This is not camera,
 Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
 Windows target compilation, a complete Linux GTK target build and physical
@@ -238,6 +289,9 @@ entire SocketTask family absent from the native service configuration.
 | HTTPS request/download/upload | WinHTTP / optional libcurl | Windows 10 SDK / libcurl 7.85+ | Target build and real transfer/cancellation |
 | WSS SocketTask | Async WinHTTP WebSocket | Windows 10 SDK | Windows build and real TLS/close/cancellation |
 | WSS SocketTask | libcurl WebSocket | Headers/library 8.16+, linked APIs, runtime `wss` protocol | Linux build and real TLS/close/cancellation |
+| BLE central/GATT | C++/WinRT | Bluetooth SDK headers, activation, foreground host UI for connection consent | Windows build and real radio/GATT/late-result cleanup |
+| LE discovery | BlueZ private D-Bus client | Running or activatable BlueZ service, powered adapter | Linux build and client-scoped discovery cleanup |
+| BLE central/GATT | BlueZ private D-Bus client + exclusive target lease | Explicit trusted host exclusivity, no preexisting connection | Linux build and real GATT/disconnect/recovery |
 
 These WSS routes accept only ASCII credential-free URLs without fragments and
 match their canonical **HTTPS origin** against `allowed_network_origins`.

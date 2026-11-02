@@ -14,6 +14,11 @@ struct DeviceApiOptions {
   // Installed host desktop-file ID used by GeoClue authorization. Empty keeps
   // Linux location routes disabled; guest request parameters cannot set it.
   std::string linux_desktop_id;
+  // Trusted Linux deployment contract: the host fences other clients from the
+  // BLE devices it uses. Default false exposes only client-scoped discovery.
+  // BlueZ Connect/Disconnect are global; a per-process lease also rejects an
+  // already connected device and conflicting owners in this SDK instance.
+  bool linux_bluetooth_exclusive = false;
 };
 
 // Reusable with an owned Session or an external/Flutter native session. Commands

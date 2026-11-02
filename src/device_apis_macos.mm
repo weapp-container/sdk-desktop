@@ -205,15 +205,25 @@ class MacDeviceApis final : public DeviceBase {
   std::map<std::string,std::string> camera_nodes_,video_nodes_;std::vector<WCDevicePhoto*> photos_;
   std::vector<NSWindow*> dialogs_;IOPMAssertionID wake_=kIOPMNullAssertionID;
   WCMacBluetooth* bluetooth_delegate_=nil;CBCentralManager* bluetooth_=nil;std::string bluetooth_open_;uint64_t bluetooth_generation_=0;
+  std::shared_ptr<std::atomic<bool>> bluetooth_delivery_,bluetooth_discovery_delivery_,bluetooth_terminal_delivery_,bluetooth_overflow_;
+  std::map<std::string,std::shared_ptr<std::atomic<bool>>> bluetooth_open_intents_;
   std::map<std::string,CBPeripheral*> peripherals_;std::map<std::string,Json> bluetooth_devices_;
   struct BlePending {std::string call,api,operation,service,characteristic;std::chrono::steady_clock::time_point deadline;};std::map<std::string,BlePending> ble_pending_;
   AVAudioRecorder* recorder_=nil;WCMacRecorder* recorder_delegate_=nil;std::string recorder_object_,recorder_path_;std::filesystem::path recorder_temporary_;double recorder_duration_=0;uint64_t recorder_generation_=0;
   CNContactStore* contacts_=[CNContactStore new];EKEventStore* calendar_=[EKEventStore new];std::vector<LAContext*> authentication_;
   static std::string peripheral_id(CBPeripheral* peripheral){return utf(peripheral.identifier.UUIDString);}
+  void bluetooth_event(const std::string& name,Json value,std::shared_ptr<std::atomic<bool>> token={}) {
+    DeviceQueued item{DeviceQueued::NativeEvent,"",name,"",std::move(value)};item.delivery_allowed=token?token:bluetooth_delivery_;
+    if(!queue_->push(std::move(item))&&bluetooth_overflow_)*bluetooth_overflow_=true;
+  }
+  void bluetooth_receipt(const std::string& call,const std::string& api,const std::shared_ptr<std::atomic<bool>>& token) {
+    DeviceQueued item{DeviceQueued::Complete,call,"","",device_ok(api)};item.delivery_allowed=token;
+    if(!queue_->push(std::move(item))&&bluetooth_overflow_)*bluetooth_overflow_=true;
+  }
   void finish_ble(const std::string& kind,CBPeripheral* peripheral,CBService* service,CBCharacteristic* characteristic,NSError* error) {
     auto id=peripheral_id(peripheral);
-    if(kind=="connect"||kind=="disconnect")queue_event(weak_queue(),"BLEConnectionStateChange","",{{"deviceId",id},{"connected",kind=="connect"&&!error}});
-    if(kind=="read"&&!error&&characteristic.value.length<=1048576){auto start=(const uint8_t*)characteristic.value.bytes;queue_event(weak_queue(),"BLECharacteristicValueChange","",{{"deviceId",id},{"serviceId",utf(characteristic.service.UUID.UUIDString)},{"characteristicId",utf(characteristic.UUID.UUIDString)},{"value",inline_binary(std::vector<uint8_t>(start,start+characteristic.value.length))}});}
+    if(kind=="connect"||kind=="disconnect")bluetooth_event("BLEConnectionStateChange",{{"deviceId",id},{"connected",kind=="connect"&&!error}});
+    if(kind=="read"&&!error&&characteristic.value.length<=1048576){auto start=(const uint8_t*)characteristic.value.bytes;bluetooth_event("BLECharacteristicValueChange",{{"deviceId",id},{"serviceId",utf(characteristic.service.UUID.UUIDString)},{"characteristicId",utf(characteristic.UUID.UUIDString)},{"value",inline_binary(std::vector<uint8_t>(start,start+characteristic.value.length))}});}
     auto found=ble_pending_.find(id);if(found==ble_pending_.end())return;auto pending=found->second;
     if(pending.operation!=kind&&kind!="disconnect")return;
     if(service&&!pending.service.empty()&&![service.UUID isEqual:ble_uuid(pending.service)])return;
@@ -228,29 +238,36 @@ class MacDeviceApis final : public DeviceBase {
   }
   void close_bluetooth() {
     ++bluetooth_generation_;
+    if(bluetooth_delivery_)*bluetooth_delivery_=false;
+    if(bluetooth_discovery_delivery_)*bluetooth_discovery_delivery_=false;
+    if(bluetooth_terminal_delivery_)*bluetooth_terminal_delivery_=false;
+    for(const auto& [call,intent]:bluetooth_open_intents_){*intent=false;if(!queue_->closed&&calls_.count(call))fail(call,"wx.openBluetoothAdapter","Bluetooth adapter closed","cancelled");}bluetooth_open_intents_.clear();
     for(auto& pending:ble_pending_)if(calls_.count(pending.second.call))fail(pending.second.call,pending.second.api,"Bluetooth adapter closed","cancelled");ble_pending_.clear();
     if(!bluetooth_open_.empty()&&calls_.count(bluetooth_open_))fail(bluetooth_open_,"wx.openBluetoothAdapter","Bluetooth adapter closed","cancelled");bluetooth_open_.clear();
     if(bluetooth_delegate_){bluetooth_delegate_->stateChanged={};bluetooth_delegate_->discovered={};bluetooth_delegate_->completed={};}
     [bluetooth_ stopScan];for(auto& entry:peripherals_){entry.second.delegate=nil;[bluetooth_ cancelPeripheralConnection:entry.second];}bluetooth_.delegate=nil;bluetooth_=nil;bluetooth_delegate_=nil;peripherals_.clear();bluetooth_devices_.clear();
   }
-  void open_bluetooth(const std::string& call,const std::string& api) {
-    if(bluetooth_){if(bluetooth_.state==CBManagerStatePoweredOn)done(call,api);else fail(call,api,"Bluetooth adapter is not powered on");return;}
+  void open_bluetooth(const std::string& call,const std::string& api,const std::shared_ptr<std::atomic<bool>>& intent) {
+    if(!intent->load()||!foreground_){fail(call,api,"Bluetooth request was retired","cancelled");return;}
+    if(bluetooth_){if(bluetooth_.state==CBManagerStatePoweredOn)bluetooth_receipt(call,api,intent);else fail(call,api,"Bluetooth adapter is not powered on");return;}
     if(![NSBundle.mainBundle objectForInfoDictionaryKey:@"NSBluetoothAlwaysUsageDescription"]){fail(call,api,"host Info.plist must declare NSBluetoothAlwaysUsageDescription","permission_denied");return;}
+    if(bluetooth_terminal_delivery_)*bluetooth_terminal_delivery_=false;
+    bluetooth_delivery_=intent;bluetooth_overflow_=std::make_shared<std::atomic<bool>>(false);auto overflow=bluetooth_overflow_;
     bluetooth_open_=call;bluetooth_delegate_=[WCMacBluetooth new];auto weak=weak_queue();auto generation=++bluetooth_generation_;
-    bluetooth_delegate_->stateChanged=[this,weak,generation]{queue_action(weak,[this,weak,generation]{auto queue=weak.lock();if(!queue||queue->closed||!bluetooth_||generation!=bluetooth_generation_)return;bool available=bluetooth_.state==CBManagerStatePoweredOn;queue_event(weak,"BluetoothAdapterStateChange","",{{"available",available},{"discovering",bool(bluetooth_.isScanning)}});if(!bluetooth_open_.empty()&&bluetooth_.state!=CBManagerStateUnknown&&bluetooth_.state!=CBManagerStateResetting){auto call=std::move(bluetooth_open_);bluetooth_open_.clear();if(calls_.count(call)){if(available)done(call,"wx.openBluetoothAdapter");else fail(call,"wx.openBluetoothAdapter","OS Bluetooth unavailable or permission denied",bluetooth_.state==CBManagerStateUnauthorized?"permission_denied":"invalid_request");}}});};
-    bluetooth_delegate_->discovered=[this,weak,generation](CBPeripheral* peripheral,NSDictionary* data,NSNumber* rssi){queue_action(weak,[this,weak,generation,peripheral,data,rssi]{auto queue=weak.lock();if(!queue||queue->closed||!bluetooth_||generation!=bluetooth_generation_)return;auto id=peripheral_id(peripheral);if(peripherals_.size()>=256&&!peripherals_.count(id))return;peripherals_[id]=peripheral;peripheral.delegate=bluetooth_delegate_;Json value={{"deviceId",id},{"name",utf(peripheral.name)},{"localName",utf(data[CBAdvertisementDataLocalNameKey])},{"RSSI",rssi.intValue},{"connectable",[data[CBAdvertisementDataIsConnectable]boolValue]},{"advertisServiceUUIDs",Json::array()}};for(CBUUID* service in data[CBAdvertisementDataServiceUUIDsKey])if(value["advertisServiceUUIDs"].size()<64)value["advertisServiceUUIDs"].push_back(utf(service.UUIDString));NSData* manufacturer=data[CBAdvertisementDataManufacturerDataKey];if(manufacturer.length&&manufacturer.length<=1048576){auto start=(const uint8_t*)manufacturer.bytes;value["advertisData"]=inline_binary(std::vector<uint8_t>(start,start+manufacturer.length));}bluetooth_devices_[id]=value;queue_event(weak,"BluetoothDeviceFound","",{{"devices",Json::array({value})}});});};
-    bluetooth_delegate_->completed=[this,weak,generation](const std::string& kind,CBPeripheral* peripheral,CBService* service,CBCharacteristic* characteristic,NSError* error){queue_action(weak,[this,weak,generation,kind,peripheral,service,characteristic,error]{auto queue=weak.lock();if(queue&&!queue->closed&&bluetooth_&&generation==bluetooth_generation_)finish_ble(kind,peripheral,service,characteristic,error);});};
-    bluetooth_=[[CBCentralManager alloc]initWithDelegate:bluetooth_delegate_ queue:dispatch_get_main_queue() options:@{CBCentralManagerOptionShowPowerAlertKey:@NO}];calls_.at(call).cancel=[this,call]{if(bluetooth_open_==call)close_bluetooth();};
+    bluetooth_delegate_->stateChanged=[this,weak,generation,overflow]{if(!queue_action(weak,[this,weak,generation]{auto queue=weak.lock();if(!queue||queue->closed||!bluetooth_||generation!=bluetooth_generation_)return;bool available=bluetooth_.state==CBManagerStatePoweredOn;bluetooth_event("BluetoothAdapterStateChange",{{"available",available},{"discovering",bool(bluetooth_.isScanning)}});if(!bluetooth_open_.empty()&&bluetooth_.state!=CBManagerStateUnknown&&bluetooth_.state!=CBManagerStateResetting){auto call=std::move(bluetooth_open_);bluetooth_open_.clear();if(calls_.count(call)){if(available)bluetooth_receipt(call,"wx.openBluetoothAdapter",bluetooth_delivery_);else fail(call,"wx.openBluetoothAdapter","OS Bluetooth unavailable or permission denied",bluetooth_.state==CBManagerStateUnauthorized?"permission_denied":"invalid_request");}}}))*overflow=true;};
+    bluetooth_delegate_->discovered=[this,weak,generation,overflow](CBPeripheral* peripheral,NSDictionary* data,NSNumber* rssi){auto scan=bluetooth_discovery_delivery_;if(!queue_action(weak,[this,weak,generation,peripheral,data,rssi,scan]{auto queue=weak.lock();if(!queue||queue->closed||!bluetooth_||generation!=bluetooth_generation_||!scan||!scan->load())return;auto id=peripheral_id(peripheral);if(peripherals_.size()>=256&&!peripherals_.count(id))return;peripherals_[id]=peripheral;peripheral.delegate=bluetooth_delegate_;Json value={{"deviceId",id},{"name",utf(peripheral.name)},{"localName",utf(data[CBAdvertisementDataLocalNameKey])},{"RSSI",rssi.intValue},{"connectable",[data[CBAdvertisementDataIsConnectable]boolValue]},{"advertisServiceUUIDs",Json::array()}};for(CBUUID* service in data[CBAdvertisementDataServiceUUIDsKey])if(value["advertisServiceUUIDs"].size()<64)value["advertisServiceUUIDs"].push_back(utf(service.UUIDString));NSData* manufacturer=data[CBAdvertisementDataManufacturerDataKey];if(manufacturer.length&&manufacturer.length<=1048576){auto start=(const uint8_t*)manufacturer.bytes;value["advertisData"]=inline_binary(std::vector<uint8_t>(start,start+manufacturer.length));}bluetooth_devices_[id]=value;bluetooth_event("BluetoothDeviceFound",{{"devices",Json::array({value})}},scan);}))*overflow=true;};
+    bluetooth_delegate_->completed=[this,weak,generation,overflow](const std::string& kind,CBPeripheral* peripheral,CBService* service,CBCharacteristic* characteristic,NSError* error){if(!queue_action(weak,[this,weak,generation,kind,peripheral,service,characteristic,error]{auto queue=weak.lock();if(queue&&!queue->closed&&bluetooth_&&generation==bluetooth_generation_)finish_ble(kind,peripheral,service,characteristic,error);}))*overflow=true;};
+    bluetooth_=[[CBCentralManager alloc]initWithDelegate:bluetooth_delegate_ queue:dispatch_get_main_queue() options:@{CBCentralManagerOptionShowPowerAlertKey:@NO}];calls_.at(call).cancel=[this,call,intent]{*intent=false;if(bluetooth_open_==call)close_bluetooth();};
   }
   bool bluetooth_call(const std::string& call,const std::string& api,const Json& payload) {
-    if(api=="wx.openBluetoothAdapter"){if(!foreground_)throw std::invalid_argument("Bluetooth requires a foreground application");permit("scope.bluetooth",api,call,[this,call,api]{open_bluetooth(call,api);});return true;}
-    if(api=="wx.closeBluetoothAdapter"){if(bluetooth_)close_bluetooth();done(call,api);return true;}
+    if(api=="wx.openBluetoothAdapter"){if(!foreground_)throw std::invalid_argument("Bluetooth requires a foreground application");auto intent=std::make_shared<std::atomic<bool>>(true);bluetooth_open_intents_[call]=intent;calls_.at(call).cancel=[intent]{*intent=false;};permit("scope.bluetooth",api,call,[this,call,api,intent]{open_bluetooth(call,api,intent);});return true;}
+    if(api=="wx.closeBluetoothAdapter"){close_bluetooth();done(call,api);return true;}
     if(api=="wx.openSystemBluetoothSetting"){if(![NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:@"x-apple.systempreferences:com.apple.BluetoothSettings"]])throw std::runtime_error("cannot open system Bluetooth settings");done(call,api);return true;}
     if(api.find("Bluetooth")==std::string::npos&&api.find("BLE")==std::string::npos)return false;
     if(!bluetooth_||bluetooth_.state!=CBManagerStatePoweredOn)throw std::runtime_error("Bluetooth adapter is not open and available");
     if(api=="wx.getBluetoothAdapterState"){done(call,api,{{"available",true},{"discovering",bool(bluetooth_.isScanning)}});return true;}
-    if(api=="wx.startBluetoothDevicesDiscovery"){if(!foreground_)throw std::invalid_argument("Bluetooth scanning requires a foreground application");NSMutableArray<CBUUID*>* services=[NSMutableArray array];auto filters=payload.value("services",Json::array());if(!filters.is_array()||filters.size()>16)throw std::invalid_argument("Bluetooth service filter limit exceeded");for(const auto& filter:filters)[services addObject:ble_uuid(filter.get<std::string>())];[bluetooth_ scanForPeripheralsWithServices:services.count?services:nil options:@{CBCentralManagerScanOptionAllowDuplicatesKey:@(payload.value("allowDuplicatesKey",false))}];done(call,api);return true;}
-    if(api=="wx.stopBluetoothDevicesDiscovery"){[bluetooth_ stopScan];done(call,api);return true;}
+    if(api=="wx.startBluetoothDevicesDiscovery"){if(!foreground_)throw std::invalid_argument("Bluetooth scanning requires a foreground application");NSMutableArray<CBUUID*>* services=[NSMutableArray array];auto filters=payload.value("services",Json::array());if(!filters.is_array()||filters.size()>16)throw std::invalid_argument("Bluetooth service filter limit exceeded");for(const auto& filter:filters)[services addObject:ble_uuid(filter.get<std::string>())];if(bluetooth_discovery_delivery_)*bluetooth_discovery_delivery_=false;bluetooth_discovery_delivery_=std::make_shared<std::atomic<bool>>(true);[bluetooth_ scanForPeripheralsWithServices:services.count?services:nil options:@{CBCentralManagerScanOptionAllowDuplicatesKey:@(payload.value("allowDuplicatesKey",false))}];done(call,api);return true;}
+    if(api=="wx.stopBluetoothDevicesDiscovery"){if(bluetooth_discovery_delivery_)*bluetooth_discovery_delivery_=false;[bluetooth_ stopScan];done(call,api);return true;}
     if(api=="wx.getBluetoothDevices"||api=="wx.getConnectedBluetoothDevices"){Json devices=Json::array();for(const auto& item:bluetooth_devices_){auto peripheral=peripherals_.at(item.first);if(api=="wx.getConnectedBluetoothDevices"&&peripheral.state!=CBPeripheralStateConnected)continue;auto filter=payload.value("services",Json::array());bool matches=filter.empty();for(const auto& expected:filter)for(CBService* service in peripheral.services)if([service.UUID isEqual:ble_uuid(expected.get<std::string>())])matches=true;if(matches)devices.push_back(item.second);}done(call,api,{{"devices",devices}});return true;}
     auto id=payload.at("deviceId").get<std::string>();auto selected=peripherals_.find(id);if(selected==peripherals_.end())throw std::invalid_argument("Bluetooth device was not discovered by this application");auto peripheral=selected->second;
     if(api=="wx.closeBLEConnection"){[bluetooth_ cancelPeripheralConnection:peripheral];done(call,api);return true;}
@@ -407,7 +424,7 @@ class MacDeviceApis final : public DeviceBase {
   }
   Status foreground_changed(bool visible) override {
     for(auto& entry:mounts_){auto& mount=entry.second;if(!visible){[mount.capture stopRunning];[mount.player pause];}else if(mount.capture && mount.snapshot.value("visible",false))[mount.capture startRunning];}
-    if(!visible){[bluetooth_ stopScan];if(recorder_.recording){[recorder_ pause];queue_event(weak_queue(),"InterruptionBegin",recorder_object_,Json::object());}cancel_locations("location request was retired when the application entered background");for(auto& entry:audio_)[entry.second.player pause];}return {};
+    if(!visible){close_bluetooth();if(recorder_.recording){[recorder_ pause];queue_event(weak_queue(),"InterruptionBegin",recorder_object_,Json::object());}cancel_locations("location request was retired when the application entered background");for(auto& entry:audio_)[entry.second.player pause];}return {};
   }
   void request_permission(const std::string& scope,std::function<void(bool)> completion) override {
     if(scope=="open-settings") {
@@ -609,6 +626,8 @@ class MacDeviceApis final : public DeviceBase {
   Status pump() override {
     auto status=DeviceBase::pump();if(!status||queue_->closed)return status;
     if(location_overflow_&&location_overflow_->exchange(false))location_backpressure();
+    if(bluetooth_overflow_&&bluetooth_overflow_->exchange(false)){close_bluetooth();bluetooth_terminal_delivery_=std::make_shared<std::atomic<bool>>(true);DeviceQueued event{DeviceQueued::NativeTerminalEvent,"","BluetoothAdapterStateChange","",{{"available",false},{"discovering",false},{"errMsg","native Bluetooth ingress backpressure limit exceeded"}}};event.delivery_allowed=bluetooth_terminal_delivery_;queue_->push(std::move(event));}
+    for(auto item=bluetooth_open_intents_.begin();item!=bluetooth_open_intents_.end();)if(!calls_.count(item->first))item=bluetooth_open_intents_.erase(item);else ++item;
     photos_.erase(std::remove_if(photos_.begin(),photos_.end(),[](WCDevicePhoto* photo){return photo->finished&&photo->finished->load();}),photos_.end());dialogs_.erase(std::remove_if(dialogs_.begin(),dialogs_.end(),[](NSWindow* window){return !window.sheetParent&&!window.visible;}),dialogs_.end());
     auto authorization=app_authorization();if(authorization!=snapshots_["wx.getAppAuthorizeSetting"]){snapshots_["wx.getAppAuthorizeSetting"]=authorization;DeviceQueued update;update.kind=DeviceQueued::Snapshots;update.value={{"wx.getAppAuthorizeSetting",authorization}};queue_->push(std::move(update));}
     auto now=std::chrono::steady_clock::now();
