@@ -24,7 +24,7 @@ jobs:
         run: cmake -S test/native-sources -B build/native-sources -A x64
       - name: Compile actual Windows and C++/WinRT translation units
         run: cmake --build build/native-sources --config Release --parallel 2
-      - name: Run finite sensor and audio lifecycle cases
+      - name: Run finite sensor, audio and Value encoding cases
         run: ctest --test-dir build/native-sources -C Release --output-on-failure
       - name: Record compiler and SDK identities
         if: always()

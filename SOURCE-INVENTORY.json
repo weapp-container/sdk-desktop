@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "4e14566dae45818112b86801c3fe1216e40fd052",
-  "review": "Review eager release of retired queued package audio snapshots during source replacement, owner cancellation and fault; the active writer still retains exact native buffers through terminal completion. Eight finite audio groups cover the ownership boundary; hardware/runtime acceptance remains pending.",
+  "sourceBaseCommit": "1f34a9aa77c9e59d3042b761b0512668ae83cefa",
+  "review": "Review safe integral Value encoding at the Desktop JSON boundary: finite exact doubles within JavaScript safe-integer range become signed JSON integers; negative zero, fractional and unsafe doubles and decimal identity strings retain their semantics. Compile and execute src/value.cpp with seven regression groups in both native-source and regular CMake tests; preserve existing nonfinite rejection. Runtime/device acceptance remains separate.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -29,8 +29,8 @@
     },
     {
       "path": ".github/workflows/windows-native.yml",
-      "sha256": "74546aa65b902591af07bbd5bf0af58c28623e31b2beb1e1f0891260fda824e6",
-      "size": 1658,
+      "sha256": "e7707b385c67301b01be85e8c507b4717abf3a4c1a4dd2e807cb4c9c35f86b8b",
+      "size": 1664,
       "mode": "100644"
     },
     {
@@ -41,8 +41,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "68064c9aebc5451ab52e3025fc4d68e0d5284fa742874037de3f8b7e6418660d",
-      "size": 12008,
+      "sha256": "b5eba27446d6088f44106d798ede3c0cbcb2ce35cb89db5c465dd90ebaaa199d",
+      "size": 12272,
       "mode": "100644"
     },
     {
@@ -347,8 +347,8 @@
     },
     {
       "path": "src/value.cpp",
-      "sha256": "7556c9bd5cbddd58308e7b4d47bb63a3d42fcff737b02f2f2944bb9f1668e363",
-      "size": 1414,
+      "sha256": "9f28dca506d386366e0d8c85ce62133a516c660fe408274d8069796eaaa33c0c",
+      "size": 1841,
       "mode": "100644"
     },
     {
@@ -455,8 +455,8 @@
     },
     {
       "path": "test/native-sources/CMakeLists.txt",
-      "sha256": "50f166656b9b1fd8a04a9a5d725493ad273805c5c6599848d5167afe66993289",
-      "size": 2223,
+      "sha256": "7ab0d292cf0307420f62c06b5dac070a027737b5741bb3881f04605927051303",
+      "size": 2493,
       "mode": "100644"
     },
     {
@@ -481,6 +481,12 @@
       "path": "test/source-inventory.test.mjs",
       "sha256": "0e62d5969b10c4f7812a35b734018f12b41e3f5a58cae0cc5eb4efbc16ce0fd7",
       "size": 4434,
+      "mode": "100644"
+    },
+    {
+      "path": "test/value_encoding.cpp",
+      "sha256": "609f4566ac74662fd4d69501e75acc99209b37f51b463e184eed8d6305c11068",
+      "size": 5283,
       "mode": "100644"
     },
     {

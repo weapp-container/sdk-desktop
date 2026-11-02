@@ -1,5 +1,6 @@
 #include "internal.hpp"
 #include <cmath>
+#include <cstdint>
 #include <stdexcept>
 #include <type_traits>
 
@@ -21,6 +22,12 @@ Json encode(const Value& v) {
         } else if constexpr (std::is_same_v<T, double>) {
           if (!std::isfinite(item))
             throw std::invalid_argument("business numbers must be finite");
+          // Value stores every number as double. Preserve integral JSON tokens
+          // for typed runtime fields without converting unsafe values or -0.
+          constexpr double max_safe_integer = 9007199254740991.0;
+          if (std::abs(item) <= max_safe_integer && std::trunc(item) == item &&
+              (item != 0.0 || !std::signbit(item)))
+            return static_cast<std::int64_t>(item);
           return item;
         } else
           return item;
