@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "c898e780f3017dc62fd78cae3449eac4fd6ed17f",
-  "review": "Trusted host service context, scoped managed files and OS device drivers; macOS source build validated, Windows/Linux and hardware acceptance pending",
+  "sourceBaseCommit": "a2410b7da1fc8a22cc5b11a25027ae0ac7d23b13",
+  "review": "Permission reset revokes queued grants, OS callbacks and queued completions; retained resource failure cleanup; executable DeviceBase lifecycle regression (fake OS callbacks), macOS build validated",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -29,8 +29,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "676ff54cf860cf2bf0ce8629b023fec0b15a70f3eacf929556ba9ecd4fc6147e",
-      "size": 4968,
+      "sha256": "99046653a0d93102a3a9daa35838419602c682497e808dabe2ab0bb59299ff47",
+      "size": 5469,
       "mode": "100644"
     },
     {
@@ -107,8 +107,8 @@
     },
     {
       "path": "docs/EMBEDDING.md",
-      "sha256": "7076ded9eb5f3b81eb8f585c58211a1a496c7ac62037013914123b5feebeeb6b",
-      "size": 9892,
+      "sha256": "2dcbc02606fae66048c5b0f6f4cb68bd2845c72e3e906aeb78045e52b3bd6529",
+      "size": 10433,
       "mode": "100644"
     },
     {
@@ -173,26 +173,26 @@
     },
     {
       "path": "src/device_apis_common.hpp",
-      "sha256": "99418938c7d430afd02968e01ec99c4a15a7ab74cf8e178fa0ab9fdc64c5a403",
-      "size": 30880,
+      "sha256": "ed7dd963c83feece75ca2be5292a6b57f4d8317224b396e6a64e0aafef4a4964",
+      "size": 32259,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_linux.cpp",
-      "sha256": "15b430da3b59ae9608ae5d14324fcc8945689013c87ce0686037decf8466c485",
-      "size": 25518,
+      "sha256": "41d085b7bf0906db0ec70ae04ee560ce2d050d3d6a0c9ebaa1ebc95c106dc067",
+      "size": 25388,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_macos.mm",
-      "sha256": "b58195e7541163bce7faab32d3ab1e7a31977fe801b562ce3a9e0d74bc7ac5e1",
-      "size": 87294,
+      "sha256": "84f0a52eea76de0da1957f928ef4f29ba6cab7ee2219b112aab71ff3001e92c1",
+      "size": 87340,
       "mode": "100644"
     },
     {
       "path": "src/device_apis_windows.cpp",
-      "sha256": "3ae776ab46fefeb3aff3fe521d5e11139b5f2945121bdb605aa6a150ae595aa6",
-      "size": 27757,
+      "sha256": "5f01ab18f1a8c7843065a74d5dbec4ca86d61f790597a3e727b3f13fda850259",
+      "size": 27630,
       "mode": "100644"
     },
     {
@@ -229,6 +229,12 @@
       "path": "test/consumer-wait.cpp",
       "sha256": "2428dbd307f8755c527233161bd8b71bcf16a912a62c41795c3370a9d6a06b0a",
       "size": 1616,
+      "mode": "100644"
+    },
+    {
+      "path": "test/device_permissions.cpp",
+      "sha256": "a5ded4aeb5acaee22eaf87abe66665fcd1e3a55ebbe20dade549c45836ee2254",
+      "size": 8190,
       "mode": "100644"
     },
     {

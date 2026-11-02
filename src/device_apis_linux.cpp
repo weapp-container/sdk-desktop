@@ -51,7 +51,7 @@ class LinuxDeviceApis final:public DeviceBase {
     dialogs_.insert(widget);g_signal_connect_data(widget,"destroy",G_CALLBACK(+[](GtkWidget* widget,gpointer pointer){auto callback=static_cast<std::function<void()>*>(pointer);(*callback)();}),new std::function<void()>([this,weak,widget]{auto queue=weak.lock();if(queue&&!queue->closed)dialogs_.erase(widget);}),[](gpointer pointer,GClosure*){delete static_cast<std::function<void()>*>(pointer);},GConnectFlags(0));gtk_widget_show_all(widget);
   }
   void request_permission(const std::string& scope,std::function<void(bool)> completion) override {
-    try{if(scope=="open-settings") {auto weak=weak_queue();dialog("Application permissions",Json(consents_).dump(2),{"Done","Reset permissions"},[this,weak,completion](int response){queue_action(weak,[this,weak,completion,response]{auto queue=weak.lock();if(!queue||queue->closed)return;if(response==1){permissions_reset();consents_.clear();auto bytes=Json(consents_).dump();durable_write(consents_file_,std::vector<uint8_t>(bytes.begin(),bytes.end()));}completion(response>=0);});});}
+    try{if(scope=="open-settings") {auto weak=weak_queue();dialog("Application permissions",Json(consents_).dump(2),{"Done","Reset permissions"},[this,weak,completion](int response){queue_action(weak,[this,weak,completion,response]{auto queue=weak.lock();if(!queue||queue->closed)return;if(response==1){reset_permissions();}completion(response>=0);});});}
       else dialog("Allow application access?",encode(options_.application).value("appId","")+" requests "+scope,{"Allow","Deny"},[completion](int response){completion(response==0);});}
     catch(...){completion(false);}
   }

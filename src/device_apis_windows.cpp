@@ -63,7 +63,7 @@ class WindowsDeviceApis final:public DeviceBase {
   HWND parent() const {return static_cast<HWND>(options_.native_parent);}
   void request_permission(const std::string& scope,std::function<void(bool)> completion) override {
     if(!parent()){completion(false);return;}
-    if(scope=="open-settings"){auto result=MessageBoxW(parent(),wide("Saved permissions for "+encode(options_.application).value("appId","")+":\n"+Json(consents_).dump(2)+"\n\nReset these application permissions?").c_str(),L"Application permissions",MB_YESNOCANCEL|MB_ICONQUESTION);if(result==IDYES){permissions_reset();consents_.clear();auto data=Json(consents_).dump();durable_write(consents_file_,std::vector<uint8_t>(data.begin(),data.end()));}completion(result!=IDCANCEL);return;}
+    if(scope=="open-settings"){auto result=MessageBoxW(parent(),wide("Saved permissions for "+encode(options_.application).value("appId","")+":\n"+Json(consents_).dump(2)+"\n\nReset these application permissions?").c_str(),L"Application permissions",MB_YESNOCANCEL|MB_ICONQUESTION);if(result==IDYES){reset_permissions();}completion(result!=IDCANCEL);return;}
     completion(MessageBoxW(parent(),wide(encode(options_.application).value("appId","")+" requests "+scope).c_str(),L"Allow application access?",MB_YESNO|MB_ICONQUESTION)==IDYES);
   }
   void request(const std::string& call,const std::string& api,Json payload) {

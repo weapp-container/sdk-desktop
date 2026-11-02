@@ -179,9 +179,10 @@ class DeviceBase : public DeviceApis {
  protected:
   DeviceApiOptions options_;Command command_;std::thread::id owner_=std::this_thread::get_id();std::shared_ptr<DeviceQueue> queue_=std::make_shared<DeviceQueue>();
   std::map<std::string,Json> apis_,snapshots_;std::filesystem::path root_,consents_file_;std::vector<std::future<void>> workers_;
-  struct Call {Json context;bool retained=false;std::function<void()> cancel;};std::map<std::string,Call> calls_;
+  struct Call {Json context;bool retained=false;std::function<void()> cancel;std::optional<uint64_t> permission_generation;};std::map<std::string,Call> calls_;
   struct Subscription {std::string event,object,call;Json context;uint64_t sequence=0;};std::map<std::string,Subscription> subscriptions_;
   bool foreground_=true,retired_successfully_=false;
+  uint64_t permission_generation_=0;
   std::map<std::string,std::string> objects_;std::map<std::string,bool> consents_;std::string bound_session_;
   DeviceBase(DeviceApiOptions options,Command command,std::filesystem::path = {}):options_(std::move(options)),command_(std::move(command)) {
     scope_material(options_);Value leased;
@@ -217,13 +218,26 @@ class DeviceBase : public DeviceApis {
     auto id=payload.value("objectId","");auto found=objects_.find(id);if(found==objects_.end()||found->second!=type) throw std::invalid_argument("native object is unknown or belongs to another type");
   }
   bool allowed_origin(const std::string& origin) const {return std::find(options_.allowed_network_origins.begin(),options_.allowed_network_origins.end(),origin)!=options_.allowed_network_origins.end();}
+  bool permission_call_is_current(const std::string& call,uint64_t generation) const {
+    auto found=calls_.find(call);return generation==permission_generation_&&found!=calls_.end()&&found->second.permission_generation==generation;
+  }
+  void reset_permissions() {
+    ++permission_generation_;
+    consents_.clear();
+    permissions_reset();
+    for(const auto& entry:calls_)if(entry.second.permission_generation)
+      fail(entry.first,entry.second.context.value("api",""),"application permission was reset","permission_denied");
+    auto bytes=Json(consents_).dump();durable_write(consents_file_,std::vector<uint8_t>(bytes.begin(),bytes.end()));
+  }
   void permit(const std::string& scope,const std::string& api,const std::string& call,std::function<void()> action) {
+    const auto generation=permission_generation_;
+    calls_.at(call).permission_generation=generation;
     auto consent=consents_.find(scope);
     if(consent!=consents_.end()) {if(consent->second)action();else fail(call,api,"application permission was denied; reset it in application settings","permission_denied");return;}
     auto weak=weak_queue();
-    request_permission(scope,[this,weak,scope,api,call,action=std::move(action)](bool granted){
-      queue_action(weak,[this,weak,scope,api,call,granted,action]{
-      auto queue=weak.lock();if(!queue||queue->closed||!calls_.count(call)) return;
+    request_permission(scope,[this,weak,scope,api,call,generation,action=std::move(action)](bool granted){
+      queue_action(weak,[this,weak,scope,api,call,generation,granted,action]{
+      auto queue=weak.lock();if(!queue||queue->closed||!permission_call_is_current(call,generation)) return;
       consents_[scope]=granted;
       try {auto data=Json(consents_).dump();durable_write(consents_file_,std::vector<uint8_t>(data.begin(),data.end()));}catch(const std::exception& error){fail(call,api,error.what());return;}
       if(granted)action();else fail(call,api,"user denied application permission","permission_denied");
@@ -308,7 +322,11 @@ class DeviceBase : public DeviceApis {
           if(!item.object.empty())data["objectId"]=item.object;
           auto status=command_("hostApiEvent",std::get<Value::Object>(decode(data).data),nullptr);if(!status)return status;}
       }else if(item.kind==DeviceQueued::Snapshots){auto status=command_("updateHostServiceSnapshots",std::get<Value::Object>(decode(item.value).data),nullptr);if(!status)return status;}
-      else {auto found=calls_.find(item.id);if(found==calls_.end())continue;bool retained=found->second.retained;if(item.kind==DeviceQueued::Failure||!retained)calls_.erase(found);
+      else {auto found=calls_.find(item.id);if(found==calls_.end())continue;
+        // A completion may already precede reset's queued failure. Revocation
+        // wins at delivery too, and the failure releases retained resources.
+        if(item.kind==DeviceQueued::Complete&&found->second.permission_generation&&*found->second.permission_generation!=permission_generation_){item.kind=DeviceQueued::Failure;item.value=device_failure(found->second.context.value("api",""),"application permission was reset","permission_denied");}
+        bool retained=found->second.retained;if(item.kind==DeviceQueued::Failure)cancelled(item.id);else if(!retained)calls_.erase(found);
         Json data={{"callId",item.id},{item.kind==DeviceQueued::Failure?"error":"result",item.value}};
         auto status=command_("completeHostCall",std::get<Value::Object>(decode(data).data),nullptr);if(!status)return status;}
     }

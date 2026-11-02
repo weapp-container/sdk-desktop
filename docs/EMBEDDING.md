@@ -158,3 +158,11 @@ The macOS source has a local CMake archive-build check. This is not camera,
 Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
 Windows/Linux target builds and physical device verification remain separate
 requirements; available source routes do not establish OS parity.
+
+The optional CMake `WEAPP_DESKTOP_BUILD_TESTS=ON` target builds
+`weapp_device_permissions_test`; run it with `ctest --test-dir <build-dir>
+--output-on-failure`. It exercises the production dispatcher, persisted consent,
+owner queue and retained-object cleanup with fake OS consent callbacks. Pending
+application grants, delayed OS grants and queued successful completions cannot
+escape a permission reset; fresh authorization can recover afterward. This is
+an executable lifecycle contract check, not hardware or privacy-dialog acceptance.
