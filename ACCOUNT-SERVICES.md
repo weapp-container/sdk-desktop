@@ -46,6 +46,18 @@ macOS 使用 ephemeral `NSURLSession`，Windows 使用 `WinHTTP`，Linux 使用 
 开启的 `127.0.0.1/localhost/[::1]` origin。取消中断原生请求，结果只在 owner pump
 处理；宿主凭据不自动附加到任意小程序网络请求。
 
+后端错误支持字符串 `error` 与对象 `error`。公开 API 字段按 envelope、
+envelope.details、error.details、error 的顺序合并，后面的非 null 值优先；
+`code/message/error/details` 始终属于容器信息，不混入公开字段。
+`HostResult<T>::api_details` 保留原始 `errCode`、`errMsg` 和公开扩展字段，独立于
+`status` 与 `backend_code`；新增成员位于末尾，已有三个成员的聚合初始化保持源兼容。
+五类容器错误及其 `ERR_*` 形式保留原分类，身份或授权失效别名归为
+`permission_denied`，未知后端分类归为 `invalid_request`。callback、Promise、
+身份刷新、授权和支付均经过相同的字段投影；后端原始错误不再由 SDK 默认值覆盖。
+`unsupported_capability` / `ERR_UNSUPPORTED_CAPABILITY` 与 `unsupported` 属于同类；
+JS 的公开码由 runtime 按既有契约生成。业务已失败后的身份刷新只尽力更新快照，
+第二次刷新失败不会取代原始业务错误；业务成功后必需的刷新失败仍正常返回刷新错误。
+
 原生授权 UI 为 AppKit sheet、属于宿主 HWND 的 Win32 窗口与 GTK dialog，必须绑定
 可见宿主 parent。展示后端注册的应用、用途和权限版本；资料与手机号分别确认，
 拒绝仍写回后端，窗口关闭/换号取消不等于同意。自定义 presenter 的 completion
@@ -178,3 +190,10 @@ HTTP/SQLite 后端 → FFI/QuickJS 链路验证 callback/Promise、独立授权�
 迟到结果、应用退出、reference 签名通知与订单确认，以及传输取消/重定向/大小限制。
 原生授权 UI、正式 QR/H5 渠道、物理设备、归档新装、GPU 呈现和商户交易仍分别待验收；
 编译、有限测试、模拟器和真实设备证据互不替代。
+
+`desktop_host_backend_errors` 执行 C++ 错误解析与投影合同；
+`desktop_host_services_backend_errors` 通过独立 `--backend-errors-only` 模式验证
+真实 HTTP → 原生 transport → QuickJS 的失败 callback/complete/Promise 顺序、
+五类分类、原始字段、双失败优先级及 native future。未知模式明确拒绝。
+该模式不声明原生组件呈现或商户验收；默认的 `desktop_host_services_reference`
+仍运行原完整账号、手机号按钮和支付流程，组件测试须满足真实呈现前提。

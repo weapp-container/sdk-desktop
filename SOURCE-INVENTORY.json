@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "061a487c5c71398eef1ef1d7d98289b5c59d3def",
-  "review": "Review macOS native battery provider test and its Apple-only CMake target without changing runtime artifacts or historical ORIGIN",
+  "sourceBaseCommit": "5d7dea9d9010c100ef843e231288338ae1d89256",
+  "review": "Review independent backend container classifications and public API error fields, HTTP and QuickJS error-route regressions, and source-compatible HostResult details",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -41,14 +41,14 @@
     },
     {
       "path": "ACCOUNT-SERVICES.md",
-      "sha256": "a2804ceb76143adc7b697ee91cf42b617da059f802a9ed83e50c3196ae982665",
-      "size": 12459,
+      "sha256": "1f90604d710cc80a315393cf58fd21f2a057b74713ffd8e5f6cd5868d632e69d",
+      "size": 14093,
       "mode": "100644"
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "10a08bc0a89cc7dd77352d60b452dd272d39100511e7fc0841f1a70c6ec5d2ad",
-      "size": 16257,
+      "sha256": "0a9cb44967791fa734672f1b315a0634ec00357edcaec6c677cfa35e53a9765c",
+      "size": 17016,
       "mode": "100644"
     },
     {
@@ -173,8 +173,8 @@
     },
     {
       "path": "include/weapp/host_services.hpp",
-      "sha256": "06c92830d2826d4e399e9cf7a7080b2d5e72046e6e78f21df0e9d6b8bcc9ee93",
-      "size": 8101,
+      "sha256": "315bd116761918d745818a3114d1f5587a9c7f8ef4a55e2284e9f82749921e33",
+      "size": 8308,
       "mode": "100644"
     },
     {
@@ -341,20 +341,20 @@
     },
     {
       "path": "src/host_services.cpp",
-      "sha256": "825ef250163cebca6c4da01ea863e630278f49455bf14e779fc7aa9cc9c59614",
-      "size": 24573,
+      "sha256": "f684457859bea4f2621cd4318f33f3de52638ddd522f7b5754f69b2a995baf18",
+      "size": 27698,
       "mode": "100644"
     },
     {
       "path": "src/host_services_adapter.cpp",
-      "sha256": "ba6941afd958ddd8765c7ad20aadac948b46b0cd60d2941de589f67576fa3409",
-      "size": 31790,
+      "sha256": "e12c5c3e2176f38ed4ca7524cc16eb5de15e534b02411e323dc3c54e83db301f",
+      "size": 32102,
       "mode": "100644"
     },
     {
       "path": "src/host_services_internal.hpp",
-      "sha256": "05b5b60554e463ab0f36469796abcfb52ba4832f85371cea8ad0d5862371df3c",
-      "size": 662,
+      "sha256": "370128d6f380f17daad7ff921fc574501e7016ca2c33c0238b3f18f9488b4744",
+      "size": 1071,
       "mode": "100644"
     },
     {
@@ -508,9 +508,21 @@
       "mode": "100644"
     },
     {
+      "path": "test/host-services-reference-args.test.mjs",
+      "sha256": "429a79c90bdc8625257f45f7e7d878abe060d2f5dff54d6f8bdecd1db499125a",
+      "size": 1011,
+      "mode": "100644"
+    },
+    {
+      "path": "test/host_backend_errors.cpp",
+      "sha256": "ad2e4adad6d5cec42aad2a15d6fea771e9321f72fad2b97f12f48f9ac86fd6d3",
+      "size": 7468,
+      "mode": "100644"
+    },
+    {
       "path": "test/host_services_reference.cpp",
-      "sha256": "ac372d8cb858e685780ef9dde141cc4097ac41fe85b5804efb1641afc79151fc",
-      "size": 20963,
+      "sha256": "20f2543c141f56362cf589d5157daa798118c79691e5d4fe073c0b69c40f267e",
+      "size": 32008,
       "mode": "100644"
     },
     {
@@ -575,8 +587,8 @@
     },
     {
       "path": "test/run-host-services-reference.mjs",
-      "sha256": "a0fcaa93ef2266731cfb1bfe674db83e00a5c645541bcc4cf589c82ea598eed7",
-      "size": 6905,
+      "sha256": "b9cb9ae83e377d6d11c49f3c5477223ae4eeae89e41c3a1853af38e355955b0f",
+      "size": 8294,
       "mode": "100644"
     },
     {

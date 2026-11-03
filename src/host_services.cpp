@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <condition_variable>
+#include <cctype>
 #include <deque>
 #include <limits>
 #include <mutex>
@@ -101,6 +102,74 @@ Json load_options(const LoadOptions& options) {
   return result;
 }
 }  // namespace
+
+namespace detail {
+namespace {
+std::string nonblank_text(const Json& value, const char* field) {
+  if (!value.is_object() || !value.contains(field) || !value[field].is_string())
+    return {};
+  const auto text = value[field].get<std::string>();
+  return std::any_of(text.begin(), text.end(), [](unsigned char c) {
+           return !std::isspace(c);
+         }) ? text : std::string{};
+}
+Json child_object(const Json& value, const char* field) {
+  return value.is_object() && value.contains(field) && value[field].is_object()
+             ? value[field] : Json::object();
+}
+}  // namespace
+std::string host_error_category(const std::string& code) {
+  auto normalized = code.compare(0, 4, "ERR_") == 0 ? code.substr(4) : code;
+  std::transform(normalized.begin(), normalized.end(), normalized.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  if (normalized == "permission_denied" || normalized == "consent_required" ||
+      normalized == "invalid_host_session" || normalized == "invalid_app_session" ||
+      normalized == "host_identity_mismatch" || normalized == "stale_principal" ||
+      normalized == "app_scope_mismatch" || normalized == "untrusted_pack")
+    return "permission_denied";
+  if (normalized == "timeout" || normalized == "cancelled" || normalized == "unsupported")
+    return normalized;
+  if (normalized == "unsupported_capability") return "unsupported";
+  return "invalid_request";
+}
+HostBackendFailure parse_host_backend_error(const Json& response) {
+  const auto nested = child_object(response, "error");
+  auto code = nonblank_text(nested, "code");
+  if (code.empty()) code = nonblank_text(response, "code");
+  if (code.empty()) code = nonblank_text(response, "error");
+  if (code.empty()) code = "ERR_HOST_SERVICES";
+  Json fields = Json::object();
+  // Non-null higher-priority fields win. Container fields never enter the
+  // public API namespace, regardless of which envelope supplied them.
+  for (const auto& source : {response, child_object(response, "details"),
+                             child_object(nested, "details"), nested}) {
+    if (!source.is_object()) continue;
+    for (auto field = source.begin(); field != source.end(); ++field)
+      if (field.key() != "code" && field.key() != "message" &&
+          field.key() != "error" && field.key() != "details" && !field.value().is_null())
+        fields[field.key()] = field.value();
+  }
+  auto message = nonblank_text(nested, "message");
+  if (message.empty()) message = nonblank_text(response, "message");
+  if (message.empty()) message = nonblank_text(fields, "errMsg");
+  if (message.empty()) message = "Host services request failed";
+  const auto category = host_error_category(code);
+  auto status = category == "invalid_request" ? "ERR_HOST_SERVICES" : "ERR_" + category;
+  if (code == "invalid_request" || code == "ERR_INVALID_REQUEST") status = "ERR_INVALID_REQUEST";
+  std::transform(status.begin(), status.end(), status.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+  return {Status::error(status, message), code, object(fields)};
+}
+Json host_api_error_details(const std::string& api, const Status& status,
+                            const Value::Object& api_details) {
+  auto fields = encode(api_details);
+  if (nonblank_text(fields, "errMsg").empty())
+    fields["errMsg"] = api + ":fail " + status.message;
+  if (!fields.contains("errCode") || fields["errCode"].is_null())
+    fields["errCode"] = host_error_category(status.code) == "permission_denied" ? 2001 : -1;
+  return fields;
+}
+}  // namespace detail
 
 Value::Object HostApiContext::value() const {
   Json out = encode(wire);
@@ -261,18 +330,10 @@ struct HostServicesClient::Impl {
               auto json = Json::parse(response.body);
               require(json.is_object(), "Backend response must be an object");
               if (response.http_status < 200 || response.http_status >= 300) {
-                result.backend_code =
-                    json.value("error", "host_services_error");
-                static const std::set<std::string> permission = {
-                    "consent_required",    "invalid_host_session",
-                    "invalid_app_session", "host_identity_mismatch",
-                    "stale_principal",     "app_scope_mismatch",
-                    "untrusted_pack"};
-                result.status = Status::error(
-                    permission.count(result.backend_code)
-                        ? "ERR_PERMISSION_DENIED"
-                        : "ERR_HOST_SERVICES",
-                    json.value("message", "Host services request failed"));
+                auto failure = detail::parse_host_backend_error(json);
+                result.status = std::move(failure.status);
+                result.backend_code = std::move(failure.backend_code);
+                result.api_details = std::move(failure.api_details);
               } else
                 result.value = convert(json);
             }
@@ -489,9 +550,7 @@ std::shared_future<AccountCleanupResult> HostServicesClient::prepare_account(
                 if (result.status) {
                   auto j = Json::parse(response.body);
                   if (response.http_status < 200 || response.http_status >= 300)
-                    result.status = Status::error(
-                        "ERR_HOST_SERVICES",
-                        j.value("message", "Identity preflight failed"));
+                    result.status = detail::parse_host_backend_error(j).status;
                   else {
                     (void)identity(j);
                     result.sync_values["weappContainer.identity.getState"] =

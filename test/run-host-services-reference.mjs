@@ -9,7 +9,10 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
-const [referenceRoot,binary,pack] = process.argv.slice(2).map(value=>resolve(value));
+const args=process.argv.slice(2);
+assert.ok(args.length===3||args.length===4,'Expected reference root, native binary, authored pack and optional mode');
+const [referenceRoot,binary,pack] = args.slice(0,3).map(value=>resolve(value));
+const mode=args[3];assert.ok(mode===undefined||mode==='--backend-errors-only','Unknown host service reference mode');
 const { HostServices } = await import(pathToFileURL(join(referenceRoot,'src/service.mjs')));
 const { createHostServicesHandler } = await import(pathToFileURL(join(referenceRoot,'src/server.mjs')));
 const { referenceSignature } = await import(pathToFileURL(join(referenceRoot,'src/crypto.mjs')));
@@ -24,7 +27,7 @@ for(const [principalId,principalEpoch] of [['alice','1'],['bob','2'],['carol','3
 const selection=principal=>({miniAppId:app.miniAppId,packRoot,expectedPrincipalId:principal,expectedPrincipalEpoch:{alice:'1',bob:'2',carol:'3'}[principal]});
 const sessions={};for(const principal of ['alice','bob'])sessions[principal]=service.exchangeLogin(app.clientId,clientSecret,service.loginCode(tokens[principal],selection(principal)).code).accessToken;
 const orders={};for(const [name,principal] of [['confirmed','alice'],['pending','alice'],['foreign','bob']])orders[name]=await service.createOrder(sessions[principal],{channel:'reference',product:'app',amount:1,currency:'CNY',description:'Desktop controlled reference',idempotencyKey:name});
-const handler=createHostServicesHandler(service);let redirectLeaks=0,loginDelay=0;const timers=new Set();
+const handler=createHostServicesHandler(service);let redirectLeaks=0,loginDelay=0;const backendErrors=[],timers=new Set();
 const server=createServer(async(request,response)=>{
   if(process.env.WEAPP_HOST_SERVICES_TEST_TRACE)console.error('native reference HTTP',request.url);
   const bearer=request.headers.authorization?.slice(7);
@@ -50,8 +53,26 @@ const server=createServer(async(request,response)=>{
         response.end(JSON.stringify({confirmed:service.getOrder(sessions.alice,body.orderId).status==='paid'}));return;
       }
       if(request.url==='/fixture/delay'){loginDelay=300;response.end('{}');return;}
+      if(request.url==='/fixture/backend-error'){
+        assert.equal(backendErrors.length,0,'Previous backend error route was not consumed');
+        for(const failure of body.failures??[body]){
+          assert.ok(typeof failure.path==='string'&&failure.path.startsWith('/v1/'));
+          assert.ok(failure.body&&typeof failure.body==='object'&&!Array.isArray(failure.body));
+          assert.ok(Number.isInteger(failure.skip??0)&&(failure.skip??0)>=0);
+          backendErrors.push({path:failure.path,body:failure.body,skip:failure.skip??0});
+        }
+        response.end('{}');return;
+      }
     }catch(error){response.writeHead(400);response.end(JSON.stringify({error:'fixture_assertion',message:error.message}));return;}
     response.writeHead(404);response.end('{}');return;
+  }
+  if(backendErrors[0]?.path===request.url){
+    if(backendErrors[0].skip>0)backendErrors[0].skip--;
+    else {
+      const failure=backendErrors.shift();
+      let size=0;for await(const chunk of request){size+=chunk.length;assert.ok(size<=262144);}
+      response.writeHead(403,{'Content-Type':'application/json'});response.end(JSON.stringify(failure.body));return;
+    }
   }
   if(bearer==='slow-fixture'||bearer===tokens.dave&&request.url==='/v1/host/identity-state'||loginDelay&&request.url==='/v1/host/login-codes'){
     const timer=setTimeout(()=>{timers.delete(timer);handler(request,response);},bearer==='slow-fixture'?1000:bearer===tokens.dave?300:loginDelay);timers.add(timer);loginDelay=0;
@@ -63,9 +84,10 @@ try {
   const endpoint=`http://127.0.0.1:${server.address().port}`;
   const input=join(directory,'native-fixture.json');
   writeFileSync(input,JSON.stringify({endpoint,control,tokens,orders:Object.fromEntries(Object.entries(orders).map(([name,value])=>[name,value.orderId])),configuration:{application:{hostAppId:app.hostAppId,tenantId:app.tenantId,publisherId:'publisher',appId:app.miniAppId,environment:app.environment,version:'1.0.0',packRoot},account:{principalId:'alice',epoch:'1'}}}),{mode:0o600});
-  const child=spawn(binary,[pack,input],{stdio:['ignore','inherit','inherit']});
+  const child=spawn(binary,[pack,input,...(mode?[mode]:[])],{stdio:['ignore','inherit','inherit']});
   const [code,signal]=await once(child,'exit');assert.equal(signal,null);assert.equal(code,0);
   assert.equal(redirectLeaks,0,'Native transport forwarded a bearer across redirect');
+  assert.equal(backendErrors.length,0,'Backend error test did not traverse its expected native HTTP route');
   console.log('Actual reference service + native transport + QuickJS: passed; no native UI or merchant transaction was executed.');
 } finally {
   for(const timer of timers)clearTimeout(timer);timers.clear();

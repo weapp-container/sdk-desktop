@@ -1,3 +1,5 @@
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -28,6 +30,7 @@ void control(const Json& input, const std::string& path, const Json& value) {
 }
 struct ControlledConsent final : HostConsentPresenter {
   bool grant = false;
+  HostResult<bool> forced_error;
   size_t presentations = 0;
   std::thread::id owner = std::this_thread::get_id();
   HostConsentRequest last;
@@ -38,7 +41,8 @@ struct ControlledConsent final : HostConsentPresenter {
     require(!cancellation.cancelled(), "Cancelled consent was presented");
     last = request;
     ++presentations;
-    complete({{}, grant, {}});
+    if (!forced_error) complete(forced_error);
+    else complete({{}, grant, {}});
   }
 };
 struct ReferenceChannel final : HostPaymentChannel {
@@ -258,6 +262,157 @@ void transport_guards(const Json& input) {
           "Cross-account host bearer was accepted");
   std::cout << "host-services transport guards: passed\n";
 }
+Json backend_error(const std::string& code) {
+  return {{"code", "envelope-code"}, {"message", "envelope message"},
+          {"errCode", 10}, {"errMsg", "envelope:fail"},
+          {"requestId", "request-1"}, {"collision", "envelope"},
+          {"details", {{"collision", "envelope-details"}, {"envelopeDetails", true},
+                       {"retained", "non-null"}}},
+          {"error", {{"code", code}, {"message", "classified backend failure"},
+                     {"errCode", 4017}, {"errMsg", "provider:fail original"},
+                     {"collision", "nested"}, {"retained", nullptr},
+                     {"backendCode", "provider-annotation"},
+                     {"extension", Json::array({1, "two", false})},
+                     {"details", {{"collision", "nested-details"},
+                                  {"provider", "identity-provider"}, {"errCode", 12}}}}}};
+}
+void arm_error(const Json& input, const std::string& path, const Json& body, int skip = 0) {
+  control(input, "/fixture/backend-error", {{"path", path}, {"body", body}, {"skip", skip}});
+}
+void public_fields(const Json& fields) {
+  require(fields.at("errCode") == 4017 && fields.at("errMsg") == "provider:fail original" &&
+              fields.at("requestId") == "request-1" && fields.at("envelopeDetails") == true &&
+              fields.at("provider") == "identity-provider" && fields.at("collision") == "nested" &&
+              fields.at("retained") == "non-null" && fields.at("backendCode") == "provider-annotation" &&
+              fields.at("extension") == Json::array({1, "two", false}),
+          "Actual native HTTP/QuickJS error lost public fields: " + fields.dump());
+}
+void js_backend_failure(Fixture& f, const std::string& op, const std::string& path,
+                        const std::string& backend, const std::string& category,
+                        int skip = 0) {
+  arm_error(f.input, path, backend_error(backend), skip);
+  const auto begin = f.send(op, op == "profile" ? Json{{"desc", "Display registered profile"}} :
+                               op == "payment" ? Json{{"orderId", f.input.at("orders").at("pending")}} : Json::object());
+  const auto promise = f.wait(op + "-reject", begin);
+  const auto callback = f.wait(op + "-failure", begin);
+  require(promise.at("error") == callback.at("error"), "callback and Promise received different API failures");
+  const auto& error = promise.at("error");
+  public_fields(error);
+  const std::map<std::string, std::string> public_codes = {
+      {"invalid_request", "ERR_INVALID_REQUEST"}, {"permission_denied", "ERR_PERMISSION_DENIED"},
+      {"timeout", "ERR_TIMEOUT"}, {"cancelled", "ERR_CANCELLED"},
+      {"unsupported", "ERR_UNSUPPORTED_CAPABILITY"}};
+  require(error.at("code") == public_codes.at(category) && error.at("message") == "classified backend failure",
+          "Actual JS error lost its independent container classification: " + error.dump());
+  std::vector<std::string> order;
+  for (size_t n = begin; n < f.messages.size(); ++n) {
+    const auto kind = f.messages[n].value("kind", "");
+    if (kind.rfind(op + "-", 0) == 0) order.push_back(kind);
+  }
+  require(order == std::vector<std::string>{op + "-failure", op + "-complete", op + "-reject"},
+          "Backend failure did not settle fail/complete/Promise exactly once in order");
+}
+void backend_error_projection(const std::string& pack, const Json& input) {
+  Fixture f(pack, input);
+  for (const std::string category : {"invalid_request", "permission_denied", "timeout", "cancelled", "unsupported"}) {
+    auto upper = category;
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    for (const auto& code : {category, "ERR_" + upper})
+      js_backend_failure(f, "login", "/v1/host/login-codes", code, category);
+  }
+  for (const std::string alias : {"consent_required", "invalid_host_session", "invalid_app_session", "host_identity_mismatch", "stale_principal"}) {
+    auto upper = alias;
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    for (const auto& code : {alias, "ERR_" + upper})
+      js_backend_failure(f, "check", "/v1/host/check-session", code, "permission_denied");
+  }
+  for (const auto* alias : {"unsupported_capability", "ERR_UNSUPPORTED_CAPABILITY"})
+    js_backend_failure(f, "login", "/v1/host/login-codes", alias, "unsupported");
+  js_backend_failure(f, "info", "/v1/host/profile", "ERR_UNSUPPORTED", "unsupported");
+  js_backend_failure(f, "profile", "/v1/host/authorization-policy", "ERR_TIMEOUT", "timeout");
+  f.consent->grant = true;
+  js_backend_failure(f, "profile", "/v1/host/consents", "ERR_CANCELLED", "cancelled");
+  js_backend_failure(f, "login", "/v1/host/identity-state", "ERR_PERMISSION_DENIED", "permission_denied");
+  js_backend_failure(f, "logout", "/v1/host/app-logout", "ERR_INVALID_REQUEST", "invalid_request");
+  const auto payment_path = "/v1/payments/orders/" + input.at("orders").at("pending").get<std::string>() + "/launch";
+  js_backend_failure(f, "payment", payment_path, "ERR_UNSUPPORTED", "unsupported");
+  f.payments->confirm = false;
+  js_backend_failure(f, "payment", payment_path, "ERR_TIMEOUT", "timeout", 1);
+  arm_error(input, "/v1/host/login-codes", {{"error", "invalid_app_session"},
+      {"message", "expired"}, {"errCode", "TOKEN_EXPIRED"}, {"errMsg", "login:fail expired"},
+      {"traceId", "plain-native-trace"}});
+  const auto plain_begin = f.send("login");
+  const auto plain_error = f.wait("login-reject", plain_begin).at("error");
+  require(plain_error == f.wait("login-failure", plain_begin).at("error") &&
+              plain_error.at("code") == "ERR_PERMISSION_DENIED" &&
+              plain_error.at("errCode") == "TOKEN_EXPIRED" &&
+              plain_error.at("errMsg") == "login:fail expired" &&
+              plain_error.at("traceId") == "plain-native-trace",
+          "Actual native HTTP string error or string errCode was lost");
+  for (const auto* original_code : {"invalid_app_session", "ERR_INVALID_APP_SESSION"}) {
+    const Json original = {{"error", original_code}, {"message", "expired before refresh"},
+        {"errCode", "TOKEN_EXPIRED"}, {"errMsg", "checkSession:fail expired"},
+        {"traceId", "original-business-error"}};
+    auto refresh_error = backend_error("ERR_TIMEOUT");
+    refresh_error["error"]["errCode"] = 9999;
+    refresh_error["error"]["errMsg"] = "identity refresh:fail secondary timeout";
+    control(input, "/fixture/backend-error", {{"failures", Json::array({
+        {{"path", "/v1/host/check-session"}, {"body", original}},
+        {{"path", "/v1/host/identity-state"}, {"body", refresh_error}}})}});
+    const auto begin = f.send("check");
+    const auto failure = f.wait("check-reject", begin).at("error");
+    require(failure == f.wait("check-failure", begin).at("error") &&
+                failure.at("code") == "ERR_PERMISSION_DENIED" &&
+                failure.at("message") == "expired before refresh" &&
+                failure.at("errCode") == "TOKEN_EXPIRED" &&
+                failure.at("errMsg") == "checkSession:fail expired" &&
+                failure.at("traceId") == "original-business-error" &&
+                !failure.contains("requestId"),
+            "Best-effort identity refresh replaced the original business failure");
+    std::vector<std::string> settled;
+    for (size_t n = begin; n < f.messages.size(); ++n) {
+      const auto kind = f.messages[n].value("kind", "");
+      if (kind.rfind("check-", 0) == 0) settled.push_back(kind);
+    }
+    require(settled == std::vector<std::string>{"check-failure", "check-complete", "check-reject"},
+            "Double backend failure changed the one-settlement boundary");
+  }
+  // The public native future also retains fields; revocation's second request
+  // must forward its own failure rather than keep the first request's metadata.
+  arm_error(input, "/v1/host/identity-state", backend_error("ERR_CANCELLED"));
+  const auto refresh = f.await(f.services->refresh(f.context()));
+  require(!refresh && refresh.status.code == "ERR_CANCELLED" && refresh.backend_code == "ERR_CANCELLED",
+          "Native refresh lost backend classification");
+  public_fields(encode(refresh.api_details));
+  arm_error(input, "/v1/host/consents", backend_error("ERR_UNSUPPORTED"));
+  const auto revoke = f.await(f.services->revoke(f.context(), HostConsentKind::Profile));
+  require(!revoke && revoke.status.code == "ERR_UNSUPPORTED", "Native revoke lost first-request error");
+  public_fields(encode(revoke.api_details));
+  arm_error(input, "/v1/host/identity-state", backend_error("ERR_TIMEOUT"));
+  const auto revoke_refresh = f.await(f.services->revoke(f.context(), HostConsentKind::Profile));
+  require(!revoke_refresh && revoke_refresh.status.code == "ERR_TIMEOUT" && revoke_refresh.backend_code == "ERR_TIMEOUT",
+          "Native revoke lost the identity refresh error");
+  public_fields(encode(revoke_refresh.api_details));
+  arm_error(input, "/v1/host/identity-state", backend_error("ERR_PERMISSION_DENIED"));
+  const auto preflight = f.backend->prepare_configuration(object(input.at("configuration"))).get();
+  require(!preflight && preflight.status.code == "ERR_PERMISSION_DENIED", "Configuration preflight lost category");
+  public_fields(encode(preflight.api_details));
+  arm_error(input, "/v1/host/identity-state", backend_error("ERR_PERMISSION_DENIED"));
+  const auto config = input.at("configuration");
+  const auto cleanup = f.backend->prepare_account({"error-preflight", object(config.at("application")), object(config.at("account"))}).get();
+  require(!cleanup.status && cleanup.status.code == "ERR_PERMISSION_DENIED" &&
+              cleanup.status.message == "classified backend failure", "Account preflight reclassified object error");
+  // Native presenter errors use the same independent API namespace.
+  f.consent->forced_error = {Status::error("ERR_CANCELLED", "Native consent cancelled"), false, {},
+                             object(Json{{"errCode", "NATIVE_CANCEL"}, {"errMsg", "profile:fail native cancel"}, {"extension", 17}})};
+  const auto begin = f.send("profile", {{"desc", "Display registered profile"}});
+  const auto decision = f.wait("profile-reject", begin).at("error");
+  require(decision["code"] == "ERR_CANCELLED" && decision["errCode"] == "NATIVE_CANCEL" &&
+              decision["errMsg"] == "profile:fail native cancel" && decision["extension"] == 17,
+          "Native consent decision lost public API fields");
+  ok(f.await(f.services->revoke(f.context(), HostConsentKind::Phone)).status);
+  std::cout << "host-services real HTTP errors: 29 object callback/Promise routes, string error, 2 double failures, native futures and preflight passed (no component presentation or merchant acceptance)\n";
+}
 void identity_and_payment(const std::string& pack, const Json& input) {
   Fixture f(pack, input);
   require(f.state()["appLoggedIn"] == true,
@@ -469,13 +624,15 @@ int main(int argc, char** argv) {
   try {
     require(weapp::desktop::test::initialize_native_host(),
             "Native SDK test host requires an initialized platform display");
-    require(argc == 3,
-            "Expected authored pack and private native fixture input");
+    require(argc == 3 || (argc == 4 && std::string(argv[3]) == "--backend-errors-only"),
+            "Expected authored pack and private native fixture input, optionally --backend-errors-only");
+    const bool errors_only = argc == 4;
     std::ifstream stream(argv[2]);
     Json input;
     stream >> input;
     transport_guards(input);
-    identity_and_payment(argv[1], input);
+    if (errors_only) backend_error_projection(argv[1], input);
+    else identity_and_payment(argv[1], input);
     return 0;
   } catch (const std::exception& e) {
     std::cerr << e.what() << '\n';

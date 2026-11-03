@@ -40,6 +40,10 @@ struct HostResult {
   Status status;
   T value{};
   std::string backend_code;
+  // Public API fields are independent of the container status and backend
+  // code. Appended so existing three-field aggregate initialization remains
+  // source compatible.
+  Value::Object api_details{};
   explicit operator bool() const { return bool(status); }
 };
 struct HostProfile {

@@ -129,24 +129,16 @@ struct HostServices::Impl {
   void fail(const std::shared_ptr<Call>& call, Status status,
             const std::string& backend = {}, Value::Object api_details = {}) {
     if (!current(call)) return;
-    auto code = status.code == "ERR_PERMISSION_DENIED" ? "permission_denied"
-                : status.code == "ERR_UNSUPPORTED"     ? "unsupported"
-                : status.code == "ERR_TIMEOUT"         ? "timeout"
-                : status.code == "ERR_CANCELLED"       ? "cancelled"
-                                                       : "invalid_request";
-    Json details = encode(api_details);
-    if (!details.contains("errMsg"))
-      details["errMsg"] = call->context.api + ":fail " + status.message;
-    if (!details.contains("errCode"))
-      details["errCode"] = status.code == "ERR_PERMISSION_DENIED" ? 2001 : -1;
-    if (!backend.empty()) details["backendCode"] = backend;
+    const auto code = detail::host_error_category(status.code);
+    Json details = detail::host_api_error_details(call->context.api, status, api_details);
+    if (!backend.empty() && !details.contains("backendCode")) details["backendCode"] = backend;
     auto failed = command("completeHostCall",
                           {{"callId", call->context.call_id},
                            {"context", encode(call->context.value())},
                            {"error",
                             {{"code", code},
                              {"message", status.message},
-                             {"retryable", status.code == "ERR_TIMEOUT"},
+                             {"retryable", code == "timeout"},
                              {"details", details}}}});
     if (!failed) transport_error = failed;
     stop_call(call->context.call_id);
@@ -200,7 +192,7 @@ struct HostServices::Impl {
           [this, call, next = std::move(next)](auto result) mutable {
             if (!current(call)) return;
             if (!result) {
-              fail(call, result.status, result.backend_code);
+              fail(call, result.status, result.backend_code, result.api_details);
               return;
             }
             auto status = snapshot(call->context, result.value);
@@ -219,12 +211,19 @@ struct HostServices::Impl {
       if (!current(call)) return;
       if (!result) {
         // Even a revoked app session refreshes the visible synchronous state.
-        if (result.backend_code == "invalid_app_session")
-          refresh_call(call, [this, call, result] {
-            fail(call, result.status, result.backend_code);
-          });
+        if (result.backend_code == "invalid_app_session" ||
+            result.backend_code == "ERR_INVALID_APP_SESSION") {
+          // The business error already settled upstream. This refresh is best
+          // effort: a second failure cannot replace its original API fields.
+          await(options.backend->identity_state(call->context, call->cancel),
+                [this, call, result](auto state) {
+                  if (!current(call)) return;
+                  if (state) (void)snapshot(call->context, state.value);
+                  fail(call, result.status, result.backend_code, result.api_details);
+                });
+        }
         else
-          fail(call, result.status, result.backend_code);
+          fail(call, result.status, result.backend_code, result.api_details);
         return;
       }
       auto value = transform(result.value);
@@ -262,7 +261,7 @@ struct HostServices::Impl {
             }
             if (!policy) {
               consent_busy = false;
-              fail(call, policy.status, policy.backend_code);
+              fail(call, policy.status, policy.backend_code, policy.api_details);
               return;
             }
             auto box = std::make_shared<Mailbox<HostResult<bool>>>();
@@ -283,7 +282,7 @@ struct HostServices::Impl {
               consent_busy = false;
               if (!current(call)) return true;
               if (!decision) {
-                fail(call, decision.status, decision.backend_code);
+                fail(call, decision.status, decision.backend_code, decision.api_details);
                 return true;
               }
               await(
@@ -292,7 +291,7 @@ struct HostServices::Impl {
                   [this, call, phone, granted = decision.value](auto recorded) {
                     if (!current(call)) return;
                     if (!recorded) {
-                      fail(call, recorded.status, recorded.backend_code);
+                      fail(call, recorded.status, recorded.backend_code, recorded.api_details);
                       return;
                     }
                     if (!granted) {
@@ -339,7 +338,7 @@ struct HostServices::Impl {
           }
           if (!result) {
             payment_busy = false;
-            fail(call, result.status, result.backend_code);
+            fail(call, result.status, result.backend_code, result.api_details);
             return;
           }
           if (result.value.status == "paid") {
@@ -394,7 +393,7 @@ struct HostServices::Impl {
           }
           if (!result) {
             payment_busy = false;
-            fail(call, result.status, result.backend_code);
+            fail(call, result.status, result.backend_code, result.api_details);
             return;
           }
           const auto& order = result.value;
@@ -782,8 +781,11 @@ std::shared_future<HostResult<Value::Object>> HostServices::revoke(
             [this, context, promise, result, token](auto state) mutable {
               if (state)
                 result.status = impl_->snapshot(context, state.value);
-              else
+              else {
                 result.status = state.status;
+                result.backend_code = std::move(state.backend_code);
+                result.api_details = std::move(state.api_details);
+              }
               impl_->forget(token);
               promise->set_value(std::move(result));
             });
