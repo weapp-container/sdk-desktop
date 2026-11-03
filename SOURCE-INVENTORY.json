@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "2bf1e3adc0ff5f59e974440201c3171833c34965",
-  "review": "Identify the existing native reference fixture as legacy consent v1 without claiming v2 revocation",
+  "sourceBaseCommit": "88e70e46eda0c6de3d71c45b81d1075d1f36f82a",
+  "review": "Review trusted system TabBar presenter configuration, dynamic indicators and styles; preserve historical ORIGIN identity",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -71,8 +71,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "73883c626dee1b641d3892492e619df5d5db5a89be86329db3af3fef70e7d6ef",
-      "size": 10554,
+      "sha256": "96e3b0cd21c208b23d5fb3a28f923e69b8498cd73ecaac927a1c475ab4252a10",
+      "size": 11307,
       "mode": "100644"
     },
     {
@@ -677,8 +677,8 @@
     },
     {
       "path": "types/weapp-container.d.ts",
-      "sha256": "c951bcb61181a050f06049417d6db2b8e421b349092cce3bd19042426bb6080b",
-      "size": 1804,
+      "sha256": "a0dc928f8d421a057fe08243e1024ffe2aa5a84fc25de6225515d465d837625f",
+      "size": 1941,
       "mode": "100644"
     }
   ]
