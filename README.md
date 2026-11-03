@@ -116,3 +116,17 @@ At preview.5.3, wrapper metadata, native-input checks and consumer tools require
 
 类型化宿主账号/身份/支付客户端、三端 HTTPS、原生授权 UI、账号清理和实际参考服务回归见
 [ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md)。正式桌面 QR/H5 展示器与商户交易仍待交付/验收。
+
+### System tab bar presenter admission
+
+`systemTabBar` is a trusted host configuration option. It defaults to `false`, and
+`false` is omitted from the wire configuration for compatibility. Set it to `true`
+with a paired runtime/SDK and an installed system tab chrome consumer, such as the
+dev Player Flutter tabs or its Windows/Gtk overlays.
+
+The runtime supports bounded `setTabBarBadge`, `removeTabBarBadge`,
+`showTabBarRedDot`, `hideTabBarRedDot`, and `setTabBarStyle` transactions with a
+Partial capability ceiling. Custom tab bars remain Unsupported. `showTabBar`,
+`hideTabBar`, and `setTabBarItem` are not implemented by this option. The flag
+admits the host consumer; it does not establish WeChat visual/parameter parity
+or platform acceptance.

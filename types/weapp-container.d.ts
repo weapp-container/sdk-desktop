@@ -38,7 +38,8 @@ export interface PageChrome {
     backgroundColor: string;
     borderStyle: string;
     selectedIndex: number | null;
-    list: Array<{ pagePath: string; text: string; iconPath?: string; selectedIconPath?: string }>;
+    /** Dynamic indicators require matching runtime admission and an attached system presenter. */
+    list: Array<{ pagePath: string; text: string; iconPath?: string; selectedIconPath?: string; badgeText?: string; redDot?: boolean }>;
   };
 }
 export interface ChromeCapabilities {
