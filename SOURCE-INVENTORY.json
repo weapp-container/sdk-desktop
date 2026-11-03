@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "87721b05d7b9098e6088c7eef695cdd39bc881d3",
-  "review": "Bind preview.6.0 runtime artifacts for Android, iOS, macOS and Linux release consumers",
+  "sourceBaseCommit": "061a487c5c71398eef1ef1d7d98289b5c59d3def",
+  "review": "Review macOS native battery provider test and its Apple-only CMake target without changing runtime artifacts or historical ORIGIN",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -47,8 +47,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "ed5863698dfadd444d455b7d0147d716ed479f296beb04860fc46e444c09078f",
-      "size": 15759,
+      "sha256": "10a08bc0a89cc7dd77352d60b452dd272d39100511e7fc0841f1a70c6ec5d2ad",
+      "size": 16257,
       "mode": "100644"
     },
     {
@@ -451,6 +451,12 @@
       "path": "test/device_audio.cpp",
       "sha256": "19bde985b6f128beb7c1c6c86fbc38607443519b44e68a34338d0de90f592d05",
       "size": 21620,
+      "mode": "100644"
+    },
+    {
+      "path": "test/device_battery_macos.mm",
+      "sha256": "10ad47e97007530a6f0c91ca282e49b86dc268292e217b53019b37316734c2bb",
+      "size": 5316,
       "mode": "100644"
     },
     {
