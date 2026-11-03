@@ -19,7 +19,8 @@ const { referenceSignature } = await import(pathToFileURL(join(referenceRoot,'sr
 const secret=()=>randomBytes(32).toString('base64url');
 const clientSecret=secret(),callbackSecret=secret(),control=secret();
 const packRoot=JSON.parse(readFileSync(join(pack,'manifest.json'))).integrity.root;
-const app={miniAppId:'desktop-services',hostAppId:'desktop-services-host',tenantId:'tenant',environment:'trial',clientId:'business-backend',clientSecret,
+// Existing native fixture uses v1 and does not claim atomic consent revocation.
+const app={miniAppId:'desktop-services',identityProtocol:'1.0',hostAppId:'desktop-services-host',tenantId:'tenant',environment:'trial',clientId:'business-backend',clientSecret,
   trustedPackRoots:[packRoot],allowedPaymentChannels:['reference'],authorizationPolicies:{profile:{purpose:'Display the authorized profile',permissionVersion:'profile-v1'},phone:{purpose:'Associate the verified phone',permissionVersion:'phone-v1'}}};
 const service=new HostServices({issuerSecret:secret(),identitySecret:secret(),applications:[app],payments:{reference:{callbackSecret}}});
 const tokens={};

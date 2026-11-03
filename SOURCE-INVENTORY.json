@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "5d7dea9d9010c100ef843e231288338ae1d89256",
-  "review": "Review independent backend container classifications and public API error fields, HTTP and QuickJS error-route regressions, and source-compatible HostResult details",
+  "sourceBaseCommit": "2bf1e3adc0ff5f59e974440201c3171833c34965",
+  "review": "Identify the existing native reference fixture as legacy consent v1 without claiming v2 revocation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -587,8 +587,8 @@
     },
     {
       "path": "test/run-host-services-reference.mjs",
-      "sha256": "b9cb9ae83e377d6d11c49f3c5477223ae4eeae89e41c3a1853af38e355955b0f",
-      "size": 8294,
+      "sha256": "4876ab75654fd9d0ec5d336fdadf8d10d5117592600e689c723e51d64d5eb248",
+      "size": 8398,
       "mode": "100644"
     },
     {
