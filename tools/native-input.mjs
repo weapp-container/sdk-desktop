@@ -25,7 +25,7 @@ export function sourceProvenance(root) {
 
 /** Distribution receipts retain identities; command paths stay in external validation. */
 export function nativeIdentity(receipt) {
-  const keys = ['schemaVersion', 'sdkVersion', 'abiVersion', 'status', 'target', 'platform', 'profile', 'features', 'viewDiagnostics', 'sourceCommit', 'sourceDirty', 'distributionProfile', 'policySha256', 'distributionPolicy', 'markerVerified'];
+  const keys = ['schemaVersion', 'sdkVersion', 'abiVersion', 'status', 'target', 'platform', 'profile', 'features', 'viewDiagnostics', 'sourceCommit', 'sourceDirty', 'distributionProfile', 'policySha256', 'distributionPolicy', 'markerVerified', 'nativePostProcessing'];
   const identity = Object.fromEntries(keys.filter(key => Object.hasOwn(receipt, key)).map(key => [key, receipt[key]]));
   identity.artifacts = receipt.artifacts.map(artifact => Object.fromEntries(['file', 'bytes', 'sha256'].filter(key => Object.hasOwn(artifact, key)).map(key => [key, artifact[key]])));
   return identity;

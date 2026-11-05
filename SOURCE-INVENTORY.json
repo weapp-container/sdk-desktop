@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "227c7d8304afb359c29ea51605dbe578eca338c2",
-  "review": "Await actual asynchronous native view allocation before consumer application load",
+  "sourceBaseCommit": "697cc99ab3ea93da5d629049f33f490187ee834d",
+  "review": "Preserve explicit post-processing provenance summaries without republishing original private producer paths",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -557,8 +557,8 @@
     },
     {
       "path": "test/native-input.test.mjs",
-      "sha256": "fba924c9ee7fe5451f76aa598457ba62388c74d6b1fff8d0ea5b2f19758345fc",
-      "size": 14476,
+      "sha256": "9c932fee6b5af01360437a99cc2ae7a05002470f68e35c2d2c4be027ebc6cd80",
+      "size": 14813,
       "mode": "100644"
     },
     {
@@ -665,8 +665,8 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "3896b931f03fc37d9212284ebc4cdc21697c3939c79b9d39a02b6c9003a6ea98",
-      "size": 12406,
+      "sha256": "e1c04230a629a4ef577edaf1d39215250e2e8d19889f5249eb5bd12a47e98063",
+      "size": 12430,
       "mode": "100644"
     },
     {

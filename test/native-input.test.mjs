@@ -85,12 +85,16 @@ test('an absent runtime input never invokes a compiler or searches a parent repo
   finally { if (prior !== undefined) process.env.WEAPP_CONTAINER_RUNTIME_NATIVE_ROOT = prior; }
 });
 test('packaged native identities exclude producer checkout, toolchain and command paths', () => {
+  const nativePostProcessing = { schemaVersion: 1, compileExecuted: false,
+    originalReceipt: { file: 'original-build.json', sha256: '1'.repeat(64), bytes: 100 } };
   const identity = nativeIdentity({ schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target: 'fixture-target', status: 'built',
     toolchain: { androidNdk: '/private/producer/ndk' }, output: '/private/producer/build', commands: ['/private/producer/cargo'],
     artifacts: [{ file: 'libfixture.a', sha256: '0'.repeat(64), bytes: 10, producerPath: '/private/producer/libfixture.a' }],
+    nativePostProcessing, originalNativeProducerReceipt: '{"output":"/private/producer/build"}',
   });
   assert.equal(JSON.stringify(identity).includes('/private/producer'), false);
   assert.equal(identity.abiVersion, 1);
+  assert.deepEqual(identity.nativePostProcessing, nativePostProcessing);
   assert.deepEqual(identity.artifacts, [{ file: 'libfixture.a', bytes: 10, sha256: '0'.repeat(64) }]);
 });
 
