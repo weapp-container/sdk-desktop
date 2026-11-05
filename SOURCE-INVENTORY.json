@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "b5e14ac72fc3c2975c30fdadd74df5e73a55e4b7",
-  "review": "Copy the Windows runtime DLL beside consumers and preserve loader diagnostics for exact ABI validation",
+  "sourceBaseCommit": "902fb7225afce3f11dfc9ca7515aa38f11e9f97a",
+  "review": "Propagate the Common Controls v6 activation dependency with the Windows native action-sheet service so installed consumers load TaskDialogIndirect correctly",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -245,8 +245,8 @@
     },
     {
       "path": "src/device_apis_windows.cpp",
-      "sha256": "eb81577e11eb9489b0139946e0d0f60eed6e9550951506973b3f00c4a73a9392",
-      "size": 28901,
+      "sha256": "8b8fffb51ba9e60fd6c05c0e4443d1fcc0b1ed53010b0f1c5bf2f2b90b469718",
+      "size": 29344,
       "mode": "100644"
     },
     {

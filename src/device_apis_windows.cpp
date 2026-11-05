@@ -24,6 +24,13 @@
 #include <cmath>
 #include <cstdio>
 
+#if defined(_MSC_VER)
+// TaskDialogIndirect is an ordinal import from Common Controls v6. Carry its
+// activation dependency in the static service object so every embedding EXE
+// selects v6 before the Windows loader resolves our imports.
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 namespace weapp::desktop::detail {
 namespace {
 std::wstring wide(const std::string& text) {
