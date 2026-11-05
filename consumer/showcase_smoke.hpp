@@ -31,6 +31,9 @@ inline int showcase_smoke(const std::string& pack, Host host, const std::string&
         [&] { host.spin(.01); }, [] { return std::chrono::steady_clock::now(); },
         [&] { return "first=" + first_id + ", second=" + second_id + ", errors=" + std::to_string(errors.size()); });
     };
+    wait("both native showcase views to receive their first layout", [&] {
+      return host.laid_out(*left) && host.laid_out(*right);
+    });
     ok(first->load(pack)); ok(second->load(pack));
     wait("two real showcase previews and independent bridge sessions", [&] {
       return left->input_enabled() && right->input_enabled() && !first_id.empty() && !second_id.empty();

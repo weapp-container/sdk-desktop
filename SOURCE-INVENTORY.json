@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "edaed69cbb1cf22bbc76c4dc99d2c06d592cd78b",
-  "review": "Review schema 1 and modern View schema 3 portable packs with unchanged canonical root, blob and path verification",
+  "sourceBaseCommit": "227c7d8304afb359c29ea51605dbe578eca338c2",
+  "review": "Await actual asynchronous native view allocation before consumer application load",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -107,8 +107,8 @@
     },
     {
       "path": "consumer/linux.cpp",
-      "sha256": "883fabfbc7896f5b9c5a12e68822677b56a04b8478c3fab27c153b2fa1199211",
-      "size": 3338,
+      "sha256": "278344c4fca5f7c1cff84f9b376c1b7f6632f20f7c60ca32ad572066a7009c75",
+      "size": 3776,
       "mode": "100644"
     },
     {
@@ -119,14 +119,14 @@
     },
     {
       "path": "consumer/showcase_smoke.hpp",
-      "sha256": "be5c4a92b628dda509db17f3ff678e6b5a44fad7f811d36d170b2192bb50e69d",
-      "size": 5708,
+      "sha256": "1b8dd6a9a87dc6f9a3d0099691e4884d0bd970d31f6a39e1aa296ba6a30bddff",
+      "size": 5851,
       "mode": "100644"
     },
     {
       "path": "consumer/smoke.hpp",
-      "sha256": "fafbe71b1380232cdc317e60c12f77476a8184cc8258606bf722b92f19c55057",
-      "size": 12212,
+      "sha256": "0241a95af8dc3f42f8e29b54ac5568090a9302a7ad8363c37619fe633135b508",
+      "size": 12544,
       "mode": "100644"
     },
     {
@@ -431,8 +431,8 @@
     },
     {
       "path": "test/consumer-wait.cpp",
-      "sha256": "2428dbd307f8755c527233161bd8b71bcf16a912a62c41795c3370a9d6a06b0a",
-      "size": 1616,
+      "sha256": "2a8187fcc1992061fbd3aa8d38c78f35a4a9d56d1c436c6f95f45799e63a36ea",
+      "size": 2187,
       "mode": "100644"
     },
     {
