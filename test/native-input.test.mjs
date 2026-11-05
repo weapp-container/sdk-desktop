@@ -177,3 +177,22 @@ test('distribution selection cannot relax native path and symlink rules', t => {
     assert.throws(() => readNative(g.native, g.target, [g.library]), /symlink/);
   }
 });
+
+
+test('modern View schema 3 packs retain full canonical integrity verification', t => {
+  const f = fixture(t), source = resolve(f.directory, 'modern-pack');
+  mkdirSync(resolve(source, 'blobs/sha256'), { recursive: true });
+  const bytes = Buffer.from('modern module fixture'), digest = hash(bytes);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), bytes);
+  const manifest = { schemaVersion: 3, modules: [{ code: `sha256:${digest}` }], integrity: { algorithm: 'sha256', root: '' } };
+  const canonical = value => Array.isArray(value) ? `[${value.map(canonical).join(',')}]` : value && typeof value === 'object' ? `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}` : JSON.stringify(value);
+  manifest.integrity.root = hash(canonical(manifest));
+  writeFileSync(resolve(source, 'manifest.json'), JSON.stringify(manifest));
+  assert.equal(copyPack(source, resolve(f.directory, 'modern-copy')), manifest.integrity.root);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), 'changed');
+  assert.throws(() => copyPack(source, resolve(f.directory, 'modern-tampered')), /blob integrity/);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), bytes);
+  manifest.schemaVersion = 2; manifest.integrity.root = ''; manifest.integrity.root = hash(canonical(manifest));
+  writeFileSync(resolve(source, 'manifest.json'), JSON.stringify(manifest));
+  assert.throws(() => copyPack(source, resolve(f.directory, 'unsupported')), /Invalid portable manifest/);
+});

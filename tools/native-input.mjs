@@ -145,7 +145,7 @@ export function copyPack(source, destination) {
   if (!relation || (!relation.startsWith(`..${sep}`) && relation !== '..' && !isAbsolute(relation))) throw new Error('Pack destination must not be inside its source');
   const manifest = JSON.parse(readFileSync(inside(source, 'manifest.json'), 'utf8'));
   const original = manifest.integrity?.root;
-  if (manifest.schemaVersion !== 1 || !/^[a-f0-9]{64}$/.test(original || '')) throw new Error('Invalid portable manifest');
+  if (![1, 3].includes(manifest.schemaVersion) || !/^[a-f0-9]{64}$/.test(original || '')) throw new Error('Invalid portable manifest');
   manifest.integrity.root = '';
   if (createHash('sha256').update(canonical(manifest)).digest('hex') !== original) throw new Error('Portable manifest integrity mismatch');
   const blobs = inside(source, 'blobs/sha256');

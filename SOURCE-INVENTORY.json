@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "f5852be34920bf9970654dae98b10a498822e255",
-  "review": "Review real restricted business pack installed consumer and automatic distribution-specific acceptance mode",
+  "sourceBaseCommit": "edaed69cbb1cf22bbc76c4dc99d2c06d592cd78b",
+  "review": "Review schema 1 and modern View schema 3 portable packs with unchanged canonical root, blob and path verification",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -557,8 +557,8 @@
     },
     {
       "path": "test/native-input.test.mjs",
-      "sha256": "8c9b31c462c0a8ccf384d7479c3b498ba3c43ffe8f96fc241fb89143550b6902",
-      "size": 12959,
+      "sha256": "fba924c9ee7fe5451f76aa598457ba62388c74d6b1fff8d0ea5b2f19758345fc",
+      "size": 14476,
       "mode": "100644"
     },
     {
@@ -665,8 +665,8 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "c59b58467e527145b096aad382d8fcff0f2cbed71981df0220fd1be8b9b6e2af",
-      "size": 12394,
+      "sha256": "3896b931f03fc37d9212284ebc4cdc21697c3939c79b9d39a02b6c9003a6ea98",
+      "size": 12406,
       "mode": "100644"
     },
     {
