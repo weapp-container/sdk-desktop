@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "7e8f4c58b35468c2a35aab67c3836992a6a40b73",
-  "review": "Use the complete Windows C ABI DLL and import library, preserve exact runtime bytes, and copy the DLL beside independent consumers",
+  "sourceBaseCommit": "b5e14ac72fc3c2975c30fdadd74df5e73a55e4b7",
+  "review": "Copy the Windows runtime DLL beside consumers and preserve loader diagnostics for exact ABI validation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -641,8 +641,8 @@
     },
     {
       "path": "tools/build.mjs",
-      "sha256": "90012545ac75fdcf5541fe6b28f94e78e8291395e71294d52770f5491d046314",
-      "size": 8802,
+      "sha256": "baeada1d359b699d95fbf361f8c7458d71364a57c5544f8e6f5b12f1fefb1c68",
+      "size": 9784,
       "mode": "100644"
     },
     {

@@ -3,7 +3,7 @@ import { distributionOptions } from './distribution-identity.mjs';
 import { verifySourceInventory } from './source-inventory.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SDK_VERSION, copyPack, readNative, readNotices, requireNativeRoot, sourceProvenance, nativeIdentity } from './native-input.mjs';
@@ -79,6 +79,17 @@ try {
     if(args.includes('--verify')){
       const binary=resolve(consumer,process.platform==='win32'?'Release/desktop_consumer.exe':'desktop_consumer');
       const explicitPack=option('--pack');
+      if (process.platform === 'win32') {
+        const runtime = resolve(prefix, 'bin/weapp_container_sdk.dll');
+        if (!existsSync(runtime)) throw new Error('Installed Windows runtime DLL is missing before consumer execution');
+        copyFileSync(runtime, resolve(dirname(binary), 'weapp_container_sdk.dll'));
+        const diagnostics = [];
+        for (const command of [['where', ['dumpbin']], ['dumpbin', ['/DEPENDENTS', runtime]], ['dumpbin', ['/HEADERS', runtime]], ['dumpbin', ['/EXPORTS', runtime]]]) {
+          const probe = spawnSync(command[0], command[1], { cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+          diagnostics.push({ command: [command[0], ...command[1]].join(' '), status: probe.status, output: `${probe.stdout || ''}${probe.stderr || ''}`.slice(0, 2 * 1024 * 1024) });
+        }
+        writeFileSync(resolve(validationDir, 'windows-runtime-diagnostics.json'), JSON.stringify(diagnostics, null, 2) + '\n');
+      }
       const pack=resolve(out,`.pack-${platform}-${process.pid}`);
       if(existsSync(pack))throw new Error(`Consumer pack staging already exists: ${pack}`);
       copyPack(explicitPack,pack);
