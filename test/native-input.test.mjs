@@ -100,11 +100,11 @@ test('packaged native identities exclude producer checkout, toolchain and comman
 
 function distributionFixture(t, platform = 'ios') {
   const f = fixture(t);
-  f.target = platform === 'android' ? 'aarch64-linux-android' : 'aarch64-apple-ios-sim';
+  f.target = platform === 'android' ? 'aarch64-linux-android' : platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'aarch64-apple-ios-sim';
   f.input = resolve(f.native, f.target); mkdirSync(f.input, { recursive: true });
-  const omitted = platform === 'android' ? 'libweapp_container_sdk.a' : 'libweapp_container_sdk.dylib';
-  const library = platform === 'android' ? 'libweapp_container_sdk.so' : 'libweapp_container_sdk.a';
-  const files = [library, omitted, 'weapp_container_sdk.h', ...(platform === 'android' ? ['libc++_shared.so', 'platform-notices/NOTICE'] : [])];
+  const omitted = platform === 'android' ? 'libweapp_container_sdk.a' : platform === 'windows' ? 'weapp_container_sdk.lib' : 'libweapp_container_sdk.dylib';
+  const library = platform === 'android' ? 'libweapp_container_sdk.so' : platform === 'windows' ? 'weapp_container_sdk.dll.lib' : 'libweapp_container_sdk.a';
+  const files = [library, omitted, 'weapp_container_sdk.h', ...(platform === 'android' ? ['libc++_shared.so', 'platform-notices/NOTICE'] : platform === 'windows' ? ['weapp_container_sdk.dll'] : [])];
   for (const name of files) {
     mkdirSync(resolve(f.input, name, '..'), { recursive: true });
     if (name === 'weapp_container_sdk.h') cpSync(resolve(root, 'include', name), resolve(f.input, name));
@@ -122,7 +122,7 @@ function distributionFixture(t, platform = 'ios') {
   return Object.assign(f, { library, omitted });
 }
 
-for (const platform of ['ios', 'android']) test(`a ${platform} exact distribution validates selected bytes while preserving its full producer receipt`, t => {
+for (const platform of ['ios', 'android', 'windows']) test(`a ${platform} exact distribution validates selected bytes while preserving its full producer receipt`, t => {
   const f = distributionFixture(t, platform), original = readFileSync(resolve(f.input, 'build.json'));
   const input = readNative(f.native, f.target, [f.library]);
   assert.equal(input.distribution.omittedArtifacts[0].file, f.omitted);

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceBaseCommit": "697cc99ab3ea93da5d629049f33f490187ee834d",
-  "review": "Preserve explicit post-processing provenance summaries without republishing original private producer paths",
+  "sourceBaseCommit": "7e8f4c58b35468c2a35aab67c3836992a6a40b73",
+  "review": "Use the complete Windows C ABI DLL and import library, preserve exact runtime bytes, and copy the DLL beside independent consumers",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -47,8 +47,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "0a9cb44967791fa734672f1b315a0634ec00357edcaec6c677cfa35e53a9765c",
-      "size": 17016,
+      "sha256": "e2a0c4c90f28818fb8fce1b9d044452974e65d3618cc67b3e518962e5d22e28f",
+      "size": 17671,
       "mode": "100644"
     },
     {
@@ -71,8 +71,8 @@
     },
     {
       "path": "README.md",
-      "sha256": "96e3b0cd21c208b23d5fb3a28f923e69b8498cd73ecaac927a1c475ab4252a10",
-      "size": 11307,
+      "sha256": "38079fd3508327899cb7cd7cc235e21a6aa2e3b3070971c5a3e9edce7931f9b0",
+      "size": 11744,
       "mode": "100644"
     },
     {
@@ -89,14 +89,14 @@
     },
     {
       "path": "cmake/WeappContainerDesktopConfig.cmake.in",
-      "sha256": "dc1352907af136d501578d26a080c4a25d54fb8d736ede9aaf77d3eea79891b8",
-      "size": 664,
+      "sha256": "317c25623429b9af8270267205b2fa56798812351284df7051886d5195827695",
+      "size": 1323,
       "mode": "100644"
     },
     {
       "path": "consumer/CMakeLists.txt",
-      "sha256": "70d0be0f47b1cd77b367e9e65ea7ad4595e35decd2f2251eeea0cc3e10e34093",
-      "size": 832,
+      "sha256": "f178aa67ce8b3270c2bf4af3781af9a6296c52e090a228ea00537d16b1416f73",
+      "size": 879,
       "mode": "100644"
     },
     {
@@ -557,8 +557,8 @@
     },
     {
       "path": "test/native-input.test.mjs",
-      "sha256": "9c932fee6b5af01360437a99cc2ae7a05002470f68e35c2d2c4be027ebc6cd80",
-      "size": 14813,
+      "sha256": "81ac68b4288889968cefc542b3e214521ad0c87537c51f59437743179ca1277d",
+      "size": 15041,
       "mode": "100644"
     },
     {
@@ -641,8 +641,8 @@
     },
     {
       "path": "tools/build.mjs",
-      "sha256": "39a60d0050a1634a371f0504803bea58f7bc0ebfc1068a2d6ebffaed4a79349e",
-      "size": 8575,
+      "sha256": "90012545ac75fdcf5541fe6b28f94e78e8291395e71294d52770f5491d046314",
+      "size": 8802,
       "mode": "100644"
     },
     {
@@ -665,14 +665,14 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "e1c04230a629a4ef577edaf1d39215250e2e8d19889f5249eb5bd12a47e98063",
-      "size": 12430,
+      "sha256": "79b1dc003914106d09f78292e7bafcc1d7cc7a0a2da1556e9a2cff619b151a6d",
+      "size": 12493,
       "mode": "100644"
     },
     {
       "path": "tools/prepare-runtime.mjs",
-      "sha256": "816694a94cffcc3b6efaf3c13b5f691efa1f54fa68917a3102b2237cef336e1b",
-      "size": 4476,
+      "sha256": "913156667411913dbf4050183b6d9c635850038ddab0966d4f0c9fa5624e5263",
+      "size": 4551,
       "mode": "100644"
     },
     {

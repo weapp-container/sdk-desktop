@@ -56,6 +56,8 @@ node tools/build.mjs --target macos-universal --native-root .runtime/install/nat
 
 Other targets are `macos-arm64`, `macos-x64`, `windows-x64` and `linux-x64`; build on the corresponding OS. `--skip-consumer` only packages. `--verify` requires a running display and exercises the installed native consumer. No successful build is counted as a GUI test.
 
+Windows uses the public C ABI through `bin/weapp_container_sdk.dll` and its `lib/weapp_container_sdk.dll.lib` import library. Call `weapp_container_copy_runtime(your_target)` after linking `WeappContainer::Desktop` to copy the exact runtime DLL beside the application. The Rust static library is not distributed for Windows because upstream Skia's Windows link configuration does not bundle its native implementation into that archive.
+
 Installations under `artifacts/desktop/TARGET` include public C/C++ headers, native and wrapper static archives, relative CMake exports, notices and an independent consumer. Consumers use:
 
 ```cmake

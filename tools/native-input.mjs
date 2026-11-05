@@ -80,7 +80,7 @@ export function readNative(nativeRoot, target, requiredLibraries, expectedDistri
     if (!Array.isArray(distribution.selectedArtifacts) || !distribution.selectedArtifacts.length || !Array.isArray(distribution.omittedArtifacts)) throw new Error('Native distribution must declare selected and omitted artifacts');
     const inventory = new Map(receipt.artifacts.map(item => [item.file, item]));
     const covered = new Set();
-    const omittedLibrary = target.endsWith('-linux-android') ? 'libweapp_container_sdk.a' : /-apple-ios(?:-sim)?$/.test(target) ? 'libweapp_container_sdk.dylib' : undefined;
+    const omittedLibrary = target.endsWith('-linux-android') ? 'libweapp_container_sdk.a' : /-apple-ios(?:-sim)?$/.test(target) ? 'libweapp_container_sdk.dylib' : target.endsWith('-windows-msvc') ? 'weapp_container_sdk.lib' : undefined;
     for (const [group, items] of [['selected', distribution.selectedArtifacts], ['omitted', distribution.omittedArtifacts]]) {
       for (const item of items) {
         if (!item || typeof item !== 'object' || Object.keys(item).sort().join(',') !== 'bytes,file,sha256' || !Number.isSafeInteger(item.bytes) || item.bytes < 0 || covered.has(item.file)) throw new Error('Invalid or duplicate native distribution artifact');

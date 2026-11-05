@@ -53,9 +53,9 @@ const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
 save();
 try {
   receipt.toolchain.cmake=query('cmake',['--version']);
-  const library=platform.startsWith('windows')?'weapp_container_sdk.lib':'libweapp_container_sdk.a';
+  const library=platform.startsWith('windows')?'weapp_container_sdk.dll.lib':'libweapp_container_sdk.a';
   for(const target of targets){
-    const {receipt:manifest}=readNative(nativeRoot,target,[library],expectedDistribution);
+    const {receipt:manifest}=readNative(nativeRoot,target,platform.startsWith('windows')?[library,'weapp_container_sdk.dll']:[library],expectedDistribution);
     readNotices(nativeRoot,licensesRoot,target);
     receipt.native.push(nativeIdentity(manifest));
   }
@@ -92,6 +92,7 @@ try {
     }
   }
   for(const file of readdirSync(resolve(prefix,'lib'))){if(/\.(a|lib)$/.test(file))receipt.artifacts.push({file:`lib/${file}`,sha256:sha(resolve(prefix,'lib',file))});}
+  if(platform.startsWith('windows'))receipt.artifacts.push({file:'bin/weapp_container_sdk.dll',sha256:sha(resolve(prefix,'bin/weapp_container_sdk.dll'))});
   receipt.status=args.includes('--verify')&&!args.includes('--skip-consumer')?'verified':'packaged';
 } catch(error){receipt.status='failed';receipt.error=error.message;process.exitCode=1;}
 receipt.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({status:receipt.status,prefix,receipt:receiptPath,error:receipt.error},null,2));

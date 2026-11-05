@@ -40,8 +40,8 @@ try {
       outDirectory: resolve(root, '.runtime/downloads'), installDirectory: native,
       artifactDirectory: option(args, '--artifact-dir', process.env.WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR),
     });
-    const library = runtimePlatform === 'android' ? 'libweapp_container_sdk.so' : runtimePlatform === 'windows' ? 'weapp_container_sdk.lib' : 'libweapp_container_sdk.a';
-    readNative(resolve(stage, 'native'), triple, runtimePlatform === 'android' ? [library, 'libc++_shared.so'] : [library], expectedDistribution);
+    const library = runtimePlatform === 'android' ? 'libweapp_container_sdk.so' : runtimePlatform === 'windows' ? 'weapp_container_sdk.dll.lib' : 'libweapp_container_sdk.a';
+    readNative(resolve(stage, 'native'), triple, runtimePlatform === 'android' ? [library, 'libc++_shared.so'] : runtimePlatform === 'windows' ? [library, 'weapp_container_sdk.dll'] : [library], expectedDistribution);
     const current = sha256(resolve(native, 'RUNTIME-LICENSE'));
     if (licenseHash && current !== licenseHash) throw new Error('Runtime slice license texts disagree');
     licenseHash = current;
