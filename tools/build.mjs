@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { distributionOptions } from './distribution-identity.mjs';
 import { verifySourceInventory } from './source-inventory.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -9,6 +10,7 @@ import { SDK_VERSION, copyPack, readNative, readNotices, requireNativeRoot, sour
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const reviewedSource = verifySourceInventory(root);
 const args=process.argv.slice(2);
+const expectedDistribution = distributionOptions(args);
 function option(name,fallback){const i=args.indexOf(name);if(i<0)return fallback;if(!args[i+1]||args[i+1].startsWith('--'))throw new Error(`${name} requires a value`);return args[i+1];}
 const platform=option('--target',process.platform==='darwin'?'macos-universal':process.platform==='win32'?'windows-x64':'linux-x64');
 const targets={
@@ -25,7 +27,7 @@ const licensesRoot=resolve(option('--licenses-root',resolve(nativeRoot,'../licen
 if(args.includes('--verify')&&!option('--pack'))throw new Error('--pack is required for consumer execution');
 mkdirSync(prefix,{recursive:true});
 function query(command,argv){const r=spawnSync(command,argv,{cwd:root,encoding:'utf8'});if(r.error||r.status!==0)throw new Error(`${command} failed: ${r.error?.message||r.stderr}`);return r.stdout.trim();}
-const receipt={schemaVersion:1,sdkVersion:SDK_VERSION,platform,...sourceProvenance(root), sourceInventorySha256: reviewedSource.inventorySha256,toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
+const receipt={schemaVersion:1,sdkVersion:SDK_VERSION,...expectedDistribution,platform,...sourceProvenance(root), sourceInventorySha256: reviewedSource.inventorySha256,toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
 const receiptPath=resolve(prefix,'package.json');
 const validationDir=resolve(out,`validation-${platform}`);mkdirSync(validationDir,{recursive:true});
 const commandEvidence=[];
@@ -53,7 +55,7 @@ try {
   receipt.toolchain.cmake=query('cmake',['--version']);
   const library=platform.startsWith('windows')?'weapp_container_sdk.lib':'libweapp_container_sdk.a';
   for(const target of targets){
-    const {receipt:manifest}=readNative(nativeRoot,target,[library]);
+    const {receipt:manifest}=readNative(nativeRoot,target,[library],expectedDistribution);
     readNotices(nativeRoot,licensesRoot,target);
     receipt.native.push(nativeIdentity(manifest));
   }

@@ -16,7 +16,7 @@ test('provenance accepts actual root worktree metadata but rejects nested metada
     const result = spawnSync('git', args, { cwd, encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
   }
-  for (const name of ['check-origin.mjs', 'native-input.mjs', 'source-inventory.mjs']) await cp(new URL(`../tools/${name}`, import.meta.url), join(repo, 'tools', name));
+  for (const name of ['check-origin.mjs', 'native-input.mjs', 'source-inventory.mjs', 'distribution-identity.mjs']) await cp(new URL(`../tools/${name}`, import.meta.url), join(repo, 'tools', name));
   await writeFile(join(repo, 'header.h'), 'public ABI');
   await writeFile(join(repo, 'ORIGIN.json'), JSON.stringify({ sdkVersion: 'test', sourceCommit: 'fixture', sources: [], generated: [], contract: { headerPath: 'header.h', headerSha256: hash('public ABI') } }));
   git(repo, ['init', '--quiet']); git(repo, ['add', '.']);

@@ -1,3 +1,5 @@
+import { assertDistributionIdentity, verifyDistributionArtifact } from './distribution-identity.mjs';
+export { distributionIdentity, distributionOptions } from './distribution-identity.mjs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, readFileSync, readdirSync } from 'node:fs';
@@ -23,7 +25,7 @@ export function sourceProvenance(root) {
 
 /** Distribution receipts retain identities; command paths stay in external validation. */
 export function nativeIdentity(receipt) {
-  const keys = ['schemaVersion', 'sdkVersion', 'abiVersion', 'status', 'target', 'platform', 'profile', 'features', 'viewDiagnostics', 'sourceCommit', 'sourceDirty'];
+  const keys = ['schemaVersion', 'sdkVersion', 'abiVersion', 'status', 'target', 'platform', 'profile', 'features', 'viewDiagnostics', 'sourceCommit', 'sourceDirty', 'distributionProfile', 'policySha256', 'distributionPolicy', 'markerVerified'];
   const identity = Object.fromEntries(keys.filter(key => Object.hasOwn(receipt, key)).map(key => [key, receipt[key]]));
   identity.artifacts = receipt.artifacts.map(artifact => Object.fromEntries(['file', 'bytes', 'sha256'].filter(key => Object.hasOwn(artifact, key)).map(key => [key, artifact[key]])));
   return identity;
@@ -50,10 +52,13 @@ export function inside(root, name) {
 }
 
 /** Inputs are versioned private runtime distributions, never a parent source tree. */
-export function readNative(nativeRoot, target, requiredLibraries) {
+export function readNative(nativeRoot, target, requiredLibraries, expectedDistribution) {
   const directory = inside(nativeRoot, target);
   const producerPath = inside(directory, 'build.json');
   const receipt = JSON.parse(readFileSync(producerPath, 'utf8'));
+  const identity = assertDistributionIdentity(receipt, expectedDistribution);
+  if (identity.distributionProfile === 'full' && receipt.features?.includes('restricted-showcase')) throw new Error('Native feature set conflicts with full distribution identity');
+  if (identity.distributionProfile === 'restricted-showcase' && (!receipt.features?.includes('restricted-showcase') || receipt.profile !== 'release' || receipt.viewDiagnostics !== 'off')) throw new Error('Restricted native runtime requires the reviewed release feature set');
   if (receipt.schemaVersion !== 1 || receipt.abiVersion !== 1 || receipt.status !== 'built' || receipt.target !== target || receipt.sdkVersion !== SDK_VERSION) {
     throw new Error(`A successfully built ${SDK_VERSION} runtime receipt is required for ${target}`);
   }
@@ -66,6 +71,7 @@ export function readNative(nativeRoot, target, requiredLibraries) {
   let artifacts = receipt.artifacts, distribution;
   if (existsSync(resolve(directory, 'runtime-distribution.json'))) {
     distribution = JSON.parse(readFileSync(inside(directory, 'runtime-distribution.json'), 'utf8'));
+    assertDistributionIdentity(distribution, identity);
     if (!/^[a-f0-9]{40}$/.test(receipt.sourceCommit) || typeof receipt.sourceDirty !== 'boolean') throw new Error('Native distribution requires a concrete producer source identity');
     for (const key of ['schemaVersion', 'sdkVersion', 'abiVersion', 'target', 'sourceCommit', 'sourceDirty']) {
       if (!Object.hasOwn(receipt, key) || distribution[key] !== receipt[key]) throw new Error(`Native distribution identity mismatch: ${key}`);
@@ -93,6 +99,7 @@ export function readNative(nativeRoot, target, requiredLibraries) {
   for (const artifact of artifacts) {
     if (sha256(inside(directory, artifact.file)) !== artifact.sha256) throw new Error(`Native hash mismatch: ${artifact.file}`);
     if (distribution && lstatSync(inside(directory, artifact.file)).size !== artifact.bytes) throw new Error(`Native size mismatch: ${artifact.file}`);
+    if (receipt.distributionProfile !== undefined && /^(?:lib)?weapp_container_sdk\.(?:a|so|dylib|dll|lib)$/.test(artifact.file)) verifyDistributionArtifact(readFileSync(inside(directory, artifact.file)), identity);
   }
   for (const name of requiredLibraries) if (!names.has(name)) throw new Error(`Missing hashed native library: ${name}`);
   if (sha256(inside(directory, 'weapp_container_sdk.h')) !== HEADER_SHA256) throw new Error('Native C header does not match reviewed SDK contract');
