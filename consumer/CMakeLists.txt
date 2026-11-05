@@ -13,3 +13,8 @@ else()
   add_executable(desktop_consumer linux.cpp c_smoke.c)
 endif()
 target_link_libraries(desktop_consumer PRIVATE WeappContainer::Desktop)
+
+option(WEAPP_CONSUMER_SHOWCASE "Run restricted business-pack acceptance" OFF)
+if(WEAPP_CONSUMER_SHOWCASE)
+  target_compile_definitions(desktop_consumer PRIVATE WEAPP_CONSUMER_SHOWCASE=1)
+endif()

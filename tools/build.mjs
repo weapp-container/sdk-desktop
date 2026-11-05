@@ -74,7 +74,7 @@ try {
   cpSync(resolve(nativeRoot,'RUNTIME-LICENSE'),resolve(prefix,'share/weapp-container/RUNTIME-LICENSE'));
   for(const file of readdirSync(resolve(prefix,'lib/cmake/WeappContainerDesktop'))){const path=resolve(prefix,'lib/cmake/WeappContainerDesktop',file);if(readFileSync(path,'utf8').includes(root))throw new Error(`Installed CMake export leaks checkout path: ${file}`);}
   if(!args.includes('--skip-consumer')){
-    run('cmake',['-S',resolve(prefix,'share/weapp-container/consumer'),'-B',consumer,`-DCMAKE_PREFIX_PATH=${prefix}`,'-DCMAKE_BUILD_TYPE=Release',...apple],'Configure installed independent consumer');
+    run('cmake',['-S',resolve(prefix,'share/weapp-container/consumer'),'-B',consumer,`-DCMAKE_PREFIX_PATH=${prefix}`,'-DCMAKE_BUILD_TYPE=Release',`-DWEAPP_CONSUMER_SHOWCASE=${expectedDistribution.distributionProfile === 'restricted-showcase' ? 'ON' : 'OFF'}`,...apple],'Configure installed independent consumer');
     run('cmake',['--build',consumer,'--config','Release','--parallel','4'],'Link installed C/C++ consumer without Rust');
     if(args.includes('--verify')){
       const binary=resolve(consumer,process.platform==='win32'?'Release/desktop_consumer.exe':'desktop_consumer');
@@ -82,6 +82,7 @@ try {
       const pack=resolve(out,`.pack-${platform}-${process.pid}`);
       if(existsSync(pack))throw new Error(`Consumer pack staging already exists: ${pack}`);
       copyPack(explicitPack,pack);
+      receipt.consumerMode=expectedDistribution.distributionProfile === 'restricted-showcase' ? 'restricted-business-pack' : 'general-sdk-contract';
       receipt.packIntegrity=JSON.parse(readFileSync(resolve(pack,'manifest.json'),'utf8')).integrity.root;
       const report=resolve(prefix,'consumer-result.txt');
       const arch=option('--run-arch',process.arch);

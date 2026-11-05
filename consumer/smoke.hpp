@@ -24,8 +24,14 @@ struct Host {
   std::function<void(View&)> key;
   std::function<void(bool)> window_visible;
 };
+#ifdef WEAPP_CONSUMER_SHOWCASE
+#include "showcase_smoke.hpp"
+#endif
 inline int smoke(const std::string& pack, Host host,
                  const std::string& report) {
+#ifdef WEAPP_CONSUMER_SHOWCASE
+  return showcase_smoke(pack, host, report);
+#else
   const auto unique = std::to_string(
       std::chrono::steady_clock::now().time_since_epoch().count());
   auto storage = std::filesystem::temp_directory_path() /
@@ -264,4 +270,5 @@ inline int smoke(const std::string& pack, Host host,
     std::filesystem::remove_all(storage);
     return 1;
   }
+#endif
 }
