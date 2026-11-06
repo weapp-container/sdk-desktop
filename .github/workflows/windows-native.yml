@@ -1,0 +1,71 @@
+name: Desktop native source build
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/host-services-integration]
+permissions:
+  contents: read
+jobs:
+  windows-native:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verify reviewed source and public ABI copy
+        run: node tools/check-origin.mjs
+      - name: Verify Windows source provenance behavior
+        run: node --test test/source-inventory.test.mjs
+      - name: Configure native source compilation
+        run: cmake -S test/native-sources -B build/native-sources -A x64
+      - name: Compile actual Windows and C++/WinRT translation units
+        run: cmake --build build/native-sources --config Release --parallel 2
+      - name: Run finite sensor, audio and Value encoding cases
+        run: ctest --test-dir build/native-sources -C Release --output-on-failure
+      - name: Record compiler and SDK identities
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path build/native-sources/CMakeCache.txt) {
+            Get-Content build/native-sources/CMakeCache.txt | Select-String 'CMAKE_(CXX_COMPILER|VS_WINDOWS_TARGET_PLATFORM_VERSION|SYSTEM_VERSION|GENERATOR)'
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-native-source-build
+          path: |
+            build/native-sources/CMakeCache.txt
+            build/native-sources/Testing/Temporary/LastTest.log
+            build/native-sources/CMakeFiles/CMakeConfigureLog.yaml
+  linux-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install native Linux source dependencies
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libepoxy-dev libfontconfig1-dev libcurl4-openssl-dev
+      - name: Verify reviewed source and public ABI copy
+        run: node tools/check-origin.mjs
+      - name: Configure native source compilation
+        run: cmake -S test/native-sources -B build/native-sources -DCMAKE_BUILD_TYPE=Release
+      - name: Compile actual Linux GTK/GIO/libcurl translation units
+        run: cmake --build build/native-sources --parallel 2
+      - name: Run finite lifecycle cases
+        run: ctest --test-dir build/native-sources --output-on-failure
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: linux-native-source-build
+          path: |
+            build/native-sources/CMakeCache.txt
+            build/native-sources/Testing/Temporary/LastTest.log
+            build/native-sources/CMakeFiles/CMakeConfigureLog.yaml

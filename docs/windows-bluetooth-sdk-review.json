@@ -1,0 +1,472 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-02T09:04:12.055553+00:00",
+  "status": "pendingAcceptance",
+  "source": {
+    "path": "src/device_bluetooth_winrt.hpp",
+    "sha256": "7ad2e331d22abef5b2c23dc303a484c5a94da7eff825b0e5849b4ef60c8b7d87"
+  },
+  "baseline": {
+    "weChatBaseLibrary": "3.17.3",
+    "typings": "miniprogram-api-typings@5.2.3",
+    "typingsDeclarationSha256": "25e9e6fdab1b4282ee5231d8f8de7a31a177d2edc690ec834e0da479cc166245"
+  },
+  "officialSdk": {
+    "package": "Microsoft.Windows.SDK.CPP",
+    "version": "10.0.26100.9457",
+    "uri": "https://api.nuget.org/v3-flatcontainer/microsoft.windows.sdk.cpp/10.0.26100.9457/microsoft.windows.sdk.cpp.10.0.26100.9457.nupkg",
+    "headers": [
+      {
+        "path": "winrt/base.h",
+        "sha256": "8d9a6a336ddb1cf2be67881d5ee8490c9e0b2c4865091ba51384d32cab7bf30d"
+      },
+      {
+        "path": "winrt/windows.devices.bluetooth.advertisement.h",
+        "sha256": "38b7bf9e922107ddf6968c338001e9a5ff74b85b18da35ad98cfc2ba93080bbd"
+      },
+      {
+        "path": "winrt/windows.devices.bluetooth.genericattributeprofile.h",
+        "sha256": "1b2a245a06a5f4ee00f872a4220ac973a110dfbc3bf98fac86372857178ab485"
+      },
+      {
+        "path": "winrt/windows.devices.bluetooth.h",
+        "sha256": "2534159c8acef5208e369c1f0215b8f12f54a460856854fdfb619f67ac19ad12"
+      },
+      {
+        "path": "winrt/windows.devices.radios.h",
+        "sha256": "518e06e7557b4481b1cea349f0f9b9b5a7e97b6b703426c2fb3ccecc839e8d37"
+      },
+      {
+        "path": "winrt/windows.foundation.metadata.h",
+        "sha256": "896d2ad6f7e27bab5b9c87b022fd62a6b88e2b34d8ab80dfada938f14bf687f8"
+      },
+      {
+        "path": "winrt/windows.storage.streams.h",
+        "sha256": "f6c333e83b3badab55c45fbc8a067abcc3ed37390a297346ae4f2143a99f0113"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.2.h",
+        "sha256": "1cf102d2bcf118854601a3718c484137ff61a13c3ed20dbeddadb01d09b43a4f"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.advertisement.2.h",
+        "sha256": "acf125e60c021528dc03f81f11a2c3add6dd60776646d05f4733dfbd7111efff"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.genericattributeprofile.2.h",
+        "sha256": "eb33aa1451edb774871c4ce35de7dc3f62ee96fd94cafd7737d73649bb74ef7d"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.rfcomm.2.h",
+        "sha256": "22bb0121db923e54497c15e12a3115f960b53626300de9898dbe2f6fce35eaf3"
+      },
+      {
+        "path": "winrt/impl/windows.devices.enumeration.2.h",
+        "sha256": "10b9374315739a0dd5925a91b1352b048469bbac58ec446b1bbc464fd2a21558"
+      },
+      {
+        "path": "winrt/impl/windows.devices.radios.2.h",
+        "sha256": "f037f997f4057a19e1ad1a746e9e0b65d66382d91f1e399d1149cd90ec82f07a"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.2.h",
+        "sha256": "a5b43cc5bcedbb692ae7a5fa4301dd6af4ce01a0cb7dfd4e640b5d40be4b8e22"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.collections.2.h",
+        "sha256": "15ed9ef4f36dc33a75c1b69c79e2b21cbeb6e789b723d50af4b8d01444ff0f44"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.metadata.2.h",
+        "sha256": "fcb06d28ff99833cf8b0f9d267563c7da3ce8e13b2014b01182abd6b21e41620"
+      },
+      {
+        "path": "winrt/impl/windows.networking.2.h",
+        "sha256": "18993591a7648a9bb42ddf630270d610f97d3819455d0a724e25b7814b86bf30"
+      },
+      {
+        "path": "winrt/impl/windows.storage.2.h",
+        "sha256": "51388a1b5aaba53b1ac1d3811c75883a64b3df0ca914070f4370ceb3a89eab08"
+      },
+      {
+        "path": "winrt/impl/windows.storage.streams.2.h",
+        "sha256": "c280af71d1dd3d211eb50bee5f3a5a8e2c213170775978dd9d203fb4d409b701"
+      },
+      {
+        "path": "winrt/impl/windows.system.2.h",
+        "sha256": "ec35209253d92270d6785fffa8b14def74a92bf45937f4b98e413e3287543c4b"
+      },
+      {
+        "path": "winrt/windows.devices.h",
+        "sha256": "c50bb175bf2597462920fe98f202819f13a36b7e1fccd8594e0222454657d66e"
+      },
+      {
+        "path": "winrt/windows.foundation.h",
+        "sha256": "02e593348ea7519d780cb1f3bb8cd6fb10d340e290ee2a32aec8023deae138e3"
+      },
+      {
+        "path": "winrt/windows.storage.h",
+        "sha256": "29c974a769050e2ecd0dda290d1e3aaa20680e8f0651426418a5f393718bb3ba"
+      },
+      {
+        "path": "winrt/impl/windows.devices.2.h",
+        "sha256": "27954e6b7664dcd72893e9a330202b57a0c4bfea4b2c9eb58e00adf904e5d411"
+      },
+      {
+        "path": "winrt/impl/windows.devices.adc.provider.2.h",
+        "sha256": "65995ba4588c026298ab3781dee9bedd9fd61ec98ed3c7819daadf38f31ac4e2"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.1.h",
+        "sha256": "9fe968dbff9224b09cfd06255cb8458ea1febfd25f285db2c6e4ccee210bba5c"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.advertisement.1.h",
+        "sha256": "d197eea92d6598e760bc94e2f14d8f64c8dc4a775fda22abed9217cc8c496825"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.genericattributeprofile.1.h",
+        "sha256": "b2c05711746d4060dd5c1dc18f5d6bcf569e112c375e1dd3e508254180ddcd11"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.rfcomm.1.h",
+        "sha256": "7b6764237e9af26f68fe6d760baddb84c8cbe574f38719066b121db59844b020"
+      },
+      {
+        "path": "winrt/impl/windows.devices.enumeration.1.h",
+        "sha256": "2503c3c38c7c635f33de783675da436283bf19202a51e44b6e6a73fe8c0f97c9"
+      },
+      {
+        "path": "winrt/impl/windows.devices.gpio.provider.2.h",
+        "sha256": "760ab4b9911cccde90db7206c8a7ee00a12b26f31d687fc5e56cbc3a14d87fe0"
+      },
+      {
+        "path": "winrt/impl/windows.devices.i2c.provider.2.h",
+        "sha256": "eda2a60b88a2b350ecafa5a77108c4756e5f42c786f8cabf96994bbfd0034b1a"
+      },
+      {
+        "path": "winrt/impl/windows.devices.pwm.provider.2.h",
+        "sha256": "cf70c101f0e49ea6f63ec6ac99377f363a42f47c82eef44ed9e74daea1360de4"
+      },
+      {
+        "path": "winrt/impl/windows.devices.radios.1.h",
+        "sha256": "e460989e8da208e3019d9d78b120a4cf3ea10bb2bffeafeecdc23eaaca43fd8f"
+      },
+      {
+        "path": "winrt/impl/windows.devices.spi.provider.2.h",
+        "sha256": "6fc484b9c0b043cbcc041873d0f23d6c1452b82e7c17d86481d91da92d755a3b"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.1.h",
+        "sha256": "5fcff43011014da4a3a5cb64aaa907be7cb4bd98693293d199f7275e90f90625"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.collections.1.h",
+        "sha256": "4427469bc2b638e88465ebd1981fb63da1ff4db1f9ee369b57b3bb41f56e2f24"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.metadata.1.h",
+        "sha256": "9d22c8a122cead110bcf7cf3133ea5d585826d582441b0b2b17b6e68df131b79"
+      },
+      {
+        "path": "winrt/impl/windows.networking.1.h",
+        "sha256": "0088a146ddfe992df2891d9d774e0e9de7be3704ded9c3d33102293e82150259"
+      },
+      {
+        "path": "winrt/impl/windows.storage.1.h",
+        "sha256": "71ebd1458753722b7af52b08b0d69515dd4edba9610d382f1398e9ebbd0f2b7f"
+      },
+      {
+        "path": "winrt/impl/windows.storage.fileproperties.2.h",
+        "sha256": "962b245a19a659e4aa241a4b1d69f6b7c70484c31e252fc2fec615856d28b02a"
+      },
+      {
+        "path": "winrt/impl/windows.storage.provider.2.h",
+        "sha256": "734e7e45ec64a164cac799714625575b7019500af8460286ab34f5a763aa9ac0"
+      },
+      {
+        "path": "winrt/impl/windows.storage.search.1.h",
+        "sha256": "cf37f4c789f87edd0e8f34ca483947dc56622503029f9814c1d396487e3273cd"
+      },
+      {
+        "path": "winrt/impl/windows.storage.search.2.h",
+        "sha256": "113b5208491eb6d9f559fff88c7c23cae88e7a9991a569da84d98685220cf0ec"
+      },
+      {
+        "path": "winrt/impl/windows.storage.streams.1.h",
+        "sha256": "99ba8e1c84e611f1c6d89d897b824ba252bea40ab9d9f874a0a710a6cca4791f"
+      },
+      {
+        "path": "winrt/impl/windows.system.1.h",
+        "sha256": "0e4806d6c83cfc33abbaaa0456b95e4c75d83f61f75ea1f1d52a43e458251399"
+      },
+      {
+        "path": "winrt/impl/windows.system.remotesystems.1.h",
+        "sha256": "06449bf94cbf882319f5c711860693ce52f8a0b094939132589b2c0e7f27cacb"
+      },
+      {
+        "path": "winrt/impl/windows.devices.1.h",
+        "sha256": "62ec655af0b49926811e6c30b786276bcc8b8b724c41d287814cc43715244025"
+      },
+      {
+        "path": "winrt/impl/windows.devices.adc.provider.1.h",
+        "sha256": "dd91db1ad45730722e4aa1e58bfaea01e63955e22a3d326cc40d9121b54e3d31"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.0.h",
+        "sha256": "c366bae9badad61c5ea7005b12ac4cbe3e20a2a7b715e9d8536484daa67a4de5"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.advertisement.0.h",
+        "sha256": "abd781d57caff144c71ed39ca99d97b3dd49c6172d318ef0ce229e212366e725"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.genericattributeprofile.0.h",
+        "sha256": "f0de922a03537e316430c9e774102bf5e338e8952f4b3e11c73cd0eee43dcda1"
+      },
+      {
+        "path": "winrt/impl/windows.devices.bluetooth.rfcomm.0.h",
+        "sha256": "67144fc0c10223a9d10cfedbeee3deca68576e215c546ee846655279239445e3"
+      },
+      {
+        "path": "winrt/impl/windows.devices.enumeration.0.h",
+        "sha256": "06eee33f95176cce9f3f5c8f944e5f9e42af216162bedcfaeb0678ec8819ec2c"
+      },
+      {
+        "path": "winrt/impl/windows.devices.geolocation.1.h",
+        "sha256": "86eff5dff4b73cd098ceeed6e91cf6f211a0ed51c4d82bba339957a4a296cc90"
+      },
+      {
+        "path": "winrt/impl/windows.devices.gpio.provider.1.h",
+        "sha256": "35c5c2ca50f10a4c3a212ba66510354e28f12c05774f1c9633a69aaa7ffe9456"
+      },
+      {
+        "path": "winrt/impl/windows.devices.i2c.provider.1.h",
+        "sha256": "f104284f4ddd575b32e3c446853899519243133164fae8d724b4c431f1d335f5"
+      },
+      {
+        "path": "winrt/impl/windows.devices.pwm.provider.1.h",
+        "sha256": "a4c2ff2382d9b1d23424072bda511d49b0ea68fae1fb3e5f8c28dedba12b8bb4"
+      },
+      {
+        "path": "winrt/impl/windows.devices.radios.0.h",
+        "sha256": "f6aabd24e919a45ff85d912dbe6d71fffc9c71f2097a165bdd3630a8b1995312"
+      },
+      {
+        "path": "winrt/impl/windows.devices.spi.provider.1.h",
+        "sha256": "7a7ced0e4da8bcc38b1fcab6e78bded63a63cc14ec7239ab6c3dc28f97dcad98"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.0.h",
+        "sha256": "dda8c74301f1768e28b7fc26a345b005d7705408ff6b3df3c0062897a2daeeda"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.collections.0.h",
+        "sha256": "d30c1785befcce449273bae4c4ea9b3dedc6b45b992df8be757105f17eb13219"
+      },
+      {
+        "path": "winrt/impl/windows.foundation.metadata.0.h",
+        "sha256": "4d5a8bea24bdaa80c8561647c377b5b3001d1b6c2a997944095e340e0581fe7a"
+      },
+      {
+        "path": "winrt/impl/windows.networking.0.h",
+        "sha256": "1697c4ee457834717ddc764dc5527f3e289f668154136a4f356eb9379153d2d6"
+      },
+      {
+        "path": "winrt/impl/windows.storage.0.h",
+        "sha256": "b8eeccc02cc8320b25e4eade7a53221aa0b38ac118507b6ccf461994a2397258"
+      },
+      {
+        "path": "winrt/impl/windows.storage.fileproperties.1.h",
+        "sha256": "930a383ad4206a40577c3327cc8112f3870af9c53d7dc0385973e1611ba545fd"
+      },
+      {
+        "path": "winrt/impl/windows.storage.provider.1.h",
+        "sha256": "f7e77b4e4f3d12294831663cc9d417147fb03f794c16288d30ee204dc650b33a"
+      },
+      {
+        "path": "winrt/impl/windows.storage.search.0.h",
+        "sha256": "f950501bad41ecf9c57b5e0967b71cb1579f9601adde3edf87bf692e1929b73c"
+      },
+      {
+        "path": "winrt/impl/windows.storage.streams.0.h",
+        "sha256": "a3d163331813e19d7954ea5f7e34e5a7da005bbfe4e2946f8acf33d0b4f0e832"
+      },
+      {
+        "path": "winrt/impl/windows.system.0.h",
+        "sha256": "11a0bf0a3b1c5e091c56dbdcc6fe83de65209ba74b50bc9a6ba2379dc89a33b8"
+      },
+      {
+        "path": "winrt/impl/windows.system.remotesystems.0.h",
+        "sha256": "d70108699354426a3fc1191bb110abfbaf3f19bdd413ea38f6e2fd649ad6a81c"
+      },
+      {
+        "path": "winrt/impl/windows.devices.0.h",
+        "sha256": "b89ecb87bfcbd7c255a41ae7a74f55d33480fbb5ff9290490fb1917ade139796"
+      },
+      {
+        "path": "winrt/impl/windows.devices.adc.provider.0.h",
+        "sha256": "3bb36ad1cd821805486b193bddc087ea09a6678792951702210046d999529f5e"
+      },
+      {
+        "path": "winrt/impl/windows.devices.geolocation.0.h",
+        "sha256": "2ecc5909ea6fd36511ffd121875ea389cc7a9cb2651d842315cc05bfcc41b5aa"
+      },
+      {
+        "path": "winrt/impl/windows.devices.gpio.provider.0.h",
+        "sha256": "2b91812d379a01f9c1a79e8b479d971079735737c5ffc8c7d12cff4eafcdd845"
+      },
+      {
+        "path": "winrt/impl/windows.devices.i2c.provider.0.h",
+        "sha256": "13e9f0652a78176c27a16af3f204771ddb21fba9c3953eb2d1b868f9f4b1a185"
+      },
+      {
+        "path": "winrt/impl/windows.devices.pwm.provider.0.h",
+        "sha256": "fdb08ce7dc1b55c72a551683d32ca1336d1127239c63f7276e58d8b0a8900d3e"
+      },
+      {
+        "path": "winrt/impl/windows.devices.spi.provider.0.h",
+        "sha256": "1885007f75201cff1aae41b7d934269486046b50cfa5e274d5c069ef7f1d22cc"
+      },
+      {
+        "path": "winrt/impl/windows.storage.fileproperties.0.h",
+        "sha256": "c45f331bc0461db6fcd64d28100546d84336ac4bf8a11dc2016c09382c8845b2"
+      },
+      {
+        "path": "winrt/impl/windows.storage.provider.0.h",
+        "sha256": "eec7c538492ce84937365654357e16e4a7f3345abb1ecb968466341d55bb07de"
+      },
+      {
+        "path": "winrt/windows.foundation.h",
+        "sha256": "02e593348ea7519d780cb1f3bb8cd6fb10d340e290ee2a32aec8023deae138e3"
+      },
+      {
+        "path": "winrt/windows.foundation.collections.h",
+        "sha256": "1e5d3e950a7f35e39ad7ac663190bf994b9f2f8c617eff71a3e178ab81b2c00c"
+      }
+    ]
+  },
+  "validation": {
+    "officialProjectionReview": "completed",
+    "windowsCompilation": "notRunNoWindowsToolchain",
+    "windowsRuntime": "notRunNoWindowsDevice",
+    "physicalPeripheral": "notRunNoPhysicalPeripheral"
+  },
+  "reviewedContracts": [
+    {
+      "file": "winrt/impl/windows.devices.bluetooth.0.h",
+      "symbols": [
+        "BluetoothAdapter.GetRadioAsync",
+        "BluetoothLEDevice.GetGattServicesAsync(BluetoothCacheMode)",
+        "BluetoothLEDevice.ConnectionStatusChanged",
+        "BluetoothLEDevice.GattServicesChanged"
+      ]
+    },
+    {
+      "file": "winrt/impl/windows.devices.bluetooth.advertisement.0.h",
+      "symbols": [
+        "BluetoothLEAdvertisementReceivedEventArgs.BluetoothAddressType",
+        "IBluetoothLEAdvertisementWatcher.remove_Received",
+        "IBluetoothLEAdvertisementWatcher.remove_Stopped"
+      ]
+    },
+    {
+      "file": "winrt/impl/windows.devices.bluetooth.genericattributeprofile.0.h",
+      "symbols": [
+        "GattSession.FromDeviceIdAsync(BluetoothDeviceId)",
+        "GattSession.MaxPduSize",
+        "GattSession.MaintainConnection",
+        "GattDeviceServicesResult.ProtocolError",
+        "GattCharacteristic.WriteValueWithResultAsync(IBuffer,GattWriteOption)",
+        "GattCharacteristic.WriteClientCharacteristicConfigurationDescriptorWithResultAsync",
+        "IGattCharacteristic.remove_ValueChanged",
+        "IGattSession.remove_MaxPduSizeChanged"
+      ]
+    },
+    {
+      "file": "winrt/windows.devices.bluetooth.genericattributeprofile.h",
+      "finding": "ValueChanged(event_token) projection is noexcept and discards remove_ValueChanged HRESULT. Production checked_remove invokes the same generated interface ABI with check_hresult, preserving tokens on a failed native remove."
+    },
+    {
+      "file": "winrt/base.h",
+      "finding": "winrt::hresult_error does not inherit std::exception. Production open/execute convert it to std::system_error; cleanup separately catches HRESULT and retains failed handles."
+    }
+  ],
+  "officialDocumentation": [
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.bluetoothledevice.frombluetoothaddressasync?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:59.459269+00:00",
+      "htmlSha256": "f91533d36a69d37a35b939df27e8105945958e84495103f6dc55efb70102fc0d",
+      "snippets": [
+        "s Creating a BluetoothLEDevice object by calling this method alone doesn't (necessarily) initiate a connection. To initiate a connection, set GattSession.MaintainConnection to true , or call an uncached service discovery method on BluetoothLEDevice , or perform a read/write operation against the device. If GattSession.MaintainConnection is set to true, then ",
+        "vice object by calling this method alone doesn't (necessarily) initiate a connection. To initiate a connection, set GattSession.MaintainConnection to true , or call an uncached service discovery method on BluetoothLEDevice , or perform a read/write operation against the device. If GattSession.MaintainConnection is set to true, then the system waits indefinit",
+        "lone doesn't (necessarily) initiate a connection. To initiate a connection, set GattSession.MaintainConnection to true , or call an uncached service discovery method on BluetoothLEDevice , or perform a read/write operation against the device. If GattSession.MaintainConnection is set to true, then the system waits indefinitely for a connection, and it will co"
+      ]
+    },
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.bluetoothledevice.getgattservicesasync?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:58.366093+00:00",
+      "htmlSha256": "f31d82e123140d42faf1a7b09d73b7c7e915b56ff00a311b4551917de5b9f131",
+      "snippets": [
+        "rvicesAsync() Gets the GattDeviceServices for this Bluetooth LowEnergy device. GetGattServicesAsync(BluetoothCacheMode) Returns the GattDeviceServices for this Bluetooth LowEnergy device with the specified cache mode. GetGattServicesAsync() Edit Gets the GattDeviceServices for this Bluetooth LowEnergy device. public: virtual IAsyncOperation<GattDeviceServicesResult ",
+        "niversalApiContract (introduced in v4.0) App capabilities bluetooth Applies to GetGattServicesAsync(BluetoothCacheMode) Edit Returns the GattDeviceServices for this Bluetooth LowEnergy device with the specified cache mode. public: virtual IAsyncOperation<GattDeviceServicesResult ^> ^ GetGattServicesAsync(BluetoothCacheMode cacheMode) = GetGattServicesAsync; /// [Win",
+        "fied cache mode. public: virtual IAsyncOperation<GattDeviceServicesResult ^> ^ GetGattServicesAsync(BluetoothCacheMode cacheMode) = GetGattServicesAsync; /// [Windows.Foundation.Metadata.Overload(\"GetGattServicesWithCacheModeAsync\")] /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<GattDeviceServicesResult> GetGattServicesAsync(BluetoothCacheMode const&"
+      ]
+    },
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.genericattributeprofile.gattsession.maxpdusize?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:57.559004+00:00",
+      "htmlSha256": "7fcd643cb415b87463e83de6b49075850805303bc7a430f2895b7715bd13d9da",
+      "snippets": [
+        "ze. This metric is also known as the maximum transmission unit (MTU) size. Also see the GattSession.MaxPduSizeChanged event. public: property unsigned short MaxPduSize { unsigned short get(); }; uint16_t MaxPduSize(); public ushort MaxPduSize { get; } var uInt16 = gattSession.maxPduSize; Public ReadOnly Property MaxPduSize As UShort Property Value UInt16 uns",
+        " unit (MTU) size. Also see the GattSession.MaxPduSizeChanged event. public: property unsigned short MaxPduSize { unsigned short get(); }; uint16_t MaxPduSize(); public ushort MaxPduSize { get; } var uInt16 = gattSession.maxPduSize; Public ReadOnly Property MaxPduSize As UShort Property Value UInt16 unsigned short uint16_t The maximum protocol data unit (PDU)",
+        "duSizeChanged event. public: property unsigned short MaxPduSize { unsigned short get(); }; uint16_t MaxPduSize(); public ushort MaxPduSize { get; } var uInt16 = gattSession.maxPduSize; Public ReadOnly Property MaxPduSize As UShort Property Value UInt16 unsigned short uint16_t The maximum protocol data unit (PDU) size. Windows requirements Requirements Descri"
+      ]
+    },
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.advertisement.bluetoothleadvertisementwatcher.stop?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:59.668545+00:00",
+      "htmlSha256": "87152888984b39a7f11981c9ca7db41085976bbe01515813c879c1ca78c9f60b",
+      "snippets": [
+        "Watcher to the Stopping state until the scan is cancelled in which the state will transition to the Stopped state. Calling this method in the Stopped or Aborted state has no effect. Calling this method in the Stopping state will overwrite any advertisements received in the last Start method call during that state. The BluetoothLEAdvertisementWatcher will ",
+        "an is cancelled in which the state will transition to the Stopped state. Calling this method in the Stopped or Aborted state has no effect. Calling this method in the Stopping state will overwrite any advertisements received in the last Start method call during that state. The BluetoothLEAdvertisementWatcher will be automatically stopped when an app is su",
+        "last Start method call during that state. The BluetoothLEAdvertisementWatcher will be automatically stopped when an app is suspended. Note Stopping the scan for the BluetoothLEAdvertisementWatcher will not actually stop the Bluetooth radio from scanning if another app or the system still requires the radio to remain in a scanning state. Applies to See als",
+        "equires the radio to remain in a scanning state. Applies to See also BluetoothLEAdvertisementWatcherStatus Feedback Was this page helpful? Yes No No Need help with this topic? Want to try using Ask Learn to clarify or guide you through this topic? Ask Learn Ask Learn Suggest a fix? "
+      ]
+    },
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.genericattributeprofile.gattcharacteristic.valuechanged?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:58.400624+00:00",
+      "htmlSha256": "d3a842baf1a713e3819cb248354b2a6e1ecb93da19d0e62e66152f6adfc2fa0e",
+      "snippets": []
+    },
+    {
+      "uri": "https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.genericattributeprofile.gattdeviceservice.requestaccessasync?view=winrt-26100",
+      "retrievedAt": "2026-11-02T08:12:58.398598+00:00",
+      "htmlSha256": "345ade7668f8d593a95998a398847b27ba8c91d98903f4a451f6804774b39b79",
+      "snippets": [
+        "ed here. Edit Requests access to the GattDeviceService. public: virtual IAsyncOperation<DeviceAccessStatus> ^ RequestAccessAsync() = RequestAccessAsync; /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessA",
+        "c() = RequestAccessAsync; /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); function requestAccessAsync() Public Function RequestAccessAsync () As IAsyncOperation(Of DeviceAccessStatus) Returns I",
+        " RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); function requestAccessAsync() Public Function RequestAccessAsync () As IAsyncOperation(Of DeviceAccessStatus) Returns IAsyncOperation < DeviceAccessStatus > An asynchronous operation that completes with a DeviceAccessStatus ob",
+        "dit Requests access to the GattDeviceService. public: virtual IAsyncOperation<DeviceAccessStatus> ^ RequestAccessAsync() = RequestAccessAsync; /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); function ",
+        "the GattDeviceService. public: virtual IAsyncOperation<DeviceAccessStatus> ^ RequestAccessAsync() = RequestAccessAsync; /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); function requestAccessAsync() Pu",
+        "questAccessAsync; /// [Windows.Foundation.Metadata.RemoteAsync] IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); [Windows.Foundation.Metadata.RemoteAsync] public IAsyncOperation<DeviceAccessStatus> RequestAccessAsync(); function requestAccessAsync() Public Function RequestAccessAsync () As IAsyncOperation(Of DeviceAccessStatus) Returns IAsyncOperation "
+      ]
+    }
+  ],
+  "limits": {
+    "concurrentOwnedConnections": 32,
+    "discoveredDevices": 256,
+    "primaryServicesPerConnection": 256,
+    "characteristicsPerConnection": 256,
+    "nativeAttributeWriteBytes": 512,
+    "writeWithoutResponse": "min(512, MaxPduSize - 3)",
+    "serviceFilters": 16
+  },
+  "remainingAcceptance": [
+    "MSVC/official SDK compile and link of the complete Windows desktop wrapper",
+    "Real Windows foreground host consent and app capability configuration",
+    "Physical BLE discovery, connect, read/write, notification/indication and actual MTU",
+    "Radio off, disconnect, service database change, cancel-late-result, queue pressure, background, account switch and retained release failures"
+  ]
+}
