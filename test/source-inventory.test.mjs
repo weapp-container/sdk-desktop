@@ -35,7 +35,8 @@ test('modified bytes and executable mode require a new explicit review', () => f
   writeFileSync(join(root, 'wrapper.mjs'), 'export const value = 2;\n');
   assert.throws(() => verifySourceInventory(root), /hash, size, mode/);
   writeFileSync(join(root, 'wrapper.mjs'), 'export const value = 1;\n');
-  chmodSync(join(root, 'wrapper.mjs'), 0o755);
+  if (process.platform === 'win32') git(root, ['update-index', '--chmod=+x', 'wrapper.mjs']);
+  else chmodSync(join(root, 'wrapper.mjs'), 0o755);
   assert.throws(() => verifySourceInventory(root), /hash, size, mode/);
 }));
 test('new source is rejected until staged, reviewed and inventoried', () => fixture(root => {

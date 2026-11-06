@@ -24,6 +24,20 @@ int main() {
       [&] { ++spins; time += 50ms; }, now, describe);
   assert(spins == 5 && time.time_since_epoch() == 250ms && descriptions == 0);
 
+  // Hosts with asynchronous allocation must observe both views, including a
+  // second view allocated on a later UI turn, before starting either load.
+  spins = 0;
+  bool left_allocated = false, right_allocated = false;
+  wait_until("both native layouts", 3s,
+      [&] { return left_allocated && right_allocated; },
+      [&] {
+        ++spins;
+        time += 50ms;
+        if (spins == 2) left_allocated = true;
+        if (spins == 7) right_allocated = true;
+      }, now, describe);
+  assert(spins == 7 && left_allocated && right_allocated && descriptions == 0);
+
   spins = 0;
   bool timed_out = false;
   try {

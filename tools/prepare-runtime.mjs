@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { distributionOptions } from './distribution-identity.mjs';
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,6 +8,7 @@ import { copyVerifiedTree, option, readNative, readNotices, SDK_VERSION, sha256 
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
+const expectedDistribution = distributionOptions(args);
 const platform = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')).weappContainerPlatform;
 const matrix = {
   android: [['android', 'arm64-v8a', 'aarch64-linux-android'], ['android', 'x86_64', 'x86_64-linux-android']],
@@ -33,13 +35,13 @@ try {
   for (const [runtimePlatform, arch, triple] of selected) {
     const native = resolve(stage, 'native', triple);
     const result = await downloadRuntimeArtifact({
-      manifestPath, version: SDK_VERSION, platform: runtimePlatform, arch,
+      manifestPath, ...expectedDistribution, version: SDK_VERSION, platform: runtimePlatform, arch,
       component: 'runtime', abiVersion: 1,
       outDirectory: resolve(root, '.runtime/downloads'), installDirectory: native,
       artifactDirectory: option(args, '--artifact-dir', process.env.WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR),
     });
-    const library = runtimePlatform === 'android' ? 'libweapp_container_sdk.so' : runtimePlatform === 'windows' ? 'weapp_container_sdk.lib' : 'libweapp_container_sdk.a';
-    readNative(resolve(stage, 'native'), triple, runtimePlatform === 'android' ? [library, 'libc++_shared.so'] : [library]);
+    const library = runtimePlatform === 'android' ? 'libweapp_container_sdk.so' : runtimePlatform === 'windows' ? 'weapp_container_sdk.dll.lib' : 'libweapp_container_sdk.a';
+    readNative(resolve(stage, 'native'), triple, runtimePlatform === 'android' ? [library, 'libc++_shared.so'] : runtimePlatform === 'windows' ? [library, 'weapp_container_sdk.dll'] : [library], expectedDistribution);
     const current = sha256(resolve(native, 'RUNTIME-LICENSE'));
     if (licenseHash && current !== licenseHash) throw new Error('Runtime slice license texts disagree');
     licenseHash = current;
@@ -49,7 +51,7 @@ try {
     readNotices(resolve(stage, 'native'), resolve(stage, 'licenses'), triple);
     receipts.push({ target: triple, artifact: result.receipt });
   }
-  writeFileSync(resolve(stage, 'installation.json'), `${JSON.stringify({ schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target, manifestSha256: sha256(manifestPath), artifacts: receipts }, null, 2)}\n`);
+  writeFileSync(resolve(stage, 'installation.json'), `${JSON.stringify({ schemaVersion: 1, sdkVersion: SDK_VERSION, ...expectedDistribution, abiVersion: 1, target, manifestSha256: sha256(manifestPath), artifacts: receipts }, null, 2)}\n`);
   if (existsSync(installationRoot)) renameSync(installationRoot, backup);
   try { renameSync(stage, installationRoot); }
   catch (error) { if (existsSync(backup)) renameSync(backup, installationRoot); throw error; }

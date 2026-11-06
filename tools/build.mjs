@@ -1,14 +1,16 @@
 #!/usr/bin/env node
+import { distributionOptions } from './distribution-identity.mjs';
 import { verifySourceInventory } from './source-inventory.mjs';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SDK_VERSION, copyPack, readNative, readNotices, requireNativeRoot, sourceProvenance, nativeIdentity } from './native-input.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const reviewedSource = verifySourceInventory(root);
 const args=process.argv.slice(2);
+const expectedDistribution = distributionOptions(args);
 function option(name,fallback){const i=args.indexOf(name);if(i<0)return fallback;if(!args[i+1]||args[i+1].startsWith('--'))throw new Error(`${name} requires a value`);return args[i+1];}
 const platform=option('--target',process.platform==='darwin'?'macos-universal':process.platform==='win32'?'windows-x64':'linux-x64');
 const targets={
@@ -25,7 +27,7 @@ const licensesRoot=resolve(option('--licenses-root',resolve(nativeRoot,'../licen
 if(args.includes('--verify')&&!option('--pack'))throw new Error('--pack is required for consumer execution');
 mkdirSync(prefix,{recursive:true});
 function query(command,argv){const r=spawnSync(command,argv,{cwd:root,encoding:'utf8'});if(r.error||r.status!==0)throw new Error(`${command} failed: ${r.error?.message||r.stderr}`);return r.stdout.trim();}
-const receipt={schemaVersion:1,sdkVersion:SDK_VERSION,platform,...sourceProvenance(root), sourceInventorySha256: reviewedSource.inventorySha256,toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
+const receipt={schemaVersion:1,sdkVersion:SDK_VERSION,...expectedDistribution,platform,...sourceProvenance(root), sourceInventorySha256: reviewedSource.inventorySha256,toolchain:{},startedAt:new Date().toISOString(),status:'building',native:[],checks:[],artifacts:[]};
 const receiptPath=resolve(prefix,'package.json');
 const validationDir=resolve(out,`validation-${platform}`);mkdirSync(validationDir,{recursive:true});
 const commandEvidence=[];
@@ -51,9 +53,9 @@ const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
 save();
 try {
   receipt.toolchain.cmake=query('cmake',['--version']);
-  const library=platform.startsWith('windows')?'weapp_container_sdk.lib':'libweapp_container_sdk.a';
+  const library=platform.startsWith('windows')?'weapp_container_sdk.dll.lib':'libweapp_container_sdk.a';
   for(const target of targets){
-    const {receipt:manifest}=readNative(nativeRoot,target,[library]);
+    const {receipt:manifest}=readNative(nativeRoot,target,platform.startsWith('windows')?[library,'weapp_container_sdk.dll']:[library],expectedDistribution);
     readNotices(nativeRoot,licensesRoot,target);
     receipt.native.push(nativeIdentity(manifest));
   }
@@ -72,14 +74,26 @@ try {
   cpSync(resolve(nativeRoot,'RUNTIME-LICENSE'),resolve(prefix,'share/weapp-container/RUNTIME-LICENSE'));
   for(const file of readdirSync(resolve(prefix,'lib/cmake/WeappContainerDesktop'))){const path=resolve(prefix,'lib/cmake/WeappContainerDesktop',file);if(readFileSync(path,'utf8').includes(root))throw new Error(`Installed CMake export leaks checkout path: ${file}`);}
   if(!args.includes('--skip-consumer')){
-    run('cmake',['-S',resolve(prefix,'share/weapp-container/consumer'),'-B',consumer,`-DCMAKE_PREFIX_PATH=${prefix}`,'-DCMAKE_BUILD_TYPE=Release',...apple],'Configure installed independent consumer');
+    run('cmake',['-S',resolve(prefix,'share/weapp-container/consumer'),'-B',consumer,`-DCMAKE_PREFIX_PATH=${prefix}`,'-DCMAKE_BUILD_TYPE=Release',`-DWEAPP_CONSUMER_SHOWCASE=${expectedDistribution.distributionProfile === 'restricted-showcase' ? 'ON' : 'OFF'}`,...apple],'Configure installed independent consumer');
     run('cmake',['--build',consumer,'--config','Release','--parallel','4'],'Link installed C/C++ consumer without Rust');
     if(args.includes('--verify')){
       const binary=resolve(consumer,process.platform==='win32'?'Release/desktop_consumer.exe':'desktop_consumer');
       const explicitPack=option('--pack');
+      if (process.platform === 'win32') {
+        const runtime = resolve(prefix, 'bin/weapp_container_sdk.dll');
+        if (!existsSync(runtime)) throw new Error('Installed Windows runtime DLL is missing before consumer execution');
+        copyFileSync(runtime, resolve(dirname(binary), 'weapp_container_sdk.dll'));
+        const diagnostics = [];
+        for (const command of [['where', ['dumpbin']], ['dumpbin', ['/DEPENDENTS', runtime]], ['dumpbin', ['/HEADERS', runtime]], ['dumpbin', ['/EXPORTS', runtime]]]) {
+          const probe = spawnSync(command[0], command[1], { cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+          diagnostics.push({ command: [command[0], ...command[1]].join(' '), status: probe.status, output: `${probe.stdout || ''}${probe.stderr || ''}`.slice(0, 2 * 1024 * 1024) });
+        }
+        writeFileSync(resolve(validationDir, 'windows-runtime-diagnostics.json'), JSON.stringify(diagnostics, null, 2) + '\n');
+      }
       const pack=resolve(out,`.pack-${platform}-${process.pid}`);
       if(existsSync(pack))throw new Error(`Consumer pack staging already exists: ${pack}`);
       copyPack(explicitPack,pack);
+      receipt.consumerMode=expectedDistribution.distributionProfile === 'restricted-showcase' ? 'restricted-business-pack' : 'general-sdk-contract';
       receipt.packIntegrity=JSON.parse(readFileSync(resolve(pack,'manifest.json'),'utf8')).integrity.root;
       const report=resolve(prefix,'consumer-result.txt');
       const arch=option('--run-arch',process.arch);
@@ -89,6 +103,7 @@ try {
     }
   }
   for(const file of readdirSync(resolve(prefix,'lib'))){if(/\.(a|lib)$/.test(file))receipt.artifacts.push({file:`lib/${file}`,sha256:sha(resolve(prefix,'lib',file))});}
+  if(platform.startsWith('windows'))receipt.artifacts.push({file:'bin/weapp_container_sdk.dll',sha256:sha(resolve(prefix,'bin/weapp_container_sdk.dll'))});
   receipt.status=args.includes('--verify')&&!args.includes('--skip-consumer')?'verified':'packaged';
 } catch(error){receipt.status='failed';receipt.error=error.message;process.exitCode=1;}
 receipt.finishedAt=new Date().toISOString();save();console.log(JSON.stringify({status:receipt.status,prefix,receipt:receiptPath,error:receipt.error},null,2));

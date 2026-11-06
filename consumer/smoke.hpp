@@ -23,9 +23,18 @@ struct Host {
   std::function<void(View&, double, double, double)> drag;
   std::function<void(View&)> key;
   std::function<void(bool)> window_visible;
+  // Most native hosts allocate synchronously. GTK supplies its actual
+  // allocation observation after the UI loop has processed size-allocate.
+  std::function<bool(View&)> laid_out = [](View&) { return true; };
 };
+#ifdef WEAPP_CONSUMER_SHOWCASE
+#include "showcase_smoke.hpp"
+#endif
 inline int smoke(const std::string& pack, Host host,
                  const std::string& report) {
+#ifdef WEAPP_CONSUMER_SHOWCASE
+  return showcase_smoke(pack, host, report);
+#else
   const auto unique = std::to_string(
       std::chrono::steady_clock::now().time_since_epoch().count());
   auto storage = std::filesystem::temp_directory_path() /
@@ -108,7 +117,9 @@ inline int smoke(const std::string& pack, Host host,
           [&] { host.spin(.005); },
           [] { return std::chrono::steady_clock::now(); }, describe_progress);
     };
-    host.spin(.15);
+    wait_for("both native views to receive their first layout", [&] {
+      return host.laid_out(*left) && host.laid_out(*right);
+    });
     auto duplicate = View::create(first, host.parent, {0, 0, 50, 50}, status);
     require(!duplicate && status.code == "ERR_SURFACE_ATTACHED",
             "second presenter was not rejected");
@@ -264,4 +275,5 @@ inline int smoke(const std::string& pack, Host host,
     std::filesystem::remove_all(storage);
     return 1;
   }
+#endif
 }

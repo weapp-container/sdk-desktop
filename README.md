@@ -1,8 +1,8 @@
 # Weapp Container Desktop SDK
 
-Version **0.1.0-preview.5.7** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
+Version **0.1.0-preview.6.0** · [weapp-container organization](https://github.com/weapp-container) · [SDK contract](https://github.com/weapp-container/sdk-contract)
 
-Current source requires a newly built **0.1.0-preview.5.7** runtime and matching SDK bundles. Production, exact archive pins, private publication and consumer validation for this version are pending. The checked-in `runtime-artifacts.lock.json` retains the historical **0.1.0-preview.5.3** archive set (SHA-256 `ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388`); it does not satisfy this source version. Preparation must reject that mismatch. Old native producer, archive and device evidence remains unchanged; new binaries require independent source and artifact bindings.
+Current source requires a newly built **0.1.0-preview.6.0** runtime and matching SDK bundles. Production, exact archive pins, private publication and consumer validation for this version are pending. The checked-in `runtime-artifacts.lock.json` retains the historical **0.1.0-preview.5.3** archive set (SHA-256 `ee393000b5726172755b24a31812f9b55051e710c2714edadb9b3ac287b95388`); it does not satisfy this source version. Preparation must reject that mismatch. Old native producer, archive and device evidence remains unchanged; new binaries require independent source and artifact bindings.
 
 This independent repository contains the **Apache-2.0 host wrapper and consumer source**. The runtime implementation remains closed source. Its separately licensed binaries are obtained only from the private [`weapp-container/runtime-artifacts`](https://github.com/weapp-container/runtime-artifacts) repository. SDK source licensing does not grant a runtime binary license. Distributions retain `RUNTIME-LICENSE` and all third-party notices alongside the wrapper's `LICENSE`.
 
@@ -47,7 +47,7 @@ Exact runtime distributions retain the producer's original `build.json` and bind
 
 ## Build and embed
 
-Requirements: CMake 3.21+, a C++17 compiler and the target UI SDK. macOS 12+ uses NSView/Metal. Dev Player uses a child HWND/WGL OpenGL 3.3 preview on Windows 10 x64 and GtkGLArea/OpenGL 3.3 on Linux (Ubuntu 22.04/glibc 2.35/GTK 3.24 baseline). These GPU integrations require platform execution evidence. Existing software embedding paths remain separate; they cannot satisfy the Player GPU requirement.
+Requirements: CMake 3.21+, a C++17 compiler (C++20 for the Windows C++/WinRT adapters) and the target UI SDK. macOS 12+ uses NSView/Metal. Dev Player uses a child HWND/WGL OpenGL 3.3 preview on Windows 10 x64 and GtkGLArea/OpenGL 3.3 on Linux (Ubuntu 22.04/glibc 2.35/GTK 3.24 baseline). These GPU integrations require platform execution evidence. Existing software embedding paths remain separate; they cannot satisfy the Player GPU requirement.
 
 ```sh
 node tools/prepare-runtime.mjs --target macos-universal
@@ -55,6 +55,8 @@ node tools/build.mjs --target macos-universal --native-root .runtime/install/nat
 ```
 
 Other targets are `macos-arm64`, `macos-x64`, `windows-x64` and `linux-x64`; build on the corresponding OS. `--skip-consumer` only packages. `--verify` requires a running display and exercises the installed native consumer. No successful build is counted as a GUI test.
+
+Windows uses the public C ABI through `bin/weapp_container_sdk.dll` and its `lib/weapp_container_sdk.dll.lib` import library. Call `weapp_container_copy_runtime(your_target)` after linking `WeappContainer::Desktop` to copy the exact runtime DLL beside the application. The Rust static library is not distributed for Windows because upstream Skia's Windows link configuration does not bundle its native implementation into that archive.
 
 Installations under `artifacts/desktop/TARGET` include public C/C++ headers, native and wrapper static archives, relative CMake exports, notices and an independent consumer. Consumers use:
 
@@ -79,6 +81,17 @@ npm test
 
 These are wrapper input-contract tests, not runtime, GPU, device, performance or WeChat parity results. This split starts with a new version: historical preview.1 results are not attributed to preview.2. Platform build/UI reports must be regenerated against the exact pinned runtime before claiming that scope passed. Native IME, complete accessibility and advanced gestures remain separate limitations.
 
+[Windows sensors](WINDOWS-SENSORS.md) documents the native accelerometer,
+compass, and gyroscope APIs, ownership rules, and finite lifecycle target. The
+Windows source workflow compiles the actual Windows/C++/WinRT adapters with the
+official SDK without linking a fabricated runtime archive. Hardware and
+packaged-runtime acceptance require separate evidence.
+
+[Windows audio](WINDOWS-AUDIO.md) documents the actual WinRT `InnerAudioContext`
+backend, strict managed/package WAVE source boundary, exact decoder teardown
+and finite ownership cases. MP3/AAC, remote audio, two unavailable policy
+properties and real output/runtime transport acceptance remain explicit gaps.
+
 The 2026-10-27 preview.2 report for wrapper source `360e789` records a universal macOS package, independent C/C++ build/link and arm64 native execution with actual Metal presentation. The consumer uses synthetic Cocoa event dispatch to exercise two views, input/scrolling, navigation, resize, hidden completion pumping, window visibility, owner-thread enforcement and durable reopening. It does not establish physical OS input. macOS x86_64 execution, Windows/Linux execution, performance and WeChat parity remain unmeasured; their unavailable runtime pins fail explicitly.
 
 `ORIGIN.json` lists the allowlisted source paths, original source SHA-256, transformed destination SHA-256 and reviewed C-header contract hash. This repository includes no core implementation, Git history from the original repository, binary runtime, cache or credentials.
@@ -91,7 +104,7 @@ After reviewing an update, stage all intended new source files, refresh explicit
 
 ```sh
 git add <reviewed-files>
-node tools/source-inventory.mjs --write --version 0.1.0-preview.5.3 --reason "Describe the reviewed changes"
+node tools/source-inventory.mjs --write --version 0.1.0-preview.6.0 --reason "Describe the reviewed changes"
 git add SOURCE-INVENTORY.json
 node tools/check-origin.mjs
 npm test
@@ -99,6 +112,23 @@ npm test
 
 Commit source and inventory together before building distributable packages. `sourceBaseCommit` identifies the checkout used to prepare the source review; it does not bind subsequent build evidence to that earlier commit. Never rewrite historical receipts or fabricate runtime archive lock hashes to make this check pass.
 
-## preview.5.3 source status
+## Historical preview.5.3 source status
 
-Current wrapper metadata, native-input checks and consumer tools require preview.5.3, and the default lock now selects the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution remain blocked; all prior release bytes and evidence retain their original source identities.
+At preview.5.3, wrapper metadata, native-input checks and consumer tools required preview.5.3, and the default lock selected the reviewed private preview.5.3 archives. The macOS universal wrapper was produced at `ae67dde1a104587968e2db37a9636b8776328607` with its original native build receipts retained. Changing the lock is distribution metadata, not a new build or device result. Windows/Linux runtime distributions and platform execution were blocked in that record; all prior release bytes and evidence retain their original source identities.
+
+类型化宿主账号/身份/支付客户端、三端 HTTPS、原生授权 UI、账号清理和实际参考服务回归见
+[ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md)。正式桌面 QR/H5 展示器与商户交易仍待交付/验收。
+
+### System tab bar presenter admission
+
+`systemTabBar` is a trusted host configuration option. It defaults to `false`, and
+`false` is omitted from the wire configuration for compatibility. Set it to `true`
+with a paired runtime/SDK and an installed system tab chrome consumer, such as the
+dev Player Flutter tabs or its Windows/Gtk overlays.
+
+The runtime supports bounded `setTabBarBadge`, `removeTabBarBadge`,
+`showTabBarRedDot`, `hideTabBarRedDot`, and `setTabBarStyle` transactions with a
+Partial capability ceiling. Custom tab bars remain Unsupported. `showTabBar`,
+`hideTabBar`, and `setTabBarItem` are not implemented by this option. The flag
+admits the host consumer; it does not establish WeChat visual/parameter parity
+or platform acceptance.

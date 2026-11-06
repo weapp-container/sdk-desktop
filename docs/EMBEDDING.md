@@ -100,3 +100,225 @@ The internal codec is nlohmann/json 3.11.3 (MIT), vendored from its upstream tag
 single header. Its license ships with the installation. Native distribution
 license inventory is copied by the packager when present; release packaging must
 retain the full third-party inventory produced by `the private runtime distribution`.
+
+
+## Native device services
+
+C++ hosts opt in before session creation with `Config.native_device_apis =
+std::make_shared<DeviceApiOptions>()` from `weapp/device_apis.hpp`. Configure
+`allowed_network_origins` with exact HTTPS origins; an empty list denies native
+network access. `private_root` selects the SDK's durable managed file store.
+The core supplies the application/account lease and real native directory;
+guest modules see only the protected `wx.env.USER_DATA_PATH` value
+`wxfile://user`. Do not supply a filesystem root from guest options.
+
+The SDK installs platform handlers before module evaluation and handles their
+completions on the creating UI thread. The reusable `DeviceApis` interface also
+supports a borrowed native session (for example Flutter): its command callback
+must use that session, its platform view must supply `set_native_parent`, and
+its owner loop must call `pump`, `update_components`, `set_foreground` and
+`retire`. It must not create a second session for device operations.
+
+Managed synchronous filesystem calls perform real disk operations inside the
+current JavaScript turn. Asynchronous filesystem operations and native media
+publication use the same scope lock, quotas and atomic replacement. Individual
+binary/read/write chunks are limited to one MiB, the managed scope to 32 MiB,
+and directory enumeration to 4096 entries. Saved settings and permission
+consent live in the core's private auxiliary directory. Account changes retire
+native resources before the core acknowledges cleanup and releases its file
+lease. Native callbacks cannot publish files after that acknowledgement.
+
+On macOS the driver uses NSURLSession HTTPS/WSS, AppKit dialogs/clipboard,
+CoreLocation, CoreWLAN, CoreBluetooth central/GATT, AVFoundation audio/camera,
+Contacts and EventKit. The containing app must declare camera, microphone,
+location, Bluetooth, contacts and calendar usage descriptions for the services
+it enables, plus normal sandbox/network/device entitlements when sandboxed.
+Recording requires explicit AAC or WAV; encoded frame callbacks are currently
+unavailable. Native video/audio sources must be managed files, downloaded
+through the trusted networking policy first. Camera/video pixels enter the
+normal Skia paint order with clipping and transforms. No child overlay view
+bypasses composition. Application permission denials persist until the user
+resets them in application settings; reset stops sensitive active resources.
+Biometric support/enrollment detection is native, while SOTER signature
+production remains unsupported because LocalAuthentication cannot produce a
+WeChat SOTER proof.
+
+Windows uses WinHTTP, system clipboard/dialogs/power information, native WLAN
+scan/connection notifications and system settings/map handlers. Wi-Fi connection
+supports open or WPA2 personal networks with a temporary profile; accepted OS
+connection attempts may finish after cancellation, while their canceled guest
+continuations remain retired. Linux uses GTK/GIO, optional libcurl 7.85+,
+NetworkManager Wi-Fi discovery/current access points, the freedesktop screen
+inhibitor and sysfs backlight control. Linux services may reject unavailable
+hardware, missing daemons or insufficient OS permissions. NetworkManager lists
+its observed access-point cache after requesting a scan.
+
+Foreground location uses CoreLocation on macOS, C++/WinRT Geolocator on Windows
+when its SDK headers and runtime activation are available, and GeoClue on Linux
+when a system service is owned or activatable. Linux hosts must set the trusted
+`DeviceApiOptions::linux_desktop_id` to their installed desktop-file ID (with or
+without `.desktop`); empty disables location routes. Guest parameters cannot
+supply this identity. GeoClue service policy and OS consent still apply. Windows
+permission acquisition requires the attached visible host HWND, its UI thread
+and foreground root window. Missing capabilities leave the routes unregistered.
+
+All three drivers accept WGS84 only; unsupported coordinate systems are rejected.
+`wx.getFuzzyLocation` requests `scope.userFuzzyLocation`, rounds coordinates to
+0.01 degrees, reports accuracy of at least 1500 metres and removes altitude and
+speed metadata. Precise calls request `scope.userLocation`. Location timeout is
+100..120000 milliseconds (default 30000). Starting a watch waits for its initial
+native startup/fix; an active watch accepts repeated starts with identical
+options, while a changed accuracy or timeout requires stopping it first. Windows
+polls Geolocator fixes at one-second intervals; Linux observes GeoClue's client
+location at 500ms intervals. Neither implementation promises an OS event stream.
+
+Stop invalidates queued watch delivery and pending application/native grants.
+Windows/Linux stop receipts wait until their native source is destroyed, including
+late acquisition after cancellation; cancelled workers retain their slots within
+the eight-owner limit until cleanup completes. Windows retains the same async
+operation until a completion callback or terminal status permits `Close`, and
+retries uncertain close failures without releasing the operation or apartment.
+GeoClue tries Stop/DeleteClient, then confirms closure of its private D-Bus
+connection; GeoClue documents private disconnect as client cleanup. Failed
+connection closure retains the connection for retry. A persistent native cleanup
+failure keeps stop/retirement pending rather than acknowledging released resources.
+`DeviceApis::retire` returns `ERR_RESOURCE_CLEANUP_PENDING` while native workers
+drain and returns control to the owner loop. Hosts retain the owner and retry
+retirement; they must obtain success before destroying it. The desktop account
+switch loop retries automatically and sends the core cleanup acknowledgement
+only after success. Destruction without successful explicit retirement retains
+a synchronous safety fallback and may wait for native cleanup.
+macOS detaches the old manager/delegate and captures a new generation before a
+fresh watch; queued callbacks from a retired manager cannot enter that watch.
+Ingress saturation stops the manager on its owner and emits a bounded terminal
+error instead of silently continuing to collect discarded location updates.
+Reset, background and retirement revoke both queued delivery and pending grants;
+returning to foreground requires a fresh start. Other desktop device families
+remain unsupported unless a host adds its own registered handlers.
+
+Windows BLE central uses C++/WinRT when the Bluetooth SDK headers and runtime
+activation are available. Windows native implementation and SDK header probes
+use C++20 for the projection's standard coroutine support; public wrapper headers
+remain compatible with C++17 consumers. Native discovery supplies device identity and address
+type; guest parameters cannot replace that metadata. Connection permission
+preparation runs on the attached foreground host UI thread. Async operations
+remain owned through terminal completion, including late connection results after
+cancellation, and cleanup releases the exact watcher, event registrations, GATT
+services/session and device references. `wx.getBLEMTU` reports the native GATT
+session's maximum PDU size; pairing, peripheral/server mode and MTU mutation are
+not registered by these desktop backends.
+
+Linux BLE uses BlueZ over a private system D-Bus connection. The default exposes
+adapter state, LE discovery and observed devices. Discovery filters and sessions
+belong to that private client; cleanup never powers the global adapter on/off or
+removes paired devices. Central connection/GATT APIs require the trusted host to
+set `DeviceApiOptions::linux_bluetooth_exclusive=true` (Flutter host option
+`linuxBluetoothExclusive`). This asserts that the deployment fences other clients
+from the target devices: BlueZ Device1 Connect/Disconnect operate globally, and
+Disconnect can terminate all profiles. This option is therefore a deployment
+contract, not OS-enforced isolation. The SDK also rejects already connected
+devices and conflicting leases in the same SDK instance. It retains each lease
+until Disconnect and a false Connected property acknowledge cleanup; losing the
+private D-Bus peer is never substituted for that device acknowledgement.
+
+BlueZ GATT discovery rejects ambiguous duplicate UUIDs, bounds each device to
+64 services and the owner to 256 characteristics, uses actual ReadValue/
+WriteValue operations, and observes notification Value signals. BlueZ writes
+are limited to 512 bytes. Neither BlueZ nor Windows registers a synthetic
+`wx.getBLEDeviceRSSI`; advertised RSSI remains part of observed device records
+where native discovery supplies it. BlueZ also leaves `wx.getBLEMTU` absent
+because this backend has no general client MTU query. Unsupported routes stay
+unregistered.
+
+The shared Windows/Linux BLE owner permits eight native owners, including
+cancelled owners still draining, 32 outstanding commands, 256 observed devices
+and 256 notification delivery tokens. Close adapter waits for every prior native
+owner. Stop discovery invalidates a queued start; notification disable and device
+close revoke queued characteristic delivery before their native release finishes.
+Read events carry their request cancellation token. Reset/background/retirement
+revoke the adapter and pending grants; a foreground return requires a fresh open.
+Native disconnection revokes queued notification delivery; an invalidated BlueZ
+service database retires the owner before cached attribute paths can be reused.
+Ingress saturation terminates collection through the bounded owner queue;
+rejected command receipts retain an error completion until the owner can drain it.
+The `weapp_device_bluetooth_test` executable checks these boundaries using a fake
+OS backend and actual linked core catalog configuration. Isolated compilation of
+the real BlueZ source against local GIO headers checks C++/GIO compatibility;
+it does not execute BlueZ. Windows target compilation, complete Linux GTK builds,
+physical radio/GATT behavior and OS consent remain separate acceptance work.
+
+The macOS source has a local CMake archive-build check. This is not camera,
+Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
+Windows target compilation, a complete Linux GTK target build and physical
+device verification remain separate requirements; available source routes do
+not establish OS parity. The GeoClue source has an isolated compile check against
+real GIO headers on the local macOS machine; this does not execute GeoClue.
+
+The optional CMake `WEAPP_DESKTOP_BUILD_TESTS=ON` target builds
+`weapp_device_permissions_test`; run it with `ctest --test-dir <build-dir>
+--output-on-failure`. It exercises the production dispatcher, persisted consent,
+owner queue and retained-object cleanup with fake OS consent callbacks. Pending
+application grants, delayed OS grants and queued successful completions cannot
+escape a permission reset; fresh authorization can recover afterward. This is
+an executable lifecycle contract check, not hardware or privacy-dialog acceptance.
+The `weapp_device_location_test` executable additionally uses fake native sources
+to verify fuzzy projection/scopes, queued-event revocation, delayed acquisition,
+stop/drain ordering, cleanup failure recovery, background behavior and bounded
+cancelled workers. It submits the adapter's complete configuration through the
+actual linked core C ABI; this validates catalog registration, not OS location.
+
+Native request cancellation and managed-file publication share a completion
+barrier on macOS, Windows and Linux. Cancellation before publication prevents
+the download file and result enqueue. A write already accepted by that barrier
+finishes its bounded file publication and result enqueue before cancellation
+returns; cancellation does not roll back an accepted file. The optional
+`weapp_device_publication_test` executable checks both orderings using real
+managed files and controlled worker timing, plus rejection after owner retirement.
+It does not establish WinHTTP, libcurl, NSURLSession or hardware acceptance.
+
+Windows advertises `wx.connectSocket` and the `SocketTask` send, close and
+Open/Message/Error/Close event family through asynchronous WinHTTP. Linux
+advertises that same family only when built against libcurl **8.16+**, both
+WebSocket symbols link, and the loaded library reports the `wss` protocol.
+The installed CMake package requires 8.16+ if its archive contains this route;
+an HTTP-only archive retains its 7.85+ dependency. A missing gate leaves the
+entire SocketTask family absent from the native service configuration.
+
+| Source route | Platform transport | Activation requirement | Acceptance still required |
+| --- | --- | --- | --- |
+| HTTPS request/download/upload | WinHTTP / optional libcurl | Windows 10 SDK / libcurl 7.85+ | Target build and real transfer/cancellation |
+| WSS SocketTask | Async WinHTTP WebSocket | Windows 10 SDK | Windows build and real TLS/close/cancellation |
+| WSS SocketTask | libcurl WebSocket | Headers/library 8.16+, linked APIs, runtime `wss` protocol | Linux build and real TLS/close/cancellation |
+| BLE central/GATT | C++/WinRT | Bluetooth SDK headers, activation, foreground host UI for connection consent | Windows build and real radio/GATT/late-result cleanup |
+| LE discovery | BlueZ private D-Bus client | Running or activatable BlueZ service, powered adapter | Linux build and client-scoped discovery cleanup |
+| BLE central/GATT | BlueZ private D-Bus client + exclusive target lease | Explicit trusted host exclusivity, no preexisting connection | Linux build and real GATT/disconnect/recovery |
+
+These WSS routes accept only ASCII credential-free URLs without fragments and
+match their canonical **HTTPS origin** against `allowed_network_origins`.
+They retain system certificate/hostname verification, reject redirects,
+validate offered and selected subprotocols, and reject reserved or injected
+request headers. Text/binary messages are limited to one MiB; each socket has
+32 queued commands and four MiB of queued outgoing bytes. Each owner has at
+most eight native socket workers, including cancelled workers still draining.
+Inbound messages share the bounded owner queue; saturation closes the transport
+and reserves space for Error/Close notifications. All guest events and results
+are delivered by the owner thread. Close completion follows native handle
+cleanup; retirement cancels and joins the workers. WinHTTP callback state
+survives the final `HANDLE_CLOSING` notifications.
+
+With `WEAPP_DESKTOP_BUILD_TESTS=ON`, `weapp_device_socket_protocol_test`
+checks strict inputs, fragments, binary bytes, quotas, terminal queue capacity
+and UTF-8 handling without linking a runtime or contacting a server.
+`weapp_device_socket_test` links the SDK and exercises its actual dispatcher,
+owner delivery, cancellation bounds and worker drain with a fake OS transport.
+It also submits the adapter's complete configuration to the actual runtime
+through `configureHostServices`, checks rejection of an API absent from the
+locked catalog, and checks that a rejected update preserves valid configuration.
+SocketTask and RecorderManager expose only catalogued `on` events; the runtime
+releases subscriptions through their lifecycle without invented `off` APIs.
+On UNIX with libcurl 8.16+, `weapp_curl_socket_compile` compiles the actual
+optional transport against real headers, and `weapp_curl_socket_headers_test`
+executes the bounded C callback with malformed and duplicate response headers.
+These checks do not establish a Linux
+target build, a Windows build or real network/device acceptance. The older
+macOS NSURLSession SocketTask implementation is a separate source route.

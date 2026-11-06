@@ -29,6 +29,14 @@ int main(int argc, char** argv) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   };
+  host.laid_out = [](View& view) {
+    auto* widget = GTK_WIDGET(view.native_handle());
+    // A size request is not an allocation. Observe the real mapped widget
+    // before load(), so the presenter has supplied viewport/display metrics.
+    return gtk_widget_get_realized(widget) && gtk_widget_get_mapped(widget) &&
+           gtk_widget_get_allocated_width(widget) > 1 &&
+           gtk_widget_get_allocated_height(widget) > 1;
+  };
   host.click = [](View& view, double x, double y) {
     auto* w = GTK_WIDGET(view.native_handle());
     GdkEvent* e = gdk_event_new(GDK_BUTTON_PRESS);

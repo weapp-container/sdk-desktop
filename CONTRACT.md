@@ -208,3 +208,19 @@ Old-size observations during staging cannot resize the new session backwards.
 The native wrapper's transform-only `prepareHostChrome` must use the Flutter-root
 to-screen transform, rather than aligning the prospective rectangle to the old
 content view origin; preparing it never mutates the accepted runtime.
+
+## Account cleanup and C ABI
+
+Account revocation starts native cleanup at the `revoking` event. The optional pre-load account cleanup handler returns a shared task; only the UI-thread pump applies operation-bound snapshots and acknowledges cleanup. Pending or failed cleanup keeps identity input blocked; explicit retry never restores the old owner. See [ACCOUNT-SERVICES.md](ACCOUNT-SERVICES.md). The C API appends identity-switching/account-switch values and explicitly maps C++ enums, preserving every original numeric value and the original configuration layout.
+
+The C++ `host_services.hpp` adapter preserves the exact accepted API context and
+uses the existing Rust shared account manager. Native transport callbacks never
+enter JS. The owner's pump settles bounded requests/subscriptions, applies
+identity snapshots, and emits events independently of the host's event listener.
+Account replacement drains those resources before the host cleanup hook, then
+fetches and binds the new account state before cleanup ACK. Failed preflight
+keeps the old owner revoked. Native profile/phone consent uses server-registered
+purpose/version; missing presenters/channels are not installed capabilities.
+Payment launch success never means paid: only backend-confirmed paid orders
+complete successfully. Official desktop QR/H5 presentation and merchant
+acceptance remain separate, unfulfilled conditions.

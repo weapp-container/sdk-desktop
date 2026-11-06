@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { lstatSync, readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,7 +15,12 @@ function git(root, args) {
 }
 function checkoutFiles(directory, writing = false) {
   const root = realpathSync(directory);
-  if (realpathSync(git(root, ['rev-parse', '--show-toplevel']).trim()) !== root) fail('a parent checkout cannot supply source provenance');
+  const top = realpathSync(git(root, ['rev-parse', '--show-toplevel']).trim());
+  // NTFS can spell the same directory using long/8.3 names or different drive
+  // letter casing. Check the actual directory identity, without case-folding
+  // unrelated paths or accepting a parent checkout.
+  const rootInfo = statSync(root, { bigint: true }), topInfo = statSync(top, { bigint: true });
+  if (top !== root && (!rootInfo.ino || rootInfo.ino !== topInfo.ino || rootInfo.dev !== topInfo.dev)) fail('a parent checkout cannot supply source provenance');
   const ignored = git(root, ['ls-files', '--others', '--ignored', '--exclude-standard', '--directory', '-z']).split('\0').filter(Boolean).map(path => path.replace(/\/$/, ''));
   function inspectMetadata(directory, prefix = '') {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -48,7 +53,16 @@ function checkedBytes(root, path) {
   if (!stat.isFile() || !realpathSync(absolute).startsWith(`${root}${sep}`)) fail(`not a contained regular file: ${path}`);
   const bytes = readFileSync(absolute);
   if (bytes.includes(0)) fail(`binary source bytes are forbidden: ${path}`);
-  return { bytes, mode: (stat.mode & 0o111) ? '100755' : '100644' };
+  // Windows filesystem modes have no Unix executable bit. Preserve the
+  // reviewed tracked Git mode there; Unix still checks the actual file mode.
+  let mode = (stat.mode & 0o111) ? '100755' : '100644';
+  if (process.platform === 'win32') {
+    const stage = git(root, ['ls-files', '--stage', '--', path]);
+    const match = /^(100644|100755) [a-f0-9]+ 0\t/.exec(stage);
+    if (!match || stage.trimEnd().split('\n').length !== 1) fail(`invalid tracked file mode: ${path}`);
+    mode = match[1];
+  }
+  return { bytes, mode };
 }
 function entriesFor(root, files) {
   return files.filter(path => path !== INVENTORY_FILE).map(path => {

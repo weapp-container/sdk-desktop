@@ -16,6 +16,51 @@ struct weapp_desktop_view {
 struct weapp_desktop_frame {
   Frame frame;
 };
+struct weapp_desktop_account_cleanup {
+  std::shared_ptr<std::promise<AccountCleanupResult>> promise;
+};
+static weapp_desktop_state_kind state_kind(SessionState state) {
+  switch (state) {
+    case SessionState::Empty:
+      return WEAPP_DESKTOP_EMPTY;
+    case SessionState::Ready:
+      return WEAPP_DESKTOP_READY;
+    case SessionState::IdentitySwitching:
+      return WEAPP_DESKTOP_IDENTITY_SWITCHING;
+    case SessionState::Closing:
+      return WEAPP_DESKTOP_CLOSING;
+    case SessionState::Closed:
+      return WEAPP_DESKTOP_CLOSED;
+  }
+  throw std::invalid_argument("unknown session state");
+}
+static weapp_desktop_event_type event_kind(EventType event) {
+  switch (event) {
+    case EventType::Ready:
+      return WEAPP_DESKTOP_EVENT_READY;
+    case EventType::Navigation:
+      return WEAPP_DESKTOP_EVENT_NAVIGATION;
+    case EventType::Frame:
+      return WEAPP_DESKTOP_EVENT_FRAME;
+    case EventType::Message:
+      return WEAPP_DESKTOP_EVENT_MESSAGE;
+    case EventType::HostCall:
+      return WEAPP_DESKTOP_EVENT_HOST_CALL;
+    case EventType::HostCallCancelled:
+      return WEAPP_DESKTOP_EVENT_HOST_CALL_CANCELLED;
+    case EventType::AccountSwitch:
+      return WEAPP_DESKTOP_EVENT_ACCOUNT_SWITCH;
+    case EventType::Error:
+      return WEAPP_DESKTOP_EVENT_ERROR;
+    case EventType::StorageFlushed:
+      return WEAPP_DESKTOP_EVENT_STORAGE_FLUSHED;
+    case EventType::Closed:
+      return WEAPP_DESKTOP_EVENT_CLOSED;
+    case EventType::Unknown:
+      return WEAPP_DESKTOP_EVENT_UNKNOWN;
+  }
+  return WEAPP_DESKTOP_EVENT_UNKNOWN;
+}
 // All Value nodes in C use actual allocated wrappers. No type-punning a C++
 // Value as an opaque handle; child caches hold stable borrowed wrapper nodes.
 struct weapp_desktop_value {
@@ -240,8 +285,7 @@ int weapp_desktop_session_on_event(weapp_desktop_session* s,
     session(s).on_event(
         callback ? std::function<void(const Event&)>([=](const Event& event) {
           weapp_desktop_value fields(event.fields);
-          callback(context, static_cast<weapp_desktop_event_type>(event.type),
-                   &fields);
+          callback(context, event_kind(event.type), &fields);
         })
                  : nullptr);
     return Status{};
@@ -287,6 +331,71 @@ int weapp_desktop_session_register_host_method(weapp_desktop_session* s,
                                                const char* name,
                                                weapp_desktop_error* e) {
   return guard(e, [&] { return session(s).register_host_method(str(name)); });
+}
+int weapp_desktop_session_configure_host_services(
+    weapp_desktop_session* s, const weapp_desktop_value* configuration,
+    weapp_desktop_error* e) {
+  return guard(e, [&] {
+    return session(s).configure_host_services(object(configuration));
+  });
+}
+int weapp_desktop_session_register_api_handler(weapp_desktop_session* s,
+                                               const char* api,
+                                               weapp_desktop_error* e) {
+  return guard(e, [&] { return session(s).register_api_handler(str(api)); });
+}
+int weapp_desktop_session_host_services_command(
+    weapp_desktop_session* s, const char* operation,
+    const weapp_desktop_value* payload, weapp_desktop_value** out,
+    weapp_desktop_error* e) {
+  return guard(e, [&] {
+    if (out && *out)
+      throw std::invalid_argument("output must be an empty value slot");
+    Value response;
+    auto status = session(s).host_services_command(
+        str(operation), object(payload), out ? &response : nullptr);
+    if (status && out) *out = new weapp_desktop_value(std::move(response));
+    return status;
+  });
+}
+int weapp_desktop_session_set_account_cleanup_handler(
+    weapp_desktop_session* s, weapp_desktop_account_cleanup_callback callback,
+    void* context, weapp_desktop_error* e) {
+  return guard(e, [&] {
+    AccountCleanupHandler handler;
+    if (callback)
+      handler = [callback, context](const AccountCleanupContext& request) {
+        auto promise = std::make_shared<std::promise<AccountCleanupResult>>();
+        auto future = promise->get_future().share();
+        auto terminal = std::make_unique<weapp_desktop_account_cleanup>();
+        terminal->promise = promise;
+        weapp_desktop_value application(request.application),
+            account(request.account);
+        callback(context, request.operation_id.c_str(), &application, &account,
+                 terminal.release());
+        return future;
+      };
+    return session(s).set_account_cleanup_handler(std::move(handler));
+  });
+}
+int weapp_desktop_account_cleanup_complete(
+    weapp_desktop_account_cleanup** slot,
+    const weapp_desktop_value* sync_values, const char* error_code,
+    const char* error_message, weapp_desktop_error* e) {
+  return guard(e, [&] {
+    if (!slot || !*slot)
+      throw std::invalid_argument("cleanup completion is empty");
+    auto snapshots = object(sync_values);
+    auto status = Status{str(error_code), str(error_message)};
+    std::unique_ptr<weapp_desktop_account_cleanup> terminal(*slot);
+    *slot = nullptr;
+    terminal->promise->set_value({std::move(status), std::move(snapshots)});
+    return Status{};
+  });
+}
+int weapp_desktop_session_retry_account_cleanup(weapp_desktop_session* s,
+                                                weapp_desktop_error* e) {
+  return guard(e, [&] { return session(s).retry_account_cleanup(); });
 }
 int weapp_desktop_session_complete_host_call(weapp_desktop_session* s,
                                              const char* id,
@@ -341,7 +450,7 @@ int weapp_desktop_session_get_state(weapp_desktop_session* s,
     if (!out) throw std::invalid_argument("state output is null");
     auto v = session(s).state();
     *out = {};
-    out->status = static_cast<weapp_desktop_state_kind>(v.status);
+    out->status = state_kind(v.status);
     out->generation = v.generation;
     out->revision = v.revision;
     out->foreground = v.foreground;

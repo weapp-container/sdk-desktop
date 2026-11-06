@@ -5,6 +5,7 @@
 
 #include "nlohmann/json.hpp"
 #include "weapp/desktop.hpp"
+#include "weapp/device_apis.hpp"
 #include "weapp_container_sdk.h"
 
 namespace weapp::desktop::detail {
@@ -31,13 +32,30 @@ struct Core {
   std::function<void(const Status&)> error_sink;
   std::unique_ptr<Loop> loop;
   Presenter* presenter = nullptr;
+  std::unique_ptr<DeviceApis> devices;
+  std::shared_ptr<HostServices> services;
   State state;
   bool requested_foreground = true, surface_visible = true, delivering = false;
   bool presentation_required = false;
+  bool presentation_enabled = false;
   bool input_enabled = false;
   std::set<std::string> methods;
   std::function<void(const Event&)> listener;
   std::vector<Event> pending;
+  std::string account_cleanup_operation;
+  Status account_cleanup_last_error;
+  AccountCleanupHandler account_cleanup_handler;
+  AccountCleanupContext account_cleanup_context;
+  Value::Object account_cleanup_snapshots;
+  std::shared_future<AccountCleanupResult> account_cleanup_future;
+  std::string account_cleanup_future_operation;
+  bool account_cleanup_future_services = false;
+  bool account_cleanup_native_done = false;
+  bool account_cleanup_hook_done = false;
+  bool account_cleanup_services_started = false;
+  bool account_cleanup_failed = false;
+  bool account_cleanup_retry_on_close = false;
+  bool close_requested = false;
   struct Touch {
     double x, y, start_x, start_y;
     std::chrono::steady_clock::time_point start;
@@ -47,10 +65,13 @@ struct Core {
   ~Core();
   Status check() const;
   Status create_native();
+  Status prepare_devices();
+  Status update_device_components();
   Status call(const char*, const Json& = Json::object(), Json* = nullptr);
   Status read_state();
   Status acknowledge_presentation(uint64_t generation, uint64_t revision);
   Status drain();
+  void retry_account_cleanup();
   Status foreground();
   void report(const Status&);
   Status set_metrics(const Metrics&);

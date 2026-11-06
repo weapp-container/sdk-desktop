@@ -4,45 +4,9 @@
 #include <utility>
 
 #include "internal.hpp"
+#include "weapp/host_services.hpp"
 
 namespace weapp::desktop::detail {
-Json encode(const Value& v) {
-  return std::visit(
-      [](const auto& item) -> Json {
-        using T = std::decay_t<decltype(item)>;
-        if constexpr (std::is_same_v<T, std::monostate>)
-          return nullptr;
-        else if constexpr (std::is_same_v<T, Value::Array>) {
-          Json a = Json::array();
-          for (const auto& x : item) a.push_back(encode(x));
-          return a;
-        } else if constexpr (std::is_same_v<T, Value::Object>) {
-          Json a = Json::object();
-          for (const auto& [k, x] : item) a[k] = encode(x);
-          return a;
-        } else if constexpr (std::is_same_v<T, double>) {
-          if (!std::isfinite(item))
-            throw std::invalid_argument("business numbers must be finite");
-          return item;
-        } else
-          return item;
-      },
-      v.data);
-}
-Value decode(const Json& j) {
-  if (j.is_null()) return {};
-  if (j.is_boolean()) return j.get<bool>();
-  if (j.is_number()) return j.get<double>();
-  if (j.is_string()) return j.get<std::string>();
-  if (j.is_array()) {
-    Value::Array a;
-    for (const auto& x : j) a.push_back(decode(x));
-    return a;
-  }
-  Value::Object a;
-  for (auto i = j.begin(); i != j.end(); ++i) a[i.key()] = decode(i.value());
-  return a;
-}
 Status Buffer::read(int32_t rc, Json* out) {
   try {
     if (!value.data)
@@ -62,6 +26,9 @@ Status Buffer::read(int32_t rc, Json* out) {
 Core::~Core() {
   if (owner != std::this_thread::get_id()) std::terminate();
   loop.reset();
+  if (services) report(services->retire());
+  if (devices) report(devices->retire());
+  devices.reset();
   if (handle && owns_handle) {
     Buffer b;
     b.read(weapp_container_sdk_session_destroy(&handle, &b.value));
@@ -86,9 +53,44 @@ static Json display(const Metrics& m) {
           {"deviceOrientation",
            m.screen_width >= m.screen_height ? "landscape" : "portrait"}};
 }
+Status Core::prepare_devices() {
+  if(devices || !config.native_device_apis) return {};
+  try {
+    auto trusted=encode(config.host_services);
+    if(!trusted.contains("application")||!trusted.contains("account"))
+      return Status::error("ERR_HOST_SERVICES","native devices require trusted application and account configuration");
+    auto options=*config.native_device_apis;
+    options.application=std::get<Value::Object>(decode(trusted.at("application")).data);
+    options.account=std::get<Value::Object>(decode(trusted.at("account")).data);
+    if(options.private_root.empty()) options.private_root=config.storage_root;
+    if(presenter) options.native_parent=presenter->native_handle();
+    Status status;
+    auto driver=DeviceApis::create(options,[this](const std::string& operation,const Value::Object& payload,Value* result){
+      Json value;auto status=call(operation.c_str(),encode(payload),result?&value:nullptr);
+      if(status&&result)*result=decode(value);return status;
+    },status);
+    if(!status||!driver) return status ? Status::error("ERR_NATIVE_DEVICES","native device driver was not created") : status;
+    auto native=encode(driver->configuration());
+    if(!trusted.contains("apis")) trusted["apis"]=Json::array();
+    for(const auto& api:native.at("apis")) if(std::find(trusted["apis"].begin(),trusted["apis"].end(),api)==trusted["apis"].end()) trusted["apis"].push_back(api);
+    if(!trusted.contains("syncValues"))trusted["syncValues"]=Json::object();
+    for(auto item=native["syncValues"].begin();item!=native["syncValues"].end();++item)trusted["syncValues"][item.key()]=item.value();
+    config.host_services=std::get<Value::Object>(decode(trusted).data);
+    if(handle && state.status==SessionState::Empty) {
+      auto configured=call("configureHostServices",trusted);if(!configured)return configured;
+    }
+    devices=std::move(driver);return {};
+  }catch(const std::exception& error){return Status::error("ERR_NATIVE_DEVICES",error.what());}
+}
+Status Core::update_device_components() {
+  if(!devices||!handle)return {};
+  Json nodes;if(auto status=call("hostComponents",Json::object(),&nodes);!status)return status;
+  if(!nodes.is_array())return Status::error("ERR_ABI","hostComponents did not return an array");
+  return devices->update_components(std::get<Value::Array>(decode(nodes).data));
+}
 Status Core::create_native() {
   if (auto s = check(); !s) return s;
-  if (handle) return {};
+  if (handle) return prepare_devices();
   if (state.status == SessionState::Closed)
     return Status::error("ERR_CLOSED", "session is closed");
   auto& m = config.metrics;
@@ -109,6 +111,11 @@ Status Core::create_native() {
   // macOS keeps its historical Metal default unless GPU is required explicitly.
   if (config.require_gpu || std::string(platform_name()) != "macos")
     j["gpuRequired"] = config.require_gpu;
+  if (!config.host_services.empty()) j["hostServices"] = encode(config.host_services);
+  if(config.native_device_apis) {
+    auto root=config.native_device_apis->private_root.empty()?config.storage_root:config.native_device_apis->private_root;
+    if(!root.empty())j["managedFilesRoot"]=root;
+  }
   if (!config.session_id.empty()) j["sessionId"] = config.session_id;
   if (!config.storage_key.empty() || !config.storage_root.empty()) {
     j["storageKey"] = config.storage_key;
@@ -120,6 +127,21 @@ Status Core::create_native() {
       reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size(), &handle,
       &b.value));
   if (!s) return s;
+  if (!config.host_services.empty()) {
+    Json capabilities;
+    auto negotiated = call("capabilities", Json::object(), &capabilities);
+    if (negotiated && capabilities.value("hostServices", Json::object())
+                          .value("protocolVersion", "") != "1.0")
+      negotiated = Status::error("ERR_PROTOCOL_VERSION",
+                                  "runtime lacks host services protocol 1.0");
+    if (!negotiated) {
+      Buffer destroyed;
+      auto cleanup = destroyed.read(
+          weapp_container_sdk_session_destroy(&handle, &destroyed.value));
+      return cleanup ? negotiated : cleanup;
+    }
+  }
+  if(auto status=prepare_devices();!status)return status;
   for (const auto& name : methods)
     if (auto e = call("registerHostMethod", {{"name", name}}); !e) return e;
   return {};
@@ -143,15 +165,22 @@ Status Core::call(const char* op, const Json& payload, Json* result) {
       state.status = status == "closed"    ? SessionState::Closed
                      : status == "closing" ? SessionState::Closing
                      : status == "ready"   ? SessionState::Ready
+                     : status == "identitySwitching" ? SessionState::IdentitySwitching
                                            : SessionState::Empty;
       state.revision = value.value("frameRevision", uint64_t(0));
       state.generation = value.value("generation", uint64_t(0));
       presentation_required = value.value("presentationRequired", false);
+      presentation_enabled = value.value("presentationEnabled", false);
       input_enabled = value.value("inputEnabled", false);
       state.foreground = value.value("foreground", false);
       state.route = value.contains("page") && value["page"].is_object()
                         ? value["page"].value("route", "")
                         : "";
+    }
+    if(value.is_object()&&value.contains("hostServicesState")&&value["hostServicesState"].is_object()) {
+      auto trusted=value["hostServicesState"];
+      if(trusted.contains("application"))config.host_services["application"]=decode(trusted["application"]);
+      if(trusted.contains("account"))config.host_services["account"]=decode(trusted["account"]);
     }
     if (result) *result = std::move(value);
     return {};
@@ -184,11 +213,138 @@ static EventType event_type(const std::string& t) {
       {"message", EventType::Message},
       {"hostCall", EventType::HostCall},
       {"hostCallCancelled", EventType::HostCallCancelled},
+      {"accountSwitch", EventType::AccountSwitch},
       {"error", EventType::Error},
       {"storageFlushed", EventType::StorageFlushed},
       {"closed", EventType::Closed}};
   auto i = types.find(t);
   return i == types.end() ? EventType::Unknown : i->second;
+}
+void Core::retry_account_cleanup() {
+  if (account_cleanup_operation.empty() && !account_cleanup_future.valid())
+    return;
+  Status cleanup;
+  if (account_cleanup_future.valid()) {
+    const auto progress =
+        account_cleanup_future.wait_for(std::chrono::seconds(0));
+    if (progress == std::future_status::timeout) return;
+    const auto operation = account_cleanup_future_operation;
+    const bool services_preflight = account_cleanup_future_services;
+    AccountCleanupResult result;
+    try {
+      if (progress == std::future_status::deferred)
+        result.status = Status::error(
+            "ERR_ACCOUNT_CLEANUP",
+            "deferred cleanup tasks cannot execute on the UI thread");
+      else
+        result = account_cleanup_future.get();
+    } catch (const std::exception& error) {
+      result.status = Status::error("ERR_ACCOUNT_CLEANUP", error.what());
+    } catch (...) {
+      result.status =
+          Status::error("ERR_ACCOUNT_CLEANUP", "account cleanup task failed");
+    }
+    account_cleanup_future = {};
+    account_cleanup_future_operation.clear();
+    account_cleanup_future_services = false;
+    // An obsolete task must finish before its successor may start, but its
+    // snapshots and errors cannot authorize or fail the successor's owner.
+    if (operation == account_cleanup_operation || close_requested) {
+      cleanup = result.status;
+      // A backend preflight has no outstanding native resource once its
+      // cancelled request terminates. Closing does not require new identity.
+      if (close_requested && services_preflight &&
+          cleanup.code == "ERR_CANCELLED") cleanup = {};
+      if (cleanup && !close_requested && !result.sync_values.empty()) {
+        cleanup = call("prepareAccountHostServiceSnapshots",
+                       {{"operationId", operation},
+                        {"values", encode(result.sync_values)}});
+        if (cleanup) {
+          // Bind replay to the runtime's sanitized baseline for this operation.
+          auto values = encode(account_cleanup_snapshots);
+          const auto prepared = encode(result.sync_values);
+          for (auto item = prepared.begin(); item != prepared.end(); ++item)
+            values[item.key()] = item.value();
+          account_cleanup_snapshots =
+              std::get<Value::Object>(decode(values).data);
+          config.host_services["syncValues"] = decode(values);
+        }
+      }
+      if (cleanup)
+        account_cleanup_hook_done = true;
+      else
+        account_cleanup_failed = true;
+    }
+  }
+  if (account_cleanup_failed) {
+    if (!cleanup) {
+      report(cleanup);
+      account_cleanup_last_error = cleanup;
+    }
+    return;
+  }
+  if (account_cleanup_operation.empty() ||
+      (close_requested && !account_cleanup_retry_on_close))
+    return;
+  if (cleanup && !account_cleanup_native_done) {
+    if (services) cleanup = services->retire();
+    if (cleanup && devices) cleanup = devices->retire();
+    if (cleanup && presenter) cleanup = presenter->detach();
+    if (cleanup) {
+      devices.reset();
+      account_cleanup_native_done = true;
+    }
+  }
+  if (cleanup && !account_cleanup_hook_done) {
+    if (!account_cleanup_handler)
+      account_cleanup_hook_done = true;
+    else {
+      try {
+        account_cleanup_future =
+            account_cleanup_handler(account_cleanup_context);
+        account_cleanup_future_services = false;
+        if (!account_cleanup_future.valid())
+          cleanup = Status::error(
+              "ERR_ACCOUNT_CLEANUP",
+              "account cleanup handler returned no terminal task");
+        else
+          account_cleanup_future_operation = account_cleanup_operation;
+      } catch (const std::exception& error) {
+        cleanup = Status::error("ERR_ACCOUNT_CLEANUP", error.what());
+      } catch (...) {
+        cleanup = Status::error("ERR_ACCOUNT_CLEANUP",
+                                "account cleanup handler threw");
+      }
+      if (!cleanup)
+        account_cleanup_failed = true;
+      else
+        return;
+    }
+  }
+  if (cleanup && account_cleanup_hook_done && services &&
+      !account_cleanup_services_started && !close_requested) {
+    account_cleanup_future = services->prepare_account(account_cleanup_context);
+    account_cleanup_future_operation = account_cleanup_operation;
+    account_cleanup_services_started = true;
+    account_cleanup_future_services = true;
+    return;
+  }
+  if (cleanup && account_cleanup_hook_done && !close_requested) {
+    cleanup = call("acknowledgeAccountCleanup",
+                   {{"operationId", account_cleanup_operation}});
+    if (cleanup) {
+      account_cleanup_operation.clear();
+      account_cleanup_last_error = {};
+      return;
+    }
+  }
+  // A pending native drain is progress. Real failures stay visible without
+  // repeating an identical diagnostic every owner-loop turn.
+  if (cleanup.code != "ERR_RESOURCE_CLEANUP_PENDING" &&
+      (cleanup.code != account_cleanup_last_error.code ||
+       cleanup.message != account_cleanup_last_error.message))
+    report(cleanup);
+  account_cleanup_last_error = cleanup;
 }
 Status Core::drain() {
   if (delivering)
@@ -200,13 +356,55 @@ Status Core::drain() {
     auto s = call("takeEvents", Json::object(), &a);
     if (!s) return s;
     for (auto& j : a) {
+      if (j.value("type", "") == "accountSwitch") {
+        if (j.contains("account") && j["account"].is_object())
+          config.host_services["account"] = decode(j["account"]);
+        if (j.contains("syncValues") && j["syncValues"].is_object())
+          config.host_services["syncValues"] = decode(j["syncValues"]);
+        auto phase = j.value("receipt", Json::object()).value("phase", "");
+        if (phase == "revoking") {
+          input_enabled = false;
+          touches.clear();
+          account_cleanup_operation =
+              j.at("receipt").at("operationId").get<std::string>();
+          account_cleanup_context = {
+              account_cleanup_operation,
+              std::get<Value::Object>(
+                  config.host_services.at("application").data),
+              std::get<Value::Object>(config.host_services.at("account").data)};
+          // Replace the whole cache with the runtime's sanitized baseline.
+          // Missing metadata fails closed instead of retaining old snapshots.
+          account_cleanup_snapshots =
+              j.contains("syncValues") && j["syncValues"].is_object()
+                  ? std::get<Value::Object>(decode(j["syncValues"]).data)
+                  : Value::Object{};
+          config.host_services["syncValues"] = account_cleanup_snapshots;
+          account_cleanup_native_done = false;
+          account_cleanup_hook_done = false;
+          account_cleanup_services_started = false;
+          account_cleanup_failed = false;
+          account_cleanup_last_error = {};
+        } else if (phase == "awaitingPresentation" && !close_requested) {
+          auto status=prepare_devices();
+          if(status && presenter)status=presenter->attach();
+          if(!status)report(status);
+        }
+      }
       Event e;
       e.type = event_type(j.value("type", ""));
       j.erase("type");
       e.fields = std::get<Value::Object>(decode(j).data);
+      if(services && services->dispatch(e)) continue;
+      if(devices && (e.type==EventType::HostCall || e.type==EventType::HostCallCancelled)) {
+        try {if(devices->dispatch(e))continue;}
+        catch(const std::exception& error){report(Status::error("ERR_NATIVE_DEVICES",error.what()));}
+      }
       events.push_back(std::move(e));
     }
   }
+  // Observe the newest revocation before accepting an asynchronous cleanup
+  // completion. The Rust operation check is still the final authority.
+  retry_account_cleanup();
   delivering = true;
   for (const auto& e : events) {
     auto callback = listener;
@@ -227,6 +425,7 @@ Status Core::foreground() {
   if (!owns_handle) return {};
   if (state.status != SessionState::Ready) return {};
   bool visible = requested_foreground && surface_visible;
+  if(devices){auto status=devices->set_foreground(visible);if(!status)return status;}
   if (visible == state.foreground) return {};
   if (!visible) cancel_touches();
   return call("lifecycle", {{"event", visible ? "show" : "hide"}});
@@ -455,6 +654,8 @@ Status Session::load(const std::string& path, const LoadOptions& options) {
     auto result = core_->call("load", payload);
     core_->read_state();
     if (core_->state.status == SessionState::Ready) {
+      if(core_->devices){auto cleanup=core_->devices->retire();if(!cleanup)return cleanup;core_->devices.reset();}
+      if(auto native=core_->prepare_devices();!native)return native;
       auto visibility = core_->foreground();
       if (!visibility && result) result = visibility;
       if (core_->presenter) {
@@ -506,6 +707,75 @@ Status Session::register_host_method(const std::string& name) {
   core_->methods.insert(name);
   return {};
 }
+Status Session::configure_host_services(const Value::Object& configuration) {
+  if (auto s=core_->check();!s) return s;
+  if (core_->state.status!=SessionState::Empty) return Status::error("ERR_INVALID_ARGUMENT","configure host services before load");
+  try {
+    if (core_->handle) {
+      Json capabilities;
+      if (auto s=core_->call("capabilities",Json::object(),&capabilities);!s) return s;
+      if (capabilities.value("hostServices",Json::object()).value("protocolVersion","")!="1.0") return Status::error("ERR_PROTOCOL_VERSION","runtime lacks host services protocol 1.0");
+      if (auto s=core_->call("configureHostServices",detail::encode(configuration));!s) return s;
+    }
+    core_->config.host_services=configuration;
+    return {};
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
+Status Session::register_api_handler(const std::string& name) {
+  if (auto s=core_->check();!s) return s;
+  if(core_->state.status!=SessionState::Empty || core_->config.host_services.empty()) return Status::error("ERR_INVALID_ARGUMENT","configure trusted host services before registering APIs and loading");
+  try {
+    auto config=detail::encode(core_->config.host_services);
+    if(!config.contains("apis")) config["apis"]=Json::array();
+    if(std::find(config["apis"].begin(),config["apis"].end(),Json(name))==config["apis"].end()) config["apis"].push_back(name);
+    return configure_host_services(std::get<Value::Object>(detail::decode(config).data));
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
+Status Session::set_account_cleanup_handler(AccountCleanupHandler handler) {
+  if (auto status = core_->check(); !status) return status;
+  if (core_->state.status != SessionState::Empty ||
+      !core_->account_cleanup_operation.empty())
+    return Status::error("ERR_INVALID_ARGUMENT",
+                         "register account cleanup before load");
+  core_->account_cleanup_handler = std::move(handler);
+  return {};
+}
+Status Session::retry_account_cleanup() {
+  if (auto status = core_->check(); !status) return status;
+  if (!core_->account_cleanup_failed)
+    return Status::error("ERR_INVALID_ARGUMENT",
+                         "no failed account cleanup to retry");
+  core_->account_cleanup_failed = false;
+  core_->account_cleanup_services_started = false;
+  core_->account_cleanup_last_error = {};
+  core_->account_cleanup_retry_on_close = true;
+  core_->retry_account_cleanup();
+  core_->account_cleanup_retry_on_close = false;
+  return core_->account_cleanup_failed ? core_->account_cleanup_last_error
+                                       : Status{};
+}
+Status Session::host_services_command(const std::string& operation,const Value::Object& payload,Value* result) {
+  static const std::set<std::string> allowed={"hostApiEvent","hostComponentEvent","hostComponents","hostComponentFrame","managedFileScope","authorizePhoneButton","acknowledgeAccountCleanup","prepareAccountHostServiceSnapshots","updateHostServiceSnapshots","switchAccount","queryAccountSwitch","updateAccountSwitchLaunch","retryAccountSwitch","cancelAccountSwitch","createHostBinary","readHostBinary","retainHostBinary","releaseHostBinary","completeHostCall","authorizeInstalledPack","migrateLegacyStorage","deleteAccountData"};
+  if(!allowed.count(operation)) return Status::error("ERR_INVALID_ARGUMENT","unknown host services command");
+  try {
+    if(operation=="updateHostServiceSnapshots" && payload.count("context")) {
+      Json negotiated;auto checked=core_->call("capabilities",Json::object(),&negotiated);if(!checked)return checked;
+      if(negotiated.value("hostServices",Json::object()).value("snapshotOwnerContext","")!="1.0")
+        return Status::error("ERR_UNSUPPORTED_CAPABILITY","runtime lacks native snapshot owner context 1.0");
+    }
+    Json value;
+    auto status=core_->call(operation.c_str(),detail::encode(payload),&value);
+    if(status && result) *result=detail::decode(value);
+    if(status && (operation=="prepareAccountHostServiceSnapshots" || operation=="updateHostServiceSnapshots")) {
+      auto data=detail::encode(payload),configured=detail::encode(core_->config.host_services);
+      if(data.contains("values")) {
+        auto snapshots=configured.value("syncValues",Json::object());snapshots.update(data["values"]);
+        core_->config.host_services["syncValues"]=detail::decode(snapshots);
+      }
+    }
+    return status;
+  } catch(const std::exception& error) { return Status::error("ERR_INVALID_ARGUMENT",error.what()); }
+}
 Status Session::complete_host_call(const std::string& id, const Value& result) {
   try {
     return core_->call("completeHostCall",
@@ -529,6 +799,16 @@ Status Session::flush_storage() { return core_->call("flushStorage"); }
 Status Session::close() {
   if (auto s = core_->check(); !s) return s;
   if (core_->state.status == SessionState::Closed) return {};
+  core_->close_requested = true;
+  core_->input_enabled = false;
+  core_->touches.clear();
+  if(core_->services) {auto status=core_->services->retire();if(!status)return status;}
+  core_->retry_account_cleanup();
+  if (core_->account_cleanup_failed) return core_->account_cleanup_last_error;
+  if (core_->account_cleanup_future.valid())
+    return Status::error("ERR_RESOURCE_CLEANUP_PENDING",
+                         "account cleanup task is still draining");
+  if(core_->devices) {auto status=core_->devices->retire();if(!status)return status;core_->devices.reset();}
   if (core_->presenter) {
     auto detached = core_->presenter->detach();
     if (!detached) return detached;
@@ -546,18 +826,32 @@ Status Session::close() {
 Status Session::pump() {
   auto keep = shared_from_this();
   if (auto s = core_->check(); !s) return s;
+  if (core_->close_requested && core_->state.status != SessionState::Closing &&
+      core_->state.status != SessionState::Closed) {
+    auto closing = close();
+    if (!closing && closing.code != "ERR_RESOURCE_CLEANUP_PENDING")
+      return closing;
+  }
   if (core_->presenter) core_->presenter->refresh();
   Status s;
+  if(core_->handle)s=core_->read_state();
+  if(core_->devices && core_->state.status==SessionState::Ready) {auto native=core_->devices->pump();if(!native&&s)s=native;}
   if (core_->handle) {
-    s = core_->call("pump");
+    auto status=core_->call("pump");if(!status&&s)s=status;
     core_->read_state();
   }
-  if (core_->presenter && core_->state.status == SessionState::Ready &&
+  if (core_->presenter && core_->presentation_enabled &&
+      (core_->state.status == SessionState::Ready || core_->state.status == SessionState::IdentitySwitching) &&
       core_->state.foreground) {
     auto draw = core_->presenter->present();
     if (!draw && s) s = draw;
   }
   auto events = core_->drain();
+  if(core_->services){auto status=core_->services->pump();if(!status&&s)s=status;}
+  if(core_->devices) {
+    auto status=core_->update_device_components();if(!status&&s)s=status;
+    if(core_->state.status==SessionState::Ready){status=core_->devices->pump();if(!status&&s)s=status;}
+  }
   return !s ? s : events;
 }
 Status Session::snapshot(Frame& out) {
@@ -586,6 +880,7 @@ Status Session::capabilities(Capabilities& c) {
   if (!s) return s;
   auto b = j.at("build");
   c.quickjs = b.value("quickjs", false);
+  c.snapshot_owner_context = j.value("hostServices",Json::object()).value("snapshotOwnerContext","")=="1.0";
   c.skia_cpu = b.value("skiaCpu", false);
   c.metal = b.value("metal", false);
   auto r = j.at("runtime");
@@ -637,6 +932,7 @@ std::unique_ptr<View> View::create(std::shared_ptr<Session> s, void* parent,
   auto p = detail::create_presenter(c);
   c.presenter = p.get();
   status = p->initialize(parent, bounds);
+  if(status && c.devices)status=c.devices->set_native_parent(p->native_handle());
   if (status && c.state.status == SessionState::Ready) status = p->attach();
   if (!status) {
     c.report(p->detach());
@@ -647,6 +943,7 @@ std::unique_ptr<View> View::create(std::shared_ptr<Session> s, void* parent,
 }
 View::~View() {
   if (auto s = session_->core_->check(); !s) std::terminate();
+  if(session_->core_->devices)session_->core_->report(session_->core_->devices->set_native_parent(nullptr));
   session_->core_->report(presenter_->detach());
   session_->core_->presenter = nullptr;
   presenter_.reset();
@@ -656,8 +953,9 @@ View::~View() {
 void* View::native_handle() const { return presenter_->native_handle(); }
 bool View::input_enabled() const {
   const auto& core = *session_->core_;
-  return bool(core.check()) && core.state.status == SessionState::Ready &&
-         core.state.foreground && core.surface_visible && core.input_enabled;
+  return bool(core.check()) && !core.close_requested &&
+         core.state.status == SessionState::Ready && core.state.foreground &&
+         core.surface_visible && core.input_enabled;
 }
 Status View::set_bounds(const Rect& r) {
   if (!valid_rect(r))

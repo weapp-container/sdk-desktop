@@ -85,22 +85,26 @@ test('an absent runtime input never invokes a compiler or searches a parent repo
   finally { if (prior !== undefined) process.env.WEAPP_CONTAINER_RUNTIME_NATIVE_ROOT = prior; }
 });
 test('packaged native identities exclude producer checkout, toolchain and command paths', () => {
+  const nativePostProcessing = { schemaVersion: 1, compileExecuted: false,
+    originalReceipt: { file: 'original-build.json', sha256: '1'.repeat(64), bytes: 100 } };
   const identity = nativeIdentity({ schemaVersion: 1, sdkVersion: SDK_VERSION, abiVersion: 1, target: 'fixture-target', status: 'built',
     toolchain: { androidNdk: '/private/producer/ndk' }, output: '/private/producer/build', commands: ['/private/producer/cargo'],
     artifacts: [{ file: 'libfixture.a', sha256: '0'.repeat(64), bytes: 10, producerPath: '/private/producer/libfixture.a' }],
+    nativePostProcessing, originalNativeProducerReceipt: '{"output":"/private/producer/build"}',
   });
   assert.equal(JSON.stringify(identity).includes('/private/producer'), false);
   assert.equal(identity.abiVersion, 1);
+  assert.deepEqual(identity.nativePostProcessing, nativePostProcessing);
   assert.deepEqual(identity.artifacts, [{ file: 'libfixture.a', bytes: 10, sha256: '0'.repeat(64) }]);
 });
 
 function distributionFixture(t, platform = 'ios') {
   const f = fixture(t);
-  f.target = platform === 'android' ? 'aarch64-linux-android' : 'aarch64-apple-ios-sim';
+  f.target = platform === 'android' ? 'aarch64-linux-android' : platform === 'windows' ? 'x86_64-pc-windows-msvc' : 'aarch64-apple-ios-sim';
   f.input = resolve(f.native, f.target); mkdirSync(f.input, { recursive: true });
-  const omitted = platform === 'android' ? 'libweapp_container_sdk.a' : 'libweapp_container_sdk.dylib';
-  const library = platform === 'android' ? 'libweapp_container_sdk.so' : 'libweapp_container_sdk.a';
-  const files = [library, omitted, 'weapp_container_sdk.h', ...(platform === 'android' ? ['libc++_shared.so', 'platform-notices/NOTICE'] : [])];
+  const omitted = platform === 'android' ? 'libweapp_container_sdk.a' : platform === 'windows' ? 'weapp_container_sdk.lib' : 'libweapp_container_sdk.dylib';
+  const library = platform === 'android' ? 'libweapp_container_sdk.so' : platform === 'windows' ? 'weapp_container_sdk.dll.lib' : 'libweapp_container_sdk.a';
+  const files = [library, omitted, 'weapp_container_sdk.h', ...(platform === 'android' ? ['libc++_shared.so', 'platform-notices/NOTICE'] : platform === 'windows' ? ['weapp_container_sdk.dll'] : [])];
   for (const name of files) {
     mkdirSync(resolve(f.input, name, '..'), { recursive: true });
     if (name === 'weapp_container_sdk.h') cpSync(resolve(root, 'include', name), resolve(f.input, name));
@@ -118,7 +122,7 @@ function distributionFixture(t, platform = 'ios') {
   return Object.assign(f, { library, omitted });
 }
 
-for (const platform of ['ios', 'android']) test(`a ${platform} exact distribution validates selected bytes while preserving its full producer receipt`, t => {
+for (const platform of ['ios', 'android', 'windows']) test(`a ${platform} exact distribution validates selected bytes while preserving its full producer receipt`, t => {
   const f = distributionFixture(t, platform), original = readFileSync(resolve(f.input, 'build.json'));
   const input = readNative(f.native, f.target, [f.library]);
   assert.equal(input.distribution.omittedArtifacts[0].file, f.omitted);
@@ -176,4 +180,23 @@ test('distribution selection cannot relax native path and symlink rules', t => {
     const g = distributionFixture(t); rmSync(resolve(g.input, g.library)); symlinkSync(resolve(root, 'LICENSE'), resolve(g.input, g.library));
     assert.throws(() => readNative(g.native, g.target, [g.library]), /symlink/);
   }
+});
+
+
+test('modern View schema 3 packs retain full canonical integrity verification', t => {
+  const f = fixture(t), source = resolve(f.directory, 'modern-pack');
+  mkdirSync(resolve(source, 'blobs/sha256'), { recursive: true });
+  const bytes = Buffer.from('modern module fixture'), digest = hash(bytes);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), bytes);
+  const manifest = { schemaVersion: 3, modules: [{ code: `sha256:${digest}` }], integrity: { algorithm: 'sha256', root: '' } };
+  const canonical = value => Array.isArray(value) ? `[${value.map(canonical).join(',')}]` : value && typeof value === 'object' ? `{${Object.keys(value).sort().map(key => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}` : JSON.stringify(value);
+  manifest.integrity.root = hash(canonical(manifest));
+  writeFileSync(resolve(source, 'manifest.json'), JSON.stringify(manifest));
+  assert.equal(copyPack(source, resolve(f.directory, 'modern-copy')), manifest.integrity.root);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), 'changed');
+  assert.throws(() => copyPack(source, resolve(f.directory, 'modern-tampered')), /blob integrity/);
+  writeFileSync(resolve(source, 'blobs/sha256', digest), bytes);
+  manifest.schemaVersion = 2; manifest.integrity.root = ''; manifest.integrity.root = hash(canonical(manifest));
+  writeFileSync(resolve(source, 'manifest.json'), JSON.stringify(manifest));
+  assert.throws(() => copyPack(source, resolve(f.directory, 'unsupported')), /Invalid portable manifest/);
 });

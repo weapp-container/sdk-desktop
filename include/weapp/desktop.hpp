@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <future>
 #include <map>
 #include <memory>
 #include <string>
@@ -35,24 +36,42 @@ struct Status {
     return {std::move(code), std::move(message)};
   }
 };
+struct AccountCleanupContext {
+  std::string operation_id;
+  Value::Object application, account;
+};
+struct AccountCleanupResult {
+  Status status;
+  // Prepared under this cleanup operation, before replacement JS starts.
+  Value::Object sync_values;
+};
+// Called once on the creating UI thread after native devices and GPU work
+// drain. The task may finish elsewhere; only pump() applies its result.
+using AccountCleanupHandler =
+    std::function<std::shared_future<AccountCleanupResult>(
+        const AccountCleanupContext&)>;
 struct Metrics {
   uint32_t width = 0, height = 0;
   double pixel_ratio = 1;
   uint32_t screen_width = 0, screen_height = 0;
   double screen_top = 0;
 };
+struct DeviceApiOptions;
 struct Config {
   // Optional when a View supplies actual metrics before load().
   Metrics metrics;
   std::string storage_key, storage_root, session_id;
   // Explicit GPU-only native preview. Failure never selects a CPU presenter.
   bool require_gpu = false;
+  Value::Object host_services;
+  // Opt in to SDK-owned native OS APIs using trusted application/account scope.
+  std::shared_ptr<DeviceApiOptions> native_device_apis;
 };
 struct LoadOptions {
   std::string route;
   Value::Object options;
 };
-enum class SessionState { Empty, Ready, Closing, Closed };
+enum class SessionState { Empty, Ready, IdentitySwitching, Closing, Closed };
 struct State {
   SessionState status = SessionState::Empty;
   uint64_t generation = 0, revision = 0;
@@ -66,6 +85,7 @@ enum class EventType {
   Message,
   HostCall,
   HostCallCancelled,
+  AccountSwitch,
   Error,
   StorageFlushed,
   Closed,
@@ -78,6 +98,7 @@ struct Event {
 };
 struct Capabilities {
   bool quickjs = false, skia_cpu = false, metal = false;
+  bool snapshot_owner_context = false;
   bool gpu_presented = false;
   std::string renderer;
   std::vector<std::string> native_apis;
@@ -118,6 +139,7 @@ class Frame {
   friend class Session;
 };
 class View;
+class HostServices;
 namespace detail {
 struct Core;
 class Presenter;
@@ -136,6 +158,11 @@ class Session final : public std::enable_shared_from_this<Session> {
   Status set_metrics(const Metrics&);
   Status send_message(const Value&);
   Status register_host_method(const std::string&);
+  Status configure_host_services(const Value::Object&);
+  Status register_api_handler(const std::string&);
+  Status set_account_cleanup_handler(AccountCleanupHandler);
+  Status retry_account_cleanup();
+  Status host_services_command(const std::string& operation, const Value::Object&, Value* result = nullptr);
   Status complete_host_call(const std::string& call_id, const Value&);
   Status fail_host_call(const std::string& call_id, const std::string& message);
   Status pointer(const PointerInput&);
@@ -156,6 +183,7 @@ class Session final : public std::enable_shared_from_this<Session> {
   std::unique_ptr<detail::Core> core_;
   friend class View;
   friend class detail::Presenter;
+  friend class HostServices;
 };
 struct Rect {
   double x = 0, y = 0, width = 0, height = 0;

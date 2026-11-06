@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /** Authorized, content-pinned runtime distribution retrieval. Node.js 24+. */
+import { assertDistributionIdentity, distributionIdentity, distributionOptions, installationDistribution } from './distribution-identity.mjs';
 import { createHash, randomUUID } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { lstat, mkdir, open, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises';
@@ -9,7 +10,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 export const RUNTIME_REPOSITORY = 'weapp-container/runtime-artifacts';
-export const SDK_VERSION = '0.1.0-preview.5.7';
+export const SDK_VERSION = '0.1.0-preview.6.0';
 export const DEFAULT_ARTIFACT_TIMEOUT_MS = 15 * 60 * 1000;
 export const MAX_ARTIFACT_TIMEOUT_MS = 60 * 60 * 1000;
 export const METADATA_TIMEOUT_MS = 30 * 1000;
@@ -74,9 +75,12 @@ export function selectArtifact(manifest, expected) {
   const { version, platform, arch, abiVersion = 1, component = 'runtime' } = expected;
   requireValue(semver(version) && Object.hasOwn(PLATFORMS, platform) && typeof arch === 'string'
     && Number.isSafeInteger(abiVersion) && abiVersion > 0 && COMPONENTS.includes(component), 'Explicit version, platform, architecture, component and ABI are required.');
-  requireValue(object(manifest) && ownKeys(manifest, ['schemaVersion', 'runtimeVersion', 'abiVersion', 'source', 'artifacts'])
+  requireValue(object(manifest) && ownKeys(manifest, ['schemaVersion', 'runtimeVersion', 'abiVersion', 'distributionProfile', 'policySha256', 'source', 'artifacts'])
     && manifest.schemaVersion === 1 && manifest.runtimeVersion === version && manifest.abiVersion === abiVersion,
     'Manifest schema, runtime version or ABI does not match the requested distribution.');
+  let distribution;
+  try { distribution = assertDistributionIdentity(manifest, expected); }
+  catch { fail('ERR_RUNTIME_MANIFEST', 'Distribution profile or showcase policy SHA-256 mismatch.'); }
   requireValue(object(manifest.source) && ownKeys(manifest.source, ['repository', 'releaseTag'])
     && manifest.source.repository === RUNTIME_REPOSITORY && manifest.source.releaseTag === `runtime-v${version}`,
     'Only an exact versioned release of weapp-container/runtime-artifacts is permitted.');
@@ -109,7 +113,7 @@ export function selectArtifact(manifest, expected) {
   }
   const entry = manifest.artifacts.find(value => value.component === component && value.platform === platform && value.arch === arch);
   if (!entry) fail('ERR_RUNTIME_TARGET', 'The pinned manifest does not contain the exact requested component/platform/architecture.');
-  return Object.freeze({ ...entry, runtimeVersion: version, abiVersion, releaseTag: manifest.source.releaseTag });
+  return Object.freeze({ ...entry, ...installationDistribution(distribution), runtimeVersion: version, abiVersion, releaseTag: manifest.source.releaseTag });
 }
 
 async function digestFile(path, entry) {
@@ -197,7 +201,7 @@ export async function downloadRuntimeArtifact(options) {
   if ((await lstat(manifestPath)).size > 1024 ** 2) fail('ERR_RUNTIME_MANIFEST', 'Artifact manifest exceeded its size limit.');
   let manifest;
   try { manifest = JSON.parse(await readFile(manifestPath, 'utf8')); } catch { fail('ERR_RUNTIME_MANIFEST', 'Artifact manifest is not valid JSON.'); }
-  const entry = selectArtifact(manifest, { version, platform, arch, component, abiVersion });
+  const entry = selectArtifact(manifest, { version, platform, arch, component, abiVersion, ...distributionIdentity(options) });
   const directory = resolve(outDirectory); await mkdir(directory, { recursive: true });
   const path = join(directory, entry.fileName);
   let source;
@@ -220,7 +224,7 @@ export async function downloadRuntimeArtifact(options) {
       finally { discardBody(response.body); }
     });
   }
-  const receipt = { schemaVersion: 1, repository: RUNTIME_REPOSITORY, runtimeVersion: version, abiVersion,
+  const receipt = { schemaVersion: 1, ...distributionIdentity(options), repository: RUNTIME_REPOSITORY, runtimeVersion: version, abiVersion,
     component, platform, arch, ...(entry.architectures ? { architectures: entry.architectures } : {}),
     releaseTag: entry.releaseTag, fileName: entry.fileName, size: entry.size, sha256: entry.sha256, source };
   const receiptPath = `${path}.receipt.json`;
@@ -232,7 +236,7 @@ export async function downloadRuntimeArtifact(options) {
     try {
       const result = await promisify(execFile)(python, [fileURLToPath(new URL('./unpack-runtime.py', import.meta.url)),
         '--archive', path, '--destination', resolve(installDirectory), '--sha256', entry.sha256,
-        '--identity-json', JSON.stringify({ runtimeVersion: version, abiVersion, component, platform, arch })], { maxBuffer: 1024 ** 2 });
+        '--identity-json', JSON.stringify({ runtimeVersion: version, abiVersion, component, platform, arch, ...installationDistribution(entry) })], { maxBuffer: 1024 ** 2 });
       installation = JSON.parse(result.stdout);
     } catch { fail('ERR_RUNTIME_INSTALL', 'Runtime installation failed; existing installation was preserved. Validate the archive layout, destination and Python 3 availability.'); }
   }
@@ -240,14 +244,14 @@ export async function downloadRuntimeArtifact(options) {
 }
 
 function parseArguments(args) {
-  const values = {}; const allowed = ['manifest', 'version', 'platform', 'arch', 'component', 'abi', 'out-dir', 'artifact-dir', 'install-dir', 'timeout-ms'];
+  const values = {}; const allowed = ['manifest', 'version', 'platform', 'arch', 'component', 'abi', 'out-dir', 'artifact-dir', 'install-dir', 'timeout-ms', 'distribution-profile', 'showcase-policy-sha256'];
   for (let index = 0; index < args.length; index += 2) {
     const key = args[index]?.slice(2);
     if (!args[index]?.startsWith('--') || !allowed.includes(key) || values[key] !== undefined || !args[index + 1] || args[index + 1].startsWith('--')) fail('ERR_RUNTIME_OPTIONS', 'Unknown, duplicated or missing runtime artifact argument.');
     values[key] = args[index + 1];
   }
   if (values.abi !== undefined && !/^[1-9]\d*$/.test(values.abi)) fail('ERR_RUNTIME_OPTIONS', '--abi must be a positive integer.');
-  return { manifestPath: values.manifest, version: values.version ?? SDK_VERSION, platform: values.platform, arch: values.arch,
+  return { ...distributionOptions(args), manifestPath: values.manifest, version: values.version ?? SDK_VERSION, platform: values.platform, arch: values.arch,
     component: values.component ?? 'runtime', abiVersion: values.abi === undefined ? 1 : Number(values.abi),
     outDirectory: values['out-dir'], artifactDirectory: values['artifact-dir'] ?? process.env.WEAPP_CONTAINER_RUNTIME_ARTIFACT_DIR,
     installDirectory: values['install-dir'], ...(values['timeout-ms'] === undefined ? {} : { timeoutMs: timeoutValue(values['timeout-ms'], true) }) };
