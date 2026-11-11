@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceFilesSha256": "ab0b3dc5178a589dc949e2e7cbb178ab40ac6af417b0c11abeed1118f974985a",
-  "review": "Review bilingual usage guides and standalone source publication",
+  "sourceFilesSha256": "d6055440f48ecc1bee25b06a18a8bd4b8700adf43492ffb2390bad0ea0e663b3",
+  "review": "Prepare Apache-2.0 core source integration documentation; preserve public SDK history and historical artifact pins.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -64,6 +64,12 @@
       "mode": "100644"
     },
     {
+      "path": "OPEN_SOURCE.md",
+      "sha256": "1dee2538d2d740dce59b041c10fbb54f42ba523c3c87e546f883e62214309195",
+      "size": 987,
+      "mode": "100644"
+    },
+    {
       "path": "ORIGIN.json",
       "sha256": "4101f0af7044d195e6f9eef19cd18f2aeb93fc4a25cc32aa557865d4a3985118",
       "size": 24852,
@@ -71,14 +77,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "d918b54f3f5fb9f53e5012e2236865396962a53b0d03de79e322a4635476eb59",
-      "size": 7507,
+      "sha256": "22bb3e96534a14d82db7d3119bcb46cb03de968f01ab54efa9ebd46ef2170f29",
+      "size": 7885,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "feda40d8fbec16855e18156af19789f1eedd67de5ec6dc3781c35bcb81d05494",
-      "size": 7223,
+      "sha256": "7277424ca75fe4ce7ca962959ff6d00aaa8af894fae67eb3b2c6644d5a63f723",
+      "size": 7560,
       "mode": "100644"
     },
     {

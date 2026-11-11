@@ -1,10 +1,12 @@
 # Weapp Container Desktop SDK
 
+The core runtime and SDK source are available under Apache-2.0. Build the current runtime from the [core source guide](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-repositories.md). Existing prebuilt archives retain their original licenses, access requirements and exact version/hash pins; this source update does not publish replacement binaries.
+
 [简体中文](README.md) | **English**
 
 Embed mini apps in an existing macOS, Windows, or Linux application. The SDK provides C/C++ sessions, native views, messaging, and lifecycle APIs. Your application owns its windows and main event loop.
 
-Source version: `0.1.0-preview.6.0`. C ABI: `1`. Host wrappers, build tools, and consumer examples in this repository are open source under Apache-2.0. Runtime binaries require a separate license; retain their `RUNTIME-LICENSE` and third-party notices.
+Source version: `0.1.0-preview.6.0`. C ABI: `1`. Host wrappers, build tools, and consumer examples in this repository are open source under Apache-2.0. New open-source runtime builds carry Apache-2.0; retain their `RUNTIME-LICENSE` and third-party notices.
 
 ## Prerequisites
 
