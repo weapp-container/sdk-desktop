@@ -1,60 +1,14 @@
 # Weapp Container Desktop SDK
 
-历史发行审计（2026-11-12）：默认锁中的 SDK 归档部分缺失，runtime pin 与当前同名资产不符，默认在线准备会被完整性校验拒绝。请从匹配的干净源码构建，或通过 `--manifest` 显式选取独立审核过的配套清单；不要仅修改旧哈希。[差异与迁移记录](https://github.com/weapp-container/weapp-container/blob/main/docs/runtime-artifacts-migration.md)。
+首次公开发布正在准备；安装命令须在对应注册源出现本版本后使用。历史私有归档及其锁文件保持原样。
 
-运行库发行工具已迁入 [核心仓库](https://github.com/weapp-container/weapp-container/tree/main/tools/runtime-artifacts)。新清单使用核心仓库的精确版本 Release；用 `--manifest` 显式选取。更新后的下载器把旧锁中的 `runtime-artifacts` 标识定向到私有的 `weapp-container/runtime-artifacts-private-archive`，仅允许九个冻结版本，保留原版本、哈希及随附许可，回执记录实际存储库。旧版下载器需升级；同名新仓库只保留停更工具源码。无跨仓库回退，私有档案仍需读取权限，源码许可不代表历史发行物公开可用。
+版本 `0.1.0-preview.7.0`；CMake 3.21+、C++17。公开 [GitHub prerelease](https://github.com/weapp-container/sdk-desktop/releases/tag/v0.1.0-preview.7.0) 提供：
 
-核心运行时与 SDK 自有源码采用 Apache-2.0，可按[主仓库源码构建说明](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-repositories.md)构建当前运行库。现有预编译归档保留原许可、访问要求及精确版本和哈希锁；本次源码更新不发布替代二进制。
+- `WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz`：macOS 12+，arm64/x86_64。
+- `WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz`：x86_64，GTK 3.24+、GIO 2.66+、fontconfig、epoxy。
+- `WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz`：Windows x86_64，MSVC。
 
-**简体中文** | [English](README.en.md)
-
-在现有 macOS、Windows 或 Linux 应用中嵌入小程序。SDK 提供 C/C++ 的会话、原生视图、消息和生命周期接口，由宿主管理窗口及主事件循环。
-
-当前源码版本：`0.1.0-preview.6.0`，C ABI：`1`。本仓库以 Apache-2.0 开源宿主封装、构建工具和消费示例；新构建的运行库采用 Apache-2.0，使用时需要保留其 `RUNTIME-LICENSE` 和第三方声明。
-
-## 准备环境
-
-- Node.js 24+、Python 3、CMake 3.21+、C++17 编译器。
-- macOS：macOS 12+ 与 Xcode Command Line Tools。
-- Windows：Windows 10 x64、MSVC 与 Windows SDK；C++/WinRT 适配器使用 C++20。
-- Linux：Ubuntu 22.04 x64 / glibc 2.35+，GTK 3.24、GIO 2.66+、fontconfig、epoxy 开发包。
-
-无需 Rust、Cargo 或核心源码仓库。SDK 尚未发布到公共包管理器，按以下步骤从本仓库构建安装目录。
-
-```sh
-git clone https://github.com/weapp-container/sdk-desktop.git
-cd sdk-desktop
-```
-
-## 获取运行库并构建
-
-准备脚本按 [runtime-artifacts.lock.json](runtime-artifacts.lock.json) 校验版本、ABI、大小和 SHA-256。当前锁文件包含 preview.6.0 的 macOS 与 Linux 运行库，尚无 Windows 运行库条目；Windows 源码可供接入，默认准备流程会因缺少对应条目而失败。
-
-获得运行库下载授权后，通过密钥管理器或 CI secret 注入 `WEAPP_CONTAINER_RUNTIME_TOKEN`，再执行：
-
-```sh
-node tools/prepare-runtime.mjs --target macos-universal
-node tools/build.mjs \
-  --target macos-universal \
-  --native-root .runtime/install/native \
-  --licenses-root .runtime/install/licenses \
-  --pack /absolute/portable-pack \
-  --verify
-```
-
-`/absolute/portable-pack` 是已经解包、包含 `manifest.json` 和 `blobs/sha256/` 的 portable pack 目录。不要传入源码目录或压缩包。
-
-如果已取得精确版本的离线归档，可替换准备命令：
-
-```sh
-node tools/prepare-runtime.mjs \
-  --target macos-universal \
-  --artifact-dir /absolute/authorized-archives
-```
-
-离线输入仍执行相同校验。可用 `--manifest /absolute/reviewed-lock.json` 指定另一份已审核的锁文件；SDK 源码与运行库版本必须匹配，缺少条目或校验失败不会回退到旧版本。
-
-目标可选 `macos-universal`、`macos-arm64`、`macos-x64`、`windows-x64`、`linux-x64`，须在对应系统构建。产物默认位于 `artifacts/desktop/TARGET`。`--verify` 会运行安装后的独立消费程序，需要可用的桌面显示环境；不传该选项只构建、链接，不代表界面运行通过。
+先按 `SHA256SUMS` 验证归档，再解压至任意 SDK 安装目录。归档包含可迁移 CMake 配置、头文件、运行库和许可。消费工程无需 Rust 或兄弟源码仓库。
 
 ## 接入已有 CMake 工程
 
