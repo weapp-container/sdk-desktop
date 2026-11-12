@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "5ffdb4b0e052f08fd819b8015263c3c42a815a37181ab81e522f1f825b1bfb3c",
-  "review": "Pin the verified public runtime release and review publication metadata",
+  "sourceFilesSha256": "f9c3a72bb76a02b7da33cc1c39f8db8a65b8a991a8c22826d4a892b7302df64b",
+  "review": "Review anonymous public Desktop archive consumer workflow and fixed release pins",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -31,6 +31,12 @@
       "path": ".github/workflows/checks.yml",
       "sha256": "1c18982a507217a8bbac7e65279383e5df5c6460689d5d92ad3e3332658eff00",
       "size": 483,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/consume-public.yml",
+      "sha256": "83845d0153b1fcaa1dff259d069454d58b4aa107dbc435e1deae1c84959e3aba",
+      "size": 1291,
       "mode": "100644"
     },
     {
@@ -253,6 +259,12 @@
       "path": "package.json",
       "sha256": "d5b16c9913a5ac0c91241f6e5afb0b9a453cb729050d5fbf15048e76e7de96b0",
       "size": 557,
+      "mode": "100644"
+    },
+    {
+      "path": "public-release-assets.0.1.0-preview.7.0.json",
+      "sha256": "b27e70ccddeec683114b1add0f6055ab490b9f769c319eafa16ea6e52c7a057d",
+      "size": 1265,
       "mode": "100644"
     },
     {
@@ -727,6 +739,12 @@
       "path": "tools/check-origin.mjs",
       "sha256": "6d0bcbffc098f454dbd9125a6490298f9d98cf6a4b8b6de52cd350d776d08e27",
       "size": 806,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/consume-public.mjs",
+      "sha256": "03cc82672dfd8f9841454bd8aa73245f9c77ebc684f3d1e830bfdbd82f695f0f",
+      "size": 3680,
       "mode": "100644"
     },
     {
