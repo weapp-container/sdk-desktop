@@ -56,3 +56,29 @@ jobs:
           path: artifacts/
           retention-days: 30
           if-no-files-found: error
+
+  finalize:
+    name: Freeze the verified platform archives
+    needs: package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: public-desktop-*
+          path: artifacts/targets
+      - name: Merge original bytes and create the macOS Podspec
+        run: node tools/package-release.mjs --out artifacts/public --merge artifacts/targets/public-desktop-macos-universal/public/release.json,artifacts/targets/public-desktop-linux-x64/public/release.json,artifacts/targets/public-desktop-windows-x64/public/release.json
+      - run: node tools/package-release.mjs --out artifacts/public --verify
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finalized-public-release
+          path: artifacts/public/
+          retention-days: 30
+          if-no-files-found: error
