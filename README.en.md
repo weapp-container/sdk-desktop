@@ -3,12 +3,37 @@
 
 [简体中文](README.md) · **English**
 
+<a id="公开发行候选preview7"></a>
+## Public distribution candidate: preview.7
+
+The installation examples below describe the preview.7 distribution candidate. Check the named registry or release before using them; source publication does not establish package publication or device acceptance. The source-build examples later in this document refer to the reviewed preview.6 checkout below. The core builder currently emits preview.6, so do not combine that runtime with preview.7 wrappers.
+
+First public publication is being prepared. Use these commands once this version is visible in its registry. Historical private archives and locks retain their original identities.
+
+Version `0.1.0-preview.7.0` requires CMake 3.21+ and C++17. The public [GitHub prerelease](https://github.com/weapp-container/sdk-desktop/releases/tag/v0.1.0-preview.7.0) provides:
+
+- `WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz`: macOS 12+, arm64/x86_64.
+- `WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz`: x86_64, GTK 3.24+, GIO 2.66+, fontconfig and epoxy.
+- `WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz`: Windows x86_64, MSVC.
+
+Verify `SHA256SUMS` before extracting to your installation directory. Archives include relocatable CMake configuration, headers, runtime libraries and licenses. Consumers need no Rust or sibling source checkout.
+
+<a id="已复核的源码构建版本"></a>
+### Reviewed source-build checkout
+
+```sh
+git clone https://github.com/weapp-container/sdk-desktop.git sdk-desktop-source
+cd sdk-desktop-source
+git checkout c27a715b06367957a24af0a91c969a1abec5627e
+```
+
+
 
 [Documentation](https://container.weapp.dev/en/docs/) · [Build from source](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-source-build.en.md) · [APIs and contracts](https://github.com/weapp-container/sdk-contract/blob/main/README.en.md)
 
 Embed WeChat Mini Programs into existing macOS, Windows, or Linux applications. The SDK provides C/C++ session, native view, message, and lifecycle interfaces, with the host managing the window and main event loop.
 
-Current source version: `0.1.0-preview.6.0`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
+Reviewed source example version: `0.1.0-preview.6.0`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
 
 <a id="从当前源码开始"></a>
 ## Start from Source Code

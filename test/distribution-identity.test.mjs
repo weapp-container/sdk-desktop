@@ -11,7 +11,7 @@ const identity = { distributionProfile: 'restricted-showcase', policySha256: 'a'
 const expected = { version: SDK_VERSION, abiVersion: 1, component: 'runtime', platform: 'android', arch: 'arm64-v8a' };
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
 function manifest(artifact) { return { schemaVersion: 1, runtimeVersion: SDK_VERSION, abiVersion: 1, ...identity,
-  source: { repository: 'weapp-container/runtime-artifacts', releaseTag: `runtime-v${SDK_VERSION}` }, artifacts: [artifact] }; }
+  source: { repository: 'weapp-container/weapp-container', releaseTag: `runtime-v${SDK_VERSION}` }, artifacts: [artifact] }; }
 test('distribution defaults to full and restricted policy selection is explicit', () => {
   assert.deepEqual(distributionIdentity(), { distributionProfile: 'full', policySha256: null });
   assert.deepEqual(distributionOptions(['--distribution-profile', identity.distributionProfile, '--showcase-policy-sha256', identity.policySha256]), identity);

@@ -74,8 +74,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "Weapp 容器桌面 SDK；从当前源码开始；准备环境；获取运行库并构建；接入已有 CMake 工程；创建视图并加载 pack；生命周期与存储；运行消费示例与检查",
-      "reviewedChineseSha256": "d324bc0c5701332d21d887c3bff528e802cd87b84e9adae39f597bcf3c1a1c46",
+      "reviewedChineseSummary": "合入 preview.7 公开发行候选的安装入口；保留已匹配的 preview.6 源码构建版本、历史锁与独立设备验收边界。",
+      "reviewedChineseSha256": "4d960d79359d340b4ea0a3e31382249c2e879110cd7dbe522ed2703f73df09fa",
       "legacyHeadingIds": [
         "weapp-container-desktop-sdk",
         "准备环境",

@@ -1,0 +1,58 @@
+name: Build public SDK archives
+on:
+  workflow_dispatch:
+    inputs:
+      runtime_run_id:
+        description: Successful Public native production run ID
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-15, platform: macos-universal }
+          - { os: ubuntu-22.04, platform: linux-x64 }
+          - { os: windows-2022, platform: windows-x64 }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node tools/source-inventory.mjs
+      - name: Download verified current runtime production
+        run: node tools/download-production.mjs "${{ inputs.runtime_run_id }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/checkout@v4
+        with:
+          repository: weapp-container/sdk-contract
+          path: .runtime/contract
+          persist-credentials: false
+      - run: node .runtime/contract/fixtures/make-acceptance-pack.mjs --out .runtime/acceptance-pack
+      - name: Install Linux native consumer dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libepoxy-dev libfontconfig1-dev libcurl4-openssl-dev xvfb
+      - name: Build and execute independent Linux consumer
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node tools/build.mjs --native-root .runtime/native --licenses-root .runtime/licenses --pack .runtime/acceptance-pack --verify
+      - name: Build and execute independent Apple/Windows consumer
+        if: runner.os != 'Linux'
+        run: node tools/build.mjs --native-root .runtime/native --licenses-root .runtime/licenses --pack .runtime/acceptance-pack --verify
+      - run: node tools/package-release.mjs --sdk artifacts/desktop/${{ matrix.platform }} --out artifacts/public
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-desktop-${{ matrix.platform }}
+          path: artifacts/
+          retention-days: 30
+          if-no-files-found: error
