@@ -1,0 +1,38 @@
+name: Anonymous public archive consumers
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  consume:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, ubuntu-22.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Linux consumer dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libepoxy-dev libfontconfig1-dev libcurl4-openssl-dev xvfb
+      - name: Download, verify, relocate, link and execute the public Linux archive
+        if: runner.os == 'Linux'
+        run: xvfb-run -a node tools/consume-public.mjs
+      - name: Download, verify, relocate, link and execute the public Apple/Windows archive
+        if: runner.os != 'Linux'
+        run: node tools/consume-public.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: anonymous-consumer-${{ runner.os }}
+          path: artifacts/**/validation.json
+          if-no-files-found: error
