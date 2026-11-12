@@ -21,6 +21,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Require a successful finalizer at this exact source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_RUN_ID: ${{ inputs.artifact_run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const id = process.env.ARTIFACT_RUN_ID;
+          if (!/^\d+$/.test(id ?? '')) throw Error('A numeric workflow run ID is required');
+          const run = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${id}`]));
+          const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          if (run.status !== 'completed' || run.conclusion !== 'success' || run.path !== '.github/workflows/build-public.yml' || run.head_sha !== commit) throw Error('A successful finalizer at this exact source commit is required');
+          NODE
       - uses: actions/download-artifact@v4
         with:
           name: finalized-public-release
