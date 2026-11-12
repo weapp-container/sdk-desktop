@@ -29,6 +29,7 @@ test('example links and IDs cannot satisfy real navigation references', () => {
   assert.equal(ids.has('inline'), false);
   assert.equal(ids.has('fenced'), false);
   assert.deepEqual(links(text), ['real.md']);
+  assert.deepEqual(links('[wrapped\nlabel](other.md#section)'), ['other.md#section']);
 });
 test('missing counterpart and unclassified new documentation fail', t => {
   const f = fixture(t);

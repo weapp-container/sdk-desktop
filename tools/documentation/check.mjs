@@ -25,7 +25,7 @@ export function headingIds(text) {
 export function links(text) {
   const prose = stripFences(text).replace(/`+[^`\n]*`+/g, '');
   return [
-    ...[...prose.matchAll(/!?\[[^\]\n]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)]*)?\)/g)].map(match => match[1]),
+    ...[...prose.matchAll(/!?\[[^\]]*\]\(\s*(<[^>\n]+>|[^\s)]+)(?:\s+[^)]*)?\)/g)].map(match => match[1]),
     ...[...prose.matchAll(/^\s*\[[^\]\n]+\]:\s*(<[^>\n]+>|\S+)/gm)].map(match => match[1]),
     ...[...prose.matchAll(/\b(?:href|src)=["']([^"']+)["']/g)].map(match => match[1]),
   ].map(link => link.replace(/^<|>$/g, ''));

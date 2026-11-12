@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceFilesSha256": "3c0920d9a4173e7d9ad14cd9816240fd82a7b41277b9394176a3ac26ba5dec05",
-  "review": "Review bilingual developer documentation and maintenance checks; preserve SDK behavior, historical ORIGIN and artifact locks.",
+  "sourceFilesSha256": "b6d30a53332a39fd82aa3bf1ab0a651be4a51c2120a5586cd7a5b80f42644872",
+  "review": "Review bilingual documentation links across wrapped Markdown labels; preserve SDK behavior, historical ORIGIN and artifact locks.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -773,14 +773,14 @@
     },
     {
       "path": "tools/documentation/check.mjs",
-      "sha256": "fabee7124bd8292b2b5f320d1378933285c50aa4a9ffb8674dde4330bb10ed55",
-      "size": 9626,
+      "sha256": "0fbf9dbed271e30d858f626f60826a32ce365e6a14c5615221044379e2b05173",
+      "size": 9624,
       "mode": "100644"
     },
     {
       "path": "tools/documentation/check.test.mjs",
-      "sha256": "665b1fcaf924fba0026ad72b8c07e48f2e5647f6c2794ac84bfb93a6c037fa83",
-      "size": 5388,
+      "sha256": "1a1ff09d21f0e73325d764637943ce9fcdcbbaf2bd1ea1a67ed5412bd7ef8cf8",
+      "size": 5475,
       "mode": "100644"
     },
     {
