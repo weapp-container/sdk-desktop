@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assetEntry, cleanSource, readRelease, releaseUrl, run, sha256, versionOf, writeRelease, publishRelease } from './public-release.mjs';
+import { assetEntry, cleanSource, readRelease, releaseUrl, run, sha256, versionOf, writeRelease, publishRelease, verifyPortableDistribution } from './public-release.mjs';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2), option = name => { const i = args.indexOf(name); return i < 0 ? undefined : args[i + 1]; };
 const out = resolve(option('--out') ?? join(root, 'artifacts/public')), version = versionOf(root);
@@ -35,6 +35,7 @@ if (args.includes('--publish') || args.includes('--verify')) {
   const platform = ({'linux-x64':'linux-x86_64','windows-x64':'windows-x86_64'})[receipt.platform] ?? receipt.platform;
   if (!['macos-universal', 'linux-x86_64', 'windows-x86_64'].includes(platform)) throw Error('Unexpected public desktop platform');
   for (const entry of receipt.artifacts) if (sha256(readFileSync(join(input, entry.file))) !== entry.sha256) throw Error(`Desktop file changed: ${entry.file}`);
+  verifyPortableDistribution(input);
   mkdirSync(out, { recursive: true });
   const name = `WeappContainerDesktop-${version}-${platform}.tar.gz`;
   if (existsSync(join(out, name)) || existsSync(manifest)) throw Error('Use a fresh release output directory');
