@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "94a9569ded61b99422f5b2a33204481f0fb2b0d2db023fe0a8bf5634d21e51f8",
-  "review": "Remap MSVC compiler paths and reject local paths in installed distribution bytes before archiving",
+  "sourceFilesSha256": "c880fdbc294368eed527b269cf99503aadfed5db1bf0af6f5c7bd2b744d5e630",
+  "review": "Review exact inert path fixtures used to verify public archive path rejection",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -65,8 +65,8 @@
     },
     {
       "path": ".public-source-policy.json",
-      "sha256": "656e72ff4cd56f2863b2f16a7f23ff9e56421229e79398b9749a3adeeec95d6b",
-      "size": 76,
+      "sha256": "0f44c89f7b15b44510f728f02e9a031d8c848418f3929dcc175632a96f98bf4b",
+      "size": 592,
       "mode": "100644"
     },
     {
