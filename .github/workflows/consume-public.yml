@@ -34,5 +34,8 @@ jobs:
         if: always()
         with:
           name: anonymous-consumer-${{ runner.os }}
-          path: artifacts/**/validation.json
+          path: |
+            artifacts/**/validation.json
+            artifacts/validation/**/*.log
+            artifacts/validation/**/consumer-result.txt
           if-no-files-found: error
