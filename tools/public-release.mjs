@@ -6,7 +6,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 export function run(command, args, cwd, options = {}) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 32 * 1024 ** 2, ...options });
-  if (result.error || result.status !== 0) throw Error(`${command} failed: ${result.error?.message ?? result.stderr ?? result.status}`);
+  if (result.error || result.status !== 0) throw Error(`${command} failed (exit ${result.status}): ${result.error?.message ?? ''}\n${result.stdout ?? ''}${result.stderr ?? ''}`);
   return result.stdout;
 }
 export function cleanSource(root) {
