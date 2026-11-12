@@ -18,7 +18,7 @@ async function download(url, maximum) {
   let response;
   try { response = await fetch(url, { signal: AbortSignal.timeout(300000) }); }
   catch (error) { throw Error(`Anonymous download failed: ${url} (${error.cause?.code ?? error.message})`); }
-  assert.equal(response.status, 200, 'Public download unavailable; no fallback is permitted');
+  assert.equal(response.status, 200, `Public download unavailable: ${url}; no fallback is permitted`);
   const chunks = []; let size = 0;
   for await (const chunk of response.body) { size += chunk.length; assert.ok(size <= maximum, 'Download exceeds its pin'); chunks.push(chunk); }
   return Buffer.concat(chunks);
@@ -33,9 +33,7 @@ try {
   const installed = join(work, 'installed');
   run(process.env.PYTHON ?? 'python3', [join(root, 'tools/unpack-runtime.py'), '--archive', archive, '--destination', installed,
     '--sha256', asset.sha256, '--identity-json', JSON.stringify({ repository: pin.repository, version, platform })], root);
-  const fixtureEntry = JSON.parse(await download('https://api.github.com/repos/weapp-container/sdk-contract/contents/fixtures/make-acceptance-pack.mjs?ref=22cafeb56ac5d214c35fc513b1dbe5691e1b801d', 32768));
-  assert.equal(fixtureEntry.encoding, 'base64');
-  const fixture = Buffer.from(fixtureEntry.content, 'base64');
+  const fixture = await download('https://raw.githubusercontent.com/weapp-container/sdk-contract/22cafeb56ac5d214c35fc513b1dbe5691e1b801d/fixtures/make-acceptance-pack.mjs', 16384);
   assert.equal(sha256(fixture), '44d4072fa62266233dddccd5297b638c8ad545a7691dabbea290432d8051c515');
   const generator = join(work, 'make-acceptance-pack.mjs'), pack = join(work, 'pack'); writeFileSync(generator, fixture);
   run(process.execPath, [generator, '--out', pack], root);
