@@ -26,6 +26,16 @@ export function filesUnder(root, prefix = '') {
     return [file];
   });
 }
+/** Inspect uncompressed installed bytes, including static library metadata. */
+export function verifyPortableDistribution(root) {
+  const privatePath = /(?<![A-Za-z0-9_./-])\/(?:Users\/|home\/|private\/(?:var|tmp)\/|var\/folders\/|Volumes\/)|[A-Za-z]:[\\/](?:Users|a|Temp|work|build|actions-runner)[\\/]|\\\\[A-Za-z0-9_.-]{3,}\\[A-Za-z0-9_.-]{3,}\\/;
+  const secret = /(?:github_pat_[A-Za-z0-9_]{15,}|gh[pousr]_[A-Za-z0-9]{20,}|AKIA[A-Z0-9]{16}|-----BEGIN (?:RSA |OPENSSH |EC |DSA )?PRIVATE KEY-----)/;
+  for (const file of filesUnder(root)) {
+    const bytes = readFileSync(join(root, file)).toString('latin1');
+    if (privatePath.test(bytes)) throw Error(`Absolute private/local path found in ${file}`);
+    if (secret.test(bytes)) throw Error(`Credential material found in ${file}`);
+  }
+}
 export function contained(root, file) {
   if (typeof file !== 'string' || !file || isAbsolute(file) || /[\\\x00-\x1f]/.test(file) || file.split('/').some(part => !part || part === '.' || part === '..')) throw Error('Invalid distribution path');
   const path = resolve(root, file), rel = relative(resolve(root), path);

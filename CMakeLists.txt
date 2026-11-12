@@ -60,6 +60,16 @@ elseif(WIN32)
   target_compile_features(weapp_container_desktop PRIVATE cxx_std_20)
   if(MSVC)
     target_compile_options(weapp_container_desktop PRIVATE /utf-8)
+    # MSVC emits object names even in Release, and C++/WinRT expands
+    # __FILE__ in failure diagnostics. Remap both before distributing .lib.
+    target_compile_options(weapp_container_desktop PRIVATE
+      "/pathmap:${CMAKE_SOURCE_DIR}=weapp-container/sdk-desktop"
+      "/pathmap:${CMAKE_BINARY_DIR}=weapp-desktop-build")
+    if(DEFINED ENV{WindowsSdkDir})
+      file(TO_CMAKE_PATH "$ENV{WindowsSdkDir}" WEAPP_WINDOWS_SDK_DIR)
+      target_compile_options(weapp_container_desktop PRIVATE
+        "/pathmap:${WEAPP_WINDOWS_SDK_DIR}=toolchains/windows-sdk/")
+    endif()
   endif()
   target_sources(weapp_container_desktop PRIVATE src/windows.cpp src/device_apis_windows.cpp src/host_services_windows.cpp)
   target_compile_definitions(weapp_container_desktop PRIVATE _WIN32_WINNT=0x0A00 WINVER=0x0A00)

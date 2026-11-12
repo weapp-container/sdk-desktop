@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assetEntry, readRelease, releaseUrl, run, writeRelease, publishRelease } from '../tools/public-release.mjs';
+import { assetEntry, readRelease, releaseUrl, run, writeRelease, publishRelease, verifyPortableDistribution } from '../tools/public-release.mjs';
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'weapp-public-release-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -37,4 +37,13 @@ test('release metadata rejects duplicate assets and invalid hashes', t => {
   const f = fixture(t), entry = assetEntry(f.out, 'sdk.tar.gz');
   assert.throws(() => writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [entry, entry]), /duplicate/);
   assert.throws(() => writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [{ ...entry, sha256: '0' }]), /unverified/);
+});
+test('distribution inspection rejects compiler paths inside libraries before archiving', t => {
+  const f = fixture(t), library = join(f.out, 'wrapper.lib');
+  for (const path of ['D:\\a\\sdk-desktop\\build\\wrapper.obj', '/Users/builder/source/wrapper.cpp', '/home/runner/source/wrapper.cpp']) {
+    writeFileSync(library, Buffer.concat([Buffer.from([0, 255]), Buffer.from(path)]));
+    assert.throws(() => verifyPortableDistribution(f.out), /private\/local path/);
+  }
+  writeFileSync(library, 'weapp-desktop-build/wrapper.obj\0weapp-container/sdk-desktop/src/windows.cpp\0/pages/home/index');
+  assert.doesNotThrow(() => verifyPortableDistribution(f.out));
 });
