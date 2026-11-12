@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.6.0",
-  "sourceFilesSha256": "d6055440f48ecc1bee25b06a18a8bd4b8700adf43492ffb2390bad0ea0e663b3",
-  "review": "Prepare Apache-2.0 core source integration documentation; preserve public SDK history and historical artifact pins.",
+  "sourceFilesSha256": "88798d876ce4326194f0b577f602e405efb88d31d3ebb5fb718e925b3a2e8acf",
+  "review": "Consolidate future runtime releases in the core repository; retain immutable historical artifact locks and ORIGIN",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -77,14 +77,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "22bb3e96534a14d82db7d3119bcb46cb03de968f01ab54efa9ebd46ef2170f29",
-      "size": 7885,
+      "sha256": "470ae3ffb1c2fbd84cc4d8efc44c4a2c3a55f0e98d5645419b51310545adc048",
+      "size": 8418,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "7277424ca75fe4ce7ca962959ff6d00aaa8af894fae67eb3b2c6644d5a63f723",
-      "size": 7560,
+      "sha256": "82b3d5f39cb799a2bb497274532563b1a00e18c7573f4de48d73e4df5696ea48",
+      "size": 8042,
       "mode": "100644"
     },
     {
@@ -616,6 +616,12 @@
       "mode": "100644"
     },
     {
+      "path": "test/runtime-repository.test.mjs",
+      "sha256": "67ab428402cbc8683a93d046a3046c72d81d6217ccd35271f7bc1d4a7a0a6a74",
+      "size": 5195,
+      "mode": "100644"
+    },
+    {
       "path": "test/source-inventory.test.mjs",
       "sha256": "9c1c47ff8e043090739590a7ffc47612138294259c5921ba249c2fd202561908",
       "size": 6327,
@@ -689,8 +695,8 @@
     },
     {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "466a06cc256475e2a033c17ea9137ee73c19fdf56d2f71eeffd62a2dfde5bee1",
-      "size": 19718,
+      "sha256": "e406847cda005b6d52f5b63b18f0d4e7e91b1dc5d9d6d8519d4d601980af1480",
+      "size": 20516,
       "mode": "100644"
     },
     {

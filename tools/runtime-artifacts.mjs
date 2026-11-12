@@ -9,7 +9,14 @@ import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-export const RUNTIME_REPOSITORY = 'weapp-container/runtime-artifacts';
+export const RUNTIME_REPOSITORY = 'weapp-container/weapp-container';
+// Frozen historical releases only. New releases must use the core repository.
+export const LEGACY_RUNTIME_REPOSITORY = 'weapp-container/runtime-artifacts';
+export const LEGACY_RUNTIME_VERSIONS = Object.freeze([
+  '0.1.0-preview.2', '0.1.0-preview.3', '0.1.0-preview.4', '0.1.0-preview.5',
+  '0.1.0-preview.5.1', '0.1.0-preview.5.2', '0.1.0-preview.5.3',
+  '0.1.0-preview.5.5', '0.1.0-preview.6.0',
+]);
 export const SDK_VERSION = '0.1.0-preview.6.0';
 export const DEFAULT_ARTIFACT_TIMEOUT_MS = 15 * 60 * 1000;
 export const MAX_ARTIFACT_TIMEOUT_MS = 60 * 60 * 1000;
@@ -82,8 +89,10 @@ export function selectArtifact(manifest, expected) {
   try { distribution = assertDistributionIdentity(manifest, expected); }
   catch { fail('ERR_RUNTIME_MANIFEST', 'Distribution profile or showcase policy SHA-256 mismatch.'); }
   requireValue(object(manifest.source) && ownKeys(manifest.source, ['repository', 'releaseTag'])
-    && manifest.source.repository === RUNTIME_REPOSITORY && manifest.source.releaseTag === `runtime-v${version}`,
-    'Only an exact versioned release of weapp-container/runtime-artifacts is permitted.');
+    && (manifest.source.repository === RUNTIME_REPOSITORY
+      || manifest.source.repository === LEGACY_RUNTIME_REPOSITORY && LEGACY_RUNTIME_VERSIONS.includes(version))
+    && manifest.source.releaseTag === `runtime-v${version}`,
+    'Only an exact core release or a frozen historical runtime-artifacts release is permitted.');
   requireValue(Array.isArray(manifest.artifacts) && manifest.artifacts.length > 0 && manifest.artifacts.length <= 1000,
     'Manifest requires a bounded non-empty artifact list.');
   const identities = new Set(); const names = new Set();
@@ -113,7 +122,7 @@ export function selectArtifact(manifest, expected) {
   }
   const entry = manifest.artifacts.find(value => value.component === component && value.platform === platform && value.arch === arch);
   if (!entry) fail('ERR_RUNTIME_TARGET', 'The pinned manifest does not contain the exact requested component/platform/architecture.');
-  return Object.freeze({ ...entry, ...installationDistribution(distribution), runtimeVersion: version, abiVersion, releaseTag: manifest.source.releaseTag });
+  return Object.freeze({ ...entry, ...installationDistribution(distribution), runtimeVersion: version, abiVersion, repository: manifest.source.repository, releaseTag: manifest.source.releaseTag });
 }
 
 async function digestFile(path, entry) {
@@ -125,19 +134,19 @@ async function digestFile(path, entry) {
 }
 
 async function exists(path) { try { await lstat(path); return true; } catch (error) { if (error.code === 'ENOENT') return false; throw error; } }
-async function request(url, token, fetchImpl, signal, binary = false) {
+async function request(url, token, fetchImpl, signal, repository, binary = false) {
   let current = new URL(url);
   for (let redirects = 0; redirects <= 5; redirects++) {
     ensureNetworkActive(signal);
     const api = current.origin === 'https://api.github.com';
-    const permittedAPI = api && current.pathname.startsWith(`/repos/${RUNTIME_REPOSITORY}/`);
+    const permittedAPI = api && current.pathname.startsWith(`/repos/${repository}/`);
     if (current.protocol !== 'https:' || current.username || current.password || current.port
       || !(permittedAPI || binary && ['release-assets.githubusercontent.com', 'objects.githubusercontent.com'].includes(current.hostname))) {
       fail('ERR_RUNTIME_REDIRECT', 'Runtime download redirected outside the permitted release endpoints.');
     }
     const headers = { Accept: binary ? 'application/octet-stream' : 'application/vnd.github+json', 'User-Agent': 'weapp-container-runtime-artifacts', 'X-GitHub-Api-Version': '2022-11-28' };
     // Signed storage URLs deliberately receive no Authorization or runtime token.
-    if (permittedAPI) headers.Authorization = `Bearer ${token}`;
+    if (permittedAPI && token) headers.Authorization = `Bearer ${token}`;
     let response;
     try {
       const pending = Promise.resolve().then(() => fetchImpl(current, { headers, redirect: 'manual', signal }));
@@ -158,7 +167,7 @@ async function request(url, token, fetchImpl, signal, binary = false) {
 }
 async function releaseAsset(entry, token, fetchImpl) {
   return withNetworkDeadline(METADATA_TIMEOUT_MS, async signal => {
-    const response = await request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/tags/${entry.releaseTag}`, token, fetchImpl, signal);
+    const response = await request(`https://api.github.com/repos/${entry.repository}/releases/tags/${entry.releaseTag}`, token, fetchImpl, signal, entry.repository);
     const chunks = []; let length = 0;
     if (!response.body) fail('ERR_RUNTIME_RELEASE', 'Release response has no body.');
     for await (const chunk of networkBody(response.body, signal)) { length += chunk.length; if (length > 4 * 1024 ** 2) fail('ERR_RUNTIME_RELEASE', 'Release metadata exceeded its limit.'); chunks.push(chunk); }
@@ -213,10 +222,11 @@ export async function downloadRuntimeArtifact(options) {
     if (dirname(await realpath(local)) !== localRoot) fail('ERR_RUNTIME_INTEGRITY', 'Offline artifact escaped its selected directory.');
     await writeVerified(path, createReadStream(local), entry); source = 'offline';
   } else {
-    if (typeof token !== 'string' || !token.trim() || /[\r\n]/.test(token)) fail('ERR_RUNTIME_CREDENTIALS', 'WEAPP_CONTAINER_RUNTIME_TOKEN with read access to private weapp-container/runtime-artifacts is required; or supply an explicit offline artifact directory.');
+    if (token !== undefined && (typeof token !== 'string' || /[\r\n]/.test(token) || token && !token.trim())) fail('ERR_RUNTIME_CREDENTIALS', 'Runtime token must be a single non-empty line when supplied.');
+    if (entry.repository === LEGACY_RUNTIME_REPOSITORY && !token) fail('ERR_RUNTIME_CREDENTIALS', 'Historical runtime-artifacts releases require WEAPP_CONTAINER_RUNTIME_TOKEN with repository read access; or an explicit offline artifact directory.');
     const assetId = await releaseAsset(entry, token, fetchImpl);
     await withNetworkDeadline(timeoutMs, async signal => {
-      const response = await request(`https://api.github.com/repos/${RUNTIME_REPOSITORY}/releases/assets/${assetId}`, token, fetchImpl, signal, true);
+      const response = await request(`https://api.github.com/repos/${entry.repository}/releases/assets/${assetId}`, token, fetchImpl, signal, entry.repository, true);
       const declared = response.headers.get('content-length');
       if (declared !== null && Number(declared) !== entry.size) { discardBody(response.body); fail('ERR_RUNTIME_INTEGRITY', 'Download Content-Length differs from the artifact pin.'); }
       if (!response.body) fail('ERR_RUNTIME_INTEGRITY', 'Artifact download has no body.');
@@ -224,7 +234,7 @@ export async function downloadRuntimeArtifact(options) {
       finally { discardBody(response.body); }
     });
   }
-  const receipt = { schemaVersion: 1, ...distributionIdentity(options), repository: RUNTIME_REPOSITORY, runtimeVersion: version, abiVersion,
+  const receipt = { schemaVersion: 1, ...distributionIdentity(options), repository: entry.repository, runtimeVersion: version, abiVersion,
     component, platform, arch, ...(entry.architectures ? { architectures: entry.architectures } : {}),
     releaseTag: entry.releaseTag, fileName: entry.fileName, size: entry.size, sha256: entry.sha256, source };
   const receiptPath = `${path}.receipt.json`;
