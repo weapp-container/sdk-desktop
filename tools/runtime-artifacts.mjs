@@ -12,6 +12,8 @@ import { promisify } from 'node:util';
 export const RUNTIME_REPOSITORY = 'weapp-container/weapp-container';
 // Frozen historical releases only. New releases must use the core repository.
 export const LEGACY_RUNTIME_REPOSITORY = 'weapp-container/runtime-artifacts';
+// Frozen manifest identities are stable; historical storage is isolated from public sources.
+export const LEGACY_RUNTIME_ARCHIVE_REPOSITORY = 'weapp-container/runtime-artifacts-private-archive';
 export const LEGACY_RUNTIME_VERSIONS = Object.freeze([
   '0.1.0-preview.2', '0.1.0-preview.3', '0.1.0-preview.4', '0.1.0-preview.5',
   '0.1.0-preview.5.1', '0.1.0-preview.5.2', '0.1.0-preview.5.3',
@@ -211,6 +213,8 @@ export async function downloadRuntimeArtifact(options) {
   let manifest;
   try { manifest = JSON.parse(await readFile(manifestPath, 'utf8')); } catch { fail('ERR_RUNTIME_MANIFEST', 'Artifact manifest is not valid JSON.'); }
   const entry = selectArtifact(manifest, { version, platform, arch, component, abiVersion, ...distributionIdentity(options) });
+  const resolvedRepository = entry.repository === LEGACY_RUNTIME_REPOSITORY ? LEGACY_RUNTIME_ARCHIVE_REPOSITORY : entry.repository;
+  const releaseEntry = { ...entry, repository: resolvedRepository };
   const directory = resolve(outDirectory); await mkdir(directory, { recursive: true });
   const path = join(directory, entry.fileName);
   let source;
@@ -224,9 +228,9 @@ export async function downloadRuntimeArtifact(options) {
   } else {
     if (token !== undefined && (typeof token !== 'string' || /[\r\n]/.test(token) || token && !token.trim())) fail('ERR_RUNTIME_CREDENTIALS', 'Runtime token must be a single non-empty line when supplied.');
     if (entry.repository === LEGACY_RUNTIME_REPOSITORY && !token) fail('ERR_RUNTIME_CREDENTIALS', 'Historical runtime-artifacts releases require WEAPP_CONTAINER_RUNTIME_TOKEN with repository read access; or an explicit offline artifact directory.');
-    const assetId = await releaseAsset(entry, token, fetchImpl);
+    const assetId = await releaseAsset(releaseEntry, token, fetchImpl);
     await withNetworkDeadline(timeoutMs, async signal => {
-      const response = await request(`https://api.github.com/repos/${entry.repository}/releases/assets/${assetId}`, token, fetchImpl, signal, entry.repository, true);
+      const response = await request(`https://api.github.com/repos/${resolvedRepository}/releases/assets/${assetId}`, token, fetchImpl, signal, resolvedRepository, true);
       const declared = response.headers.get('content-length');
       if (declared !== null && Number(declared) !== entry.size) { discardBody(response.body); fail('ERR_RUNTIME_INTEGRITY', 'Download Content-Length differs from the artifact pin.'); }
       if (!response.body) fail('ERR_RUNTIME_INTEGRITY', 'Artifact download has no body.');
@@ -234,7 +238,7 @@ export async function downloadRuntimeArtifact(options) {
       finally { discardBody(response.body); }
     });
   }
-  const receipt = { schemaVersion: 1, ...distributionIdentity(options), repository: entry.repository, runtimeVersion: version, abiVersion,
+  const receipt = { schemaVersion: 1, ...distributionIdentity(options), repository: entry.repository, ...(resolvedRepository !== entry.repository ? { resolvedRepository } : {}), runtimeVersion: version, abiVersion,
     component, platform, arch, ...(entry.architectures ? { architectures: entry.architectures } : {}),
     releaseTag: entry.releaseTag, fileName: entry.fileName, size: entry.size, sha256: entry.sha256, source };
   const receiptPath = `${path}.receipt.json`;

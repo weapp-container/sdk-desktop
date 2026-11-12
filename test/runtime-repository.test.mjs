@@ -5,7 +5,7 @@ import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { downloadRuntimeArtifact, selectArtifact, RUNTIME_REPOSITORY,
-  LEGACY_RUNTIME_REPOSITORY, LEGACY_RUNTIME_VERSIONS } from '../tools/runtime-artifacts.mjs';
+  LEGACY_RUNTIME_REPOSITORY, LEGACY_RUNTIME_ARCHIVE_REPOSITORY, LEGACY_RUNTIME_VERSIONS } from '../tools/runtime-artifacts.mjs';
 
 const bytes = Buffer.from('isolated migration fixture, not a runtime');
 const sha256 = createHash('sha256').update(bytes).digest('hex');
@@ -43,9 +43,11 @@ test('both repositories use exact metadata and asset endpoints and retain the ac
       return calls.length === 1 ? Response.json({ tag_name: c.pin.source.releaseTag, draft: false,
         assets: [{ id: 17, state: 'uploaded', name: c.pin.artifacts[0].fileName, size: bytes.length, digest: `sha256:${sha256}` }] }) : new Response(bytes);
     } });
-    assert.deepEqual(calls, [`https://api.github.com/repos/${repository}/releases/tags/${c.pin.source.releaseTag}`,
-      `https://api.github.com/repos/${repository}/releases/assets/17`]);
+    const storageRepository = repository === LEGACY_RUNTIME_REPOSITORY ? LEGACY_RUNTIME_ARCHIVE_REPOSITORY : repository;
+    assert.deepEqual(calls, [`https://api.github.com/repos/${storageRepository}/releases/tags/${c.pin.source.releaseTag}`,
+      `https://api.github.com/repos/${storageRepository}/releases/assets/17`]);
     assert.equal(result.receipt.repository, repository);
+    assert.equal(result.receipt.resolvedRepository, repository === LEGACY_RUNTIME_REPOSITORY ? storageRepository : undefined);
     assert.deepEqual(await readFile(result.path), bytes);
   }
 });
