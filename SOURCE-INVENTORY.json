@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "c880fdbc294368eed527b269cf99503aadfed5db1bf0af6f5c7bd2b744d5e630",
-  "review": "Review exact inert path fixtures used to verify public archive path rejection",
+  "sourceFilesSha256": "90075e02f497b629d1dd7bfa934f6e7824e3f3f218424b334dd3c94649776369",
+  "review": "Enable the MSVC deterministic mode required for path mapping during Release compilation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -77,8 +77,8 @@
     },
     {
       "path": "CMakeLists.txt",
-      "sha256": "7346a80c34b8481cd80a318bdab9955905f276a30f41549454f1f0e6ef969c60",
-      "size": 18245,
+      "sha256": "c6c7dd31c1c44c954e5a93c7548659e53e8ab42c21bfe2b96facd6f568f866a7",
+      "size": 18273,
       "mode": "100644"
     },
     {
