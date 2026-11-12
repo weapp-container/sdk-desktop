@@ -65,6 +65,7 @@ The host application consumes a built installation without Rust or Cargo. Produc
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git
 cd sdk-desktop
+git checkout c27a715b06367957a24af0a91c969a1abec5627e
 ```
 
 

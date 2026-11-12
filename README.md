@@ -65,6 +65,7 @@ node sdk/contract/fixtures/make-acceptance-pack.mjs --out artifacts/hello-pack
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git
 cd sdk-desktop
+git checkout c27a715b06367957a24af0a91c969a1abec5627e
 ```
 
 <a id="obtain-runtime-and-build"></a>

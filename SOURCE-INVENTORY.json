@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "d2dbf55d0cc8ae4ac5d612632aa387e87eb07ed31beac47833f9919a4465f970",
-  "review": "Merge public distribution candidate and review bilingual installation boundaries; retain pinned preview.6 source example, historical ORIGIN and artifact locks.",
+  "sourceFilesSha256": "53fe6b5404889463e27d086426387957400d773876f501b8262c238699696365",
+  "review": "Review merged public publication workflows and bilingual maintainer guidance; keep original SDK behavior, ORIGIN and historical artifact locks.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -49,6 +49,12 @@
       "path": ".github/workflows/publication-security.yml",
       "sha256": "b6d87425d409e2d0add4aaa9b40fc7c0f33e5b6be9ff692eaecc91ed32b93c91",
       "size": 1189,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/publish-release.yml",
+      "sha256": "b06eebbdf6c244f74b5bb44bc11dee6a2b90817611e7f65730e19492adbafb64",
+      "size": 857,
       "mode": "100644"
     },
     {
@@ -124,15 +130,27 @@
       "mode": "100644"
     },
     {
+      "path": "PUBLIC-RELEASE.en.md",
+      "sha256": "4e1764d0c6e6db8308b6639f6b66287de911a80b67b8496e7c324ddd3be66efa",
+      "size": 3451,
+      "mode": "100644"
+    },
+    {
+      "path": "PUBLIC-RELEASE.md",
+      "sha256": "400d910081fa478d23790b7fcc7bd4ea4afc911547bf40de43eb1995ba7e60c2",
+      "size": 3161,
+      "mode": "100644"
+    },
+    {
       "path": "README.en.md",
-      "sha256": "ddf7803b207cb0545cea14a0082bbd69094726a8e11fb65bb47746661f80ae2e",
-      "size": 14909,
+      "sha256": "defc9658221eb5e7638f131416f1f71a1b26fd9203d6c2266a017cffd10495dd",
+      "size": 14963,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "4d960d79359d340b4ea0a3e31382249c2e879110cd7dbe522ed2703f73df09fa",
-      "size": 12773,
+      "sha256": "7b3907bbc8d6fc48d610f869cc278b5165389e783b93f3bc6f3c2fc9337be238",
+      "size": 12827,
       "mode": "100644"
     },
     {
@@ -245,8 +263,8 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "9df15a6e922738ce8fa821a98677175b0fc40b1e7a0f997822d690e0c113ef6e",
-      "size": 6142,
+      "sha256": "49fcb2bc8365433e1411ce56796e77359ae0b7d4a8b13a886f519860f9e15d25",
+      "size": 6662,
       "mode": "100644"
     },
     {
