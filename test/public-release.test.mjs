@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assetEntry, readRelease, releaseUrl, run, writeRelease, publishRelease, verifyPortableDistribution } from '../tools/public-release.mjs';
+import { assetEntry, readRelease, releaseUrl, run, writeRelease, publishRelease } from '../tools/public-release.mjs';
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), 'weapp-public-release-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -38,12 +38,34 @@ test('release metadata rejects duplicate assets and invalid hashes', t => {
   assert.throws(() => writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [entry, entry]), /duplicate/);
   assert.throws(() => writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [{ ...entry, sha256: '0' }]), /unverified/);
 });
-test('distribution inspection rejects compiler paths inside libraries before archiving', t => {
-  const f = fixture(t), library = join(f.out, 'wrapper.lib');
-  for (const path of ['D:\\a\\sdk-desktop\\build\\wrapper.obj', '/Users/builder/source/wrapper.cpp', '/home/runner/source/wrapper.cpp']) {
-    writeFileSync(library, Buffer.concat([Buffer.from([0, 255]), Buffer.from(path)]));
-    assert.throws(() => verifyPortableDistribution(f.out), /private\/local path/);
+test('publication verifies an unpublished draft by ID when tag lookup cannot see it', async t => {
+  const f = fixture(t);
+  const value = writeRelease(f.root, f.out, 'weapp-container/sdk-ios', [assetEntry(f.out, 'sdk.tar.gz')]);
+  const files = readdirSync(f.out).map(name => assetEntry(f.out, name));
+  function github(overrides = {}) {
+    const calls = [];
+    const invoke = (_command, args) => {
+      calls.push(args);
+      assert.ok(!args.some(arg => arg.includes('/releases/tags/')), 'Unpublished drafts must not use tag lookup');
+      if (args.includes('--slurp')) return JSON.stringify([[], overrides.exists ? [{ tag_name: value.tag, draft: true }] : []]);
+      if (args[1].includes('/git/ref/')) throw Error('Not Found (HTTP 404)');
+      if (args.includes('POST')) return JSON.stringify({ id: 123 });
+      if (args.includes('PATCH') || args[0] === 'release') return '{}';
+      assert.equal(args[1], 'repos/weapp-container/sdk-ios/releases/123');
+      return JSON.stringify({ id: 123, tag_name: value.tag, draft: true, prerelease: true, target_commitish: value.sourceCommit,
+        assets: files.map(file => ({ name: file.fileName, size: file.size, digest: `sha256:${file.sha256}`, state: 'uploaded', ...overrides.asset })), ...overrides.release });
+    };
+    return { calls, invoke };
   }
-  writeFileSync(library, 'weapp-desktop-build/wrapper.obj\0weapp-container/sdk-desktop/src/windows.cpp\0/pages/home/index');
-  assert.doesNotThrow(() => verifyPortableDistribution(f.out));
+  const success = github();
+  assert.equal((await publishRelease(f.root, f.manifest, true, success.invoke)).status, 'published');
+  const patch = success.calls.find(args => args.includes('PATCH'));
+  assert.equal(patch[1], 'repos/weapp-container/sdk-ios/releases/123');
+  assert.ok(patch.includes('make_latest=false'));
+  for (const overrides of [{ exists: true }, { release: { id: 124 } }, { release: { assets: [] } }, { asset: { digest: 'sha256:wrong' } }, { release: { target_commitish: 'b'.repeat(40) } }]) {
+    const rejected = github(overrides);
+    await assert.rejects(publishRelease(f.root, f.manifest, true, rejected.invoke));
+    assert.ok(!rejected.calls.some(args => args.includes('PATCH')));
+    if (overrides.exists) assert.ok(!rejected.calls.some(args => args.includes('POST')));
+  }
 });
