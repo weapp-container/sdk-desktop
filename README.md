@@ -118,3 +118,7 @@ npm test
 - [源码许可证](LICENSE) · [原始提取记录](ORIGIN.json) · [当前源码清单](SOURCE-INVENTORY.json)
 
 构建工具会校验源码清单。修改 SDK 源码后须按 `tools/source-inventory.mjs` 的审核流程更新清单，历史 `ORIGIN.json` 保留原样。各平台实际构建与运行范围以对应产物的验证记录为准。
+
+## Published preview erratum
+
+The immutable `0.1.0-preview.7.0` archives contain a stale `WEAPP_DESKTOP_VERSION` C header macro (`0.1.0-preview.6.0`). The archive metadata and linked runtime are `0.1.0-preview.7.0`, ABI 1. Current source corrects the macro and checks version coordination. Existing archives, tags and hashes are retained; distributing the corrected header requires a new version. Public archive consumers passed on macOS, Linux and Windows.
