@@ -68,6 +68,20 @@ try {
   run('cmake',['-S',root,'-B',build,`-DWEAPP_CORE_DIR=${coreDir}`,`-DCMAKE_INSTALL_PREFIX=${prefix}`,'-DCMAKE_BUILD_TYPE=Release',...apple],'Configure desktop adapter');
   run('cmake',['--build',build,'--config','Release','--parallel','4'],'Build desktop adapter');
   run('cmake',['--install',build,'--config','Release'],'Install relocatable desktop SDK');
+  if (process.platform === 'win32') {
+    // /pathmap remaps runtime diagnostics, but MSVC retains absolute S_OBJNAME
+    // records even with NoDbgInfo. Strip only compiler debug metadata before
+    // linking/executing the independent consumer and freezing artifact hashes.
+    const candidates = [option('--llvm-objcopy'), 'llvm-objcopy',
+      process.env.ProgramFiles && resolve(process.env.ProgramFiles, 'LLVM/bin/llvm-objcopy.exe')].filter(Boolean);
+    const objcopy = candidates.find(command => {
+      const probe = spawnSync(command, ['--version'], { encoding: 'utf8' });
+      return probe.status === 0 && /LLVM/.test(probe.stdout);
+    });
+    if (!objcopy) throw new Error('LLVM objcopy is required to remove private MSVC object debug records');
+    receipt.toolchain.llvmObjcopy = query(objcopy, ['--version']);
+    run(objcopy, ['--strip-debug', resolve(prefix, 'lib/weapp_container_desktop.lib')], 'Remove private MSVC object debug records');
+  }
   const licenses=resolve(prefix,'share/weapp-container/licenses/native');mkdirSync(licenses,{recursive:true});
   for(const target of targets){const source=resolve(licensesRoot,target);if(!existsSync(resolve(source,'licenses.json')))throw new Error(`Native license inventory missing for ${target}; supply authorized runtime notices`);cpSync(source,resolve(licenses,target),{recursive:true});receipt.checks.push({label:`Native license inventory ${target}`,status:'included'});}
   if(existsSync(resolve(root,'LICENSE')))cpSync(resolve(root,'LICENSE'),resolve(prefix,'share/weapp-container/LICENSE'));
