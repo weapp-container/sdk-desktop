@@ -59,7 +59,7 @@ elseif(WIN32)
   set(CMAKE_CXX_STANDARD 20)
   target_compile_features(weapp_container_desktop PRIVATE cxx_std_20)
   if(MSVC)
-    target_compile_options(weapp_container_desktop PRIVATE /utf-8)
+    target_compile_options(weapp_container_desktop PRIVATE /utf-8 /experimental:deterministic)
     # MSVC emits object names even in Release, and C++/WinRT expands
     # __FILE__ in failure diagnostics. Remap both before distributing .lib.
     target_compile_options(weapp_container_desktop PRIVATE
