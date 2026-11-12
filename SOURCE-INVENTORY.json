@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "sdkVersion": "0.1.0-preview.6.0",
-  "sourceFilesSha256": "6f9fbf187413e648838b077b8fdd6ab7de2a99c699c1859f8c0817629a471319",
-  "review": "Isolate immutable legacy downloads in private storage and enforce reviewed publication scanning",
+  "sdkVersion": "0.1.0-preview.7.0",
+  "sourceFilesSha256": "c6148923377326eb431e75f33085dc7c0a6c871f12845391fd496cc6e9677a73",
+  "review": "Prepare validated public preview distributions",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -22,9 +22,21 @@
       "mode": "100644"
     },
     {
+      "path": ".github/workflows/build-public.yml",
+      "sha256": "1236c04c3f2e5b96cc66b332bdbf6434788a5ba7c478d726d953547f2cdcaca5",
+      "size": 2295,
+      "mode": "100644"
+    },
+    {
       "path": ".github/workflows/checks.yml",
       "sha256": "1c18982a507217a8bbac7e65279383e5df5c6460689d5d92ad3e3332658eff00",
       "size": 483,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/public-sdk.yml",
+      "sha256": "3582ab912d24f859b0f543d95dab2002e17f091390adc8e4ae02a04f1007edaf",
+      "size": 476,
       "mode": "100644"
     },
     {
@@ -89,14 +101,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "b5f82988d0f0b4fc10fbdc8334f29b8845ba1cccacbca5955c0d7f0e38dacb29",
-      "size": 9389,
+      "sha256": "db5ac0b7703120c155388c18b2aeff2484388726b0045ab4494511bdacb42e40",
+      "size": 5633,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "f71dd716414235966a97ba12319913c0f746efaae037e0d07c3a5ca44dc30c6b",
-      "size": 8621,
+      "sha256": "e803d12274dbe112cb19870d30b9f21bf05bac8e236fa0d701ff9fa242b8a7b7",
+      "size": 5449,
       "mode": "100644"
     },
     {
@@ -227,8 +239,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "4e41301412c9e54f13dabc39bc2227a470dea16c9bb4e088a40365d8e0ab6779",
-      "size": 500,
+      "sha256": "d5b16c9913a5ac0c91241f6e5afb0b9a453cb729050d5fbf15048e76e7de96b0",
+      "size": 557,
       "mode": "100644"
     },
     {
@@ -533,8 +545,8 @@
     },
     {
       "path": "test/distribution-identity.test.mjs",
-      "sha256": "e874cc53417ecb88434afda08e500c67de1cecc424ac4b8c72fed5d9d90bf14a",
-      "size": 6175,
+      "sha256": "841c3c68981696fd63c8fff1870999499690ef5727e8c708263193c3dd860120",
+      "size": 6173,
       "mode": "100644"
     },
     {
@@ -622,6 +634,12 @@
       "mode": "100644"
     },
     {
+      "path": "test/public-release.test.mjs",
+      "sha256": "c76a8bd9a74205a71e24f5ffce08dc877217a2bc421580a3c6cd3a6509444dfa",
+      "size": 2749,
+      "mode": "100644"
+    },
+    {
       "path": "test/run-host-services-reference.mjs",
       "sha256": "4876ab75654fd9d0ec5d336fdadf8d10d5117592600e689c723e51d64d5eb248",
       "size": 8398,
@@ -694,9 +712,21 @@
       "mode": "100644"
     },
     {
+      "path": "tools/download-production.mjs",
+      "sha256": "be7c75d07ad81331d2d55dfd630c3f92efed1f1ca5938a6e05e9cb47e9a70b84",
+      "size": 2257,
+      "mode": "100644"
+    },
+    {
       "path": "tools/native-input.mjs",
-      "sha256": "79b1dc003914106d09f78292e7bafcc1d7cc7a0a2da1556e9a2cff619b151a6d",
+      "sha256": "7e54d654c6d6776e47f3d486d4ee996c4f2d08fd1de9617d5b3908f9ae4ffd0e",
       "size": 12493,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/package-release.mjs",
+      "sha256": "9a4829f7f0884897ee77b422a1e19e832f8fd561c30ca3c7fcc53719dc74ff6d",
+      "size": 4440,
       "mode": "100644"
     },
     {
@@ -706,8 +736,14 @@
       "mode": "100644"
     },
     {
+      "path": "tools/public-release.mjs",
+      "sha256": "a8691fca9be3c6def20195cbeced5b597e76be6ca6fb3329b7e1937b12f08ce3",
+      "size": 7288,
+      "mode": "100644"
+    },
+    {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "17b6f4f4ec2a1b743fe1e2632b3a119f0cf2bf7fd3b7fa1e15df32da5d8bb882",
+      "sha256": "3246476e3a0a8a5161f0e5290a205e5ac88c19a53fe231fc79698d9bea58af18",
       "size": 21000,
       "mode": "100644"
     },

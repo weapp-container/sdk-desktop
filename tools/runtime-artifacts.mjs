@@ -19,7 +19,7 @@ export const LEGACY_RUNTIME_VERSIONS = Object.freeze([
   '0.1.0-preview.5.1', '0.1.0-preview.5.2', '0.1.0-preview.5.3',
   '0.1.0-preview.5.5', '0.1.0-preview.6.0',
 ]);
-export const SDK_VERSION = '0.1.0-preview.6.0';
+export const SDK_VERSION = '0.1.0-preview.7.0';
 export const DEFAULT_ARTIFACT_TIMEOUT_MS = 15 * 60 * 1000;
 export const MAX_ARTIFACT_TIMEOUT_MS = 60 * 60 * 1000;
 export const METADATA_TIMEOUT_MS = 30 * 1000;

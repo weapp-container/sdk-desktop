@@ -1,6 +1,6 @@
 {
   "name": "@weapp-container/sdk-desktop-tools",
-  "version": "0.1.0-preview.6.0",
+  "version": "0.1.0-preview.7.0",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -13,6 +13,7 @@
     "runtime:prepare": "node tools/prepare-runtime.mjs",
     "build": "node tools/build.mjs",
     "test": "node --test test/*.test.mjs",
-    "check:origin": "node tools/check-origin.mjs"
+    "check:origin": "node tools/check-origin.mjs",
+    "release:package": "node tools/package-release.mjs"
   }
 }

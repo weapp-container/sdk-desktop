@@ -1,62 +1,14 @@
 # Weapp Container Desktop SDK
 
-Historical storage: updated downloaders map the nine frozen legacy `runtime-artifacts` versions to the private `weapp-container/runtime-artifacts-private-archive`, retaining original lock bytes, hashes and licenses and recording the resolved repository. Old downloaders must upgrade. The new repository at the old name contains retired tool source only; new runtime releases use the core repository. Private archive access still requires authorization, with no cross-repository fallback.
+First public publication is being prepared. Use these commands once this version is visible in its registry. Historical private archives and locks retain their original identities.
 
-Historical release audit (2026-11-12): Some default SDK archives are missing and the runtime pins differ from current same-name legacy assets; default online preparation fails integrity checks. Build from matching clean source or explicitly select an independently reviewed matching manifest with `--manifest`; do not merely replace old hashes. See the [audit and migration record](https://github.com/weapp-container/weapp-container/blob/main/docs/runtime-artifacts-migration.md).
+Version `0.1.0-preview.7.0` requires CMake 3.21+ and C++17. The public [GitHub prerelease](https://github.com/weapp-container/sdk-desktop/releases/tag/v0.1.0-preview.7.0) provides:
 
-Runtime packaging and publication now live in the [core repository](https://github.com/weapp-container/weapp-container/tree/main/tools/runtime-artifacts). New manifests select exact core releases through `--manifest`. The default lock retains its historical `runtime-artifacts` source, version, hashes and bundled licenses. The retired repository remains a read-only archive; downloads never fall back between repositories. Private repositories still require read access; source licensing does not imply public binary availability.
+- `WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz`: macOS 12+, arm64/x86_64.
+- `WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz`: x86_64, GTK 3.24+, GIO 2.66+, fontconfig and epoxy.
+- `WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz`: Windows x86_64, MSVC.
 
-The core runtime and SDK source are available under Apache-2.0. Build the current runtime from the [core source guide](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-repositories.md). Existing prebuilt archives retain their original licenses, access requirements and exact version/hash pins; this source update does not publish replacement binaries.
-
-[简体中文](README.md) | **English**
-
-Embed mini apps in an existing macOS, Windows, or Linux application. The SDK provides C/C++ sessions, native views, messaging, and lifecycle APIs. Your application owns its windows and main event loop.
-
-Source version: `0.1.0-preview.6.0`. C ABI: `1`. Host wrappers, build tools, and consumer examples in this repository are open source under Apache-2.0. New open-source runtime builds carry Apache-2.0; retain their `RUNTIME-LICENSE` and third-party notices.
-
-## Prerequisites
-
-- Node.js 24+, Python 3, CMake 3.21+, and a C++17 compiler.
-- macOS: macOS 12+ and Xcode Command Line Tools.
-- Windows: Windows 10 x64, MSVC, and the Windows SDK; C++/WinRT adapters use C++20.
-- Linux: Ubuntu 22.04 x64 / glibc 2.35+, with GTK 3.24, GIO 2.66+, fontconfig, and epoxy development packages.
-
-Rust, Cargo, and the core source repository are unnecessary. The SDK is not published to a public package registry; build an installation from this checkout:
-
-```sh
-git clone https://github.com/weapp-container/sdk-desktop.git
-cd sdk-desktop
-```
-
-## Obtain the runtime and build
-
-The preparation script verifies version, ABI, size, and SHA-256 against [runtime-artifacts.lock.json](runtime-artifacts.lock.json). The current lock contains preview.6.0 runtime archives for macOS and Linux, with no Windows runtime entry. Windows integration source is available, but default preparation fails when its required pin is absent.
-
-After obtaining runtime download access, inject `WEAPP_CONTAINER_RUNTIME_TOKEN` through your secret manager or CI secrets, then run:
-
-```sh
-node tools/prepare-runtime.mjs --target macos-universal
-node tools/build.mjs \
-  --target macos-universal \
-  --native-root .runtime/install/native \
-  --licenses-root .runtime/install/licenses \
-  --pack /absolute/portable-pack \
-  --verify
-```
-
-`/absolute/portable-pack` must be an unpacked portable pack containing `manifest.json` and `blobs/sha256/`. Do not pass a source project or archive.
-
-If you already have the exact authorized archives, replace the preparation command with:
-
-```sh
-node tools/prepare-runtime.mjs \
-  --target macos-universal \
-  --artifact-dir /absolute/authorized-archives
-```
-
-Offline input undergoes the same checks. Use `--manifest /absolute/reviewed-lock.json` to select another reviewed lock. Source and runtime versions must match; a missing pin or failed check never falls back to an older version.
-
-Targets are `macos-universal`, `macos-arm64`, `macos-x64`, `windows-x64`, and `linux-x64`; build on the matching OS. Output defaults to `artifacts/desktop/TARGET`. `--verify` runs the installed independent consumer and needs a working desktop display. Without it, compilation and linking do not establish successful UI execution.
+Verify `SHA256SUMS` before extracting to your installation directory. Archives include relocatable CMake configuration, headers, runtime libraries and licenses. Consumers need no Rust or sibling source checkout.
 
 ## Integrate with CMake
 
