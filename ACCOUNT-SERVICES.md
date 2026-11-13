@@ -1,10 +1,15 @@
+<a id="desktop-hosting-account-authorization-and-payment"></a>
 # 桌面宿主账号、授权与支付
+
+**简体中文** · [English](ACCOUNT-SERVICES.en.md)
+
 
 `include/weapp/host_services.hpp` 提供独立的 C++17 业务适配器。它复用 runtime 的
 共享账号 owner；`HostAccountManager` 只包装换号、查询、取消、重试及本地数据删除，
 不维护第二套 epoch。`HostApiContext` 保留完整的 runtime wire context，账号 epoch
 与 deadline 使用十进制字符串，不能经 JSON double 转换。
 
+<a id="access-sequence"></a>
 ## 接入顺序
 
 1. 以宿主可信安装记录构造 `Config.host_services` 的 application/account。
@@ -37,6 +42,7 @@ consent、手机号码、应用退出及订单 launch。独立 app client secret
 业务 app bearer 和下单金额留在后端；SDK 不提供这些凭据的 guest 入口。
 选择请求完整携带 `miniAppId/packRoot/expectedPrincipalId/expectedPrincipalEpoch`。
 
+<a id="network-and-authorization-ui"></a>
 ## 网络与授权 UI
 
 macOS 使用 ephemeral `NSURLSession`，Windows 使用 `WinHTTP`，Linux 使用 7.85+
@@ -74,6 +80,7 @@ policy，不以 guest desc 替换。`wx.getUserInfo` 只读取已有授权。手
 账号切换事件和查询终态观察完成，新入口的同步快照反映 app 未登录。其他小程序
 与宿主账号保留，后端既有独立资料/手机号 consent 也不被应用退出自动删除。
 
+<a id="desktop-payment-boundary"></a>
 ## 桌面支付边界
 
 `HostPaymentChannel` 是宿主正式渠道与 SDK 的类型化接入边界。guest 仅传 `orderId`；
@@ -102,6 +109,7 @@ SDK 再按同一订单轮询
 身份，原生设备和 GPU 清理从 `accountSwitch` 的 `revoking` 事件开始。公共 controller
 保持稳定，内部 JS session、页面栈及查询参数由 runtime 重建。
 
+<a id="asynchronous-cleanup-and-identity-snapshot"></a>
 ## 异步清理与身份快照
 
 异步身份刷新要求 runtime 提供 `hostServices.snapshotOwnerContext == "1.0"`；
@@ -158,6 +166,7 @@ application/account 字段，并获得一个自有 completion。调用
 error_message, &error)` 只完成 promise，可以从其他线程调用；它不进入 runtime。
 每个 completion 必须且只能结算一次，成功消费后指针置空。取消也必须以错误结算。
 
+<a id="c-abi-compatible"></a>
 ## C ABI 兼容
 
 原有 C state 与 event 的数字不变，`IDENTITY_SWITCHING` 与 `EVENT_ACCOUNT_SWITCH`
@@ -167,6 +176,7 @@ error_message, &error)` 只完成 promise，可以从其他线程调用；它不
 `weapp_desktop_session_register_api_handler` 和
 `weapp_desktop_session_host_services_command`。
 
+<a id="validation-scope-and-remaining-integration-work"></a>
 ## 验证范围与剩余接入
 
 `WEAPP_DESKTOP_BUILD_TESTS=ON` 会生成独立 authored fixture，运行公开 C++/C SDK →

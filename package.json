@@ -14,6 +14,7 @@
     "build": "node tools/build.mjs",
     "test": "node --test test/*.test.mjs",
     "check:origin": "node tools/check-origin.mjs",
-    "release:package": "node tools/package-release.mjs"
+    "release:package": "node tools/package-release.mjs",
+    "docs:check": "node tools/documentation/check.mjs && node tools/documentation/check-content.mjs"
   }
 }

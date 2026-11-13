@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "2cd9d8b831ee5c06c7002a920243049af405eb9bfec3ceeb8335839e72a4b113",
-  "review": "Correct the current C header version, add version coordination coverage, document the immutable archive erratum and retain public consumer diagnostics.",
+  "sourceFilesSha256": "19ee137c69dba609d22f7f6fcf1b0eb339034d71ff6250233400d7ff7e67d69f",
+  "review": "Merge current public release and reviewed bilingual documentation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -37,6 +37,12 @@
       "path": ".github/workflows/consume-public.yml",
       "sha256": "c8f8894a07819abcab286c6f8350503b4479c25534a6b156b4c4121ebe11372b",
       "size": 1403,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/documentation.yml",
+      "sha256": "6be53c9ba3b356899fdc53c29097b58e2a65d65bc74196d441efa29aa27487f1",
+      "size": 446,
       "mode": "100644"
     },
     {
@@ -76,9 +82,15 @@
       "mode": "100644"
     },
     {
+      "path": "ACCOUNT-SERVICES.en.md",
+      "sha256": "5aa5752100f8025644d1b1730ee823baf47fb6dd2bf04713a9f7c1e9923a27e4",
+      "size": 17939,
+      "mode": "100644"
+    },
+    {
       "path": "ACCOUNT-SERVICES.md",
-      "sha256": "1f90604d710cc80a315393cf58fd21f2a057b74713ffd8e5f6cd5868d632e69d",
-      "size": 14093,
+      "sha256": "075467a368728447de45e27d086264ef6cebd9b39b0dd99ca3a1f90b2326a72a",
+      "size": 14468,
       "mode": "100644"
     },
     {
@@ -88,9 +100,15 @@
       "mode": "100644"
     },
     {
+      "path": "CONTRACT.en.md",
+      "sha256": "d076dfb58cebfe9f691c03f336cabcd122b28f1344444a9b55d117b8a922bbdd",
+      "size": 15124,
+      "mode": "100644"
+    },
+    {
       "path": "CONTRACT.md",
-      "sha256": "ba10912a5e56bfeca475d4da513df0bb002b833daad68c6a9617fc5106d33c38",
-      "size": 14835,
+      "sha256": "a5a984c4cb8f98ac1c7eb18360deccf42a8171c3d848c328cb820b804706c333",
+      "size": 14187,
       "mode": "100644"
     },
     {
@@ -100,9 +118,15 @@
       "mode": "100644"
     },
     {
+      "path": "OPEN_SOURCE.en.md",
+      "sha256": "f2948c337b350a55e9cf7687542e9bdebb9b3281b4941830d1703b6adfec5e73",
+      "size": 1073,
+      "mode": "100644"
+    },
+    {
       "path": "OPEN_SOURCE.md",
-      "sha256": "1dee2538d2d740dce59b041c10fbb54f42ba523c3c87e546f883e62214309195",
-      "size": 987,
+      "sha256": "253d2545971cb8d03ebea4859913da305b00e0c902bdad63b5f643f32eaec77b",
+      "size": 1057,
       "mode": "100644"
     },
     {
@@ -112,33 +136,51 @@
       "mode": "100644"
     },
     {
+      "path": "PUBLIC-RELEASE.en.md",
+      "sha256": "b90292e5ebe9404505e3b98f8523cb9d8cf9ac8bd179aa82992bb101f3d4cfb6",
+      "size": 3919,
+      "mode": "100644"
+    },
+    {
       "path": "PUBLIC-RELEASE.md",
-      "sha256": "86efd0f5af8e004e5371ee84ae8232b57f0e224a2b0354f96d98b2b590bc9366",
-      "size": 3868,
+      "sha256": "7dbd75c500eb52616f16b8c64d4a9334b4fa351ed22f272edc193c8f39b95184",
+      "size": 3570,
       "mode": "100644"
     },
     {
       "path": "README.en.md",
-      "sha256": "db5ac0b7703120c155388c18b2aeff2484388726b0045ab4494511bdacb42e40",
-      "size": 5633,
+      "sha256": "97a5d16cdf890e0fcd655a37dff8b0db6bee401d73398be1de07e05da29e009c",
+      "size": 15546,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "4a942ca7ad7441b048b44b18e14a81caf995f2db476525d1abb0e5489f939525",
-      "size": 5908,
+      "sha256": "e5ffcda388e2b00c03cdacc22679e4ba3f20d3d83c74b4643bb8e63a59b7bae7",
+      "size": 13382,
+      "mode": "100644"
+    },
+    {
+      "path": "WINDOWS-AUDIO.en.md",
+      "sha256": "3906fe16d9347a9043bf37ecccb23faa8865e11e0f9b7e91909aacc819f0d99a",
+      "size": 6835,
       "mode": "100644"
     },
     {
       "path": "WINDOWS-AUDIO.md",
-      "sha256": "f1e21064ebcc2bc35c3f6015a0746f719101fabf6b6fca23c8ab5cbe1c7df31e",
-      "size": 6619,
+      "sha256": "6a0ea955a9bb1c0165b94b5099a3750dc43fc0fad4757cb35f278e7983d0945c",
+      "size": 6259,
+      "mode": "100644"
+    },
+    {
+      "path": "WINDOWS-SENSORS.en.md",
+      "sha256": "4b33348133feb749625f5805bf0653dca745a2d6f2a218cdcf8322a9a879630c",
+      "size": 3535,
       "mode": "100644"
     },
     {
       "path": "WINDOWS-SENSORS.md",
-      "sha256": "05c73ca5252caaffe828c06c313a40e19f769ea2ac44729a4634ca2b94e2f5d1",
-      "size": 3452,
+      "sha256": "00267ad4fbeb98b48414803fdc3770ea8224126e1ab550e31c2c54bcacd6a32e",
+      "size": 3271,
       "mode": "100644"
     },
     {
@@ -196,9 +238,15 @@
       "mode": "100644"
     },
     {
+      "path": "docs/EMBEDDING.en.md",
+      "sha256": "861f2afe9d7d590a65775cd2022287e4bf833ce9e261138f732be9c8b7205a3a",
+      "size": 22138,
+      "mode": "100644"
+    },
+    {
       "path": "docs/EMBEDDING.md",
-      "sha256": "dcadd15beb0fb656eaa32970ccdb20109856cb564e2bcdf82510895a791b11ef",
-      "size": 21922,
+      "sha256": "3ae1e54f10481d9adfa94e77ca6a488a1d3a02ed7f1783468e4f34cf343cde2e",
+      "size": 20990,
       "mode": "100644"
     },
     {
@@ -208,9 +256,21 @@
       "mode": "100644"
     },
     {
+      "path": "docs/windows-bluetooth.en.md",
+      "sha256": "af2dbd0e6b8cfc1b9b19180f1a79eafca95c7190e1a548d9d9ead8a7df629339",
+      "size": 3628,
+      "mode": "100644"
+    },
+    {
       "path": "docs/windows-bluetooth.md",
-      "sha256": "a0d5a5ba0f26d2b91a4a1a046d7c64956ef8e670babc65ddf6a2697762837580",
-      "size": 3527,
+      "sha256": "313714994b4aab11628cd3b1f5bbc20055c94c68678917b7f4b88a44774305d8",
+      "size": 3269,
+      "mode": "100644"
+    },
+    {
+      "path": "documentation.json",
+      "sha256": "2b99de4e2d25d4ff05721fdac5ff1d7be01e9f65482ddad0e961959969be7ece",
+      "size": 6798,
       "mode": "100644"
     },
     {
@@ -257,8 +317,8 @@
     },
     {
       "path": "package.json",
-      "sha256": "d5b16c9913a5ac0c91241f6e5afb0b9a453cb729050d5fbf15048e76e7de96b0",
-      "size": 557,
+      "sha256": "06e74aa497e10a1f3d7897e408f95f01244f1774c91b65f389f258755b9aa7ae",
+      "size": 659,
       "mode": "100644"
     },
     {
@@ -757,6 +817,48 @@
       "path": "tools/distribution-identity.mjs",
       "sha256": "2c4ee0d63bc96c2dace3184833f107b3c35dc87647886b6997896ebf1841386d",
       "size": 2127,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/README.en.md",
+      "sha256": "0771ea3d888cddc15444f452964da24b74e517aefd1f162d1de2af965f19d7fa",
+      "size": 2742,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/README.md",
+      "sha256": "6c0d12dd12a6cd4a1076e912f2a09d959772638769da314e76d1708cc7c5a64e",
+      "size": 2435,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/check-content.mjs",
+      "sha256": "d37144b18bf7d42d181b08a476afcc1f5dea9425e6b4993f03aabad14033eb70",
+      "size": 4110,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/check-content.test.mjs",
+      "sha256": "60f2d77ab72a2413798d8750f8e538d3b3dd0424c7037298162312cab5cce245",
+      "size": 2742,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/check.mjs",
+      "sha256": "0fbf9dbed271e30d858f626f60826a32ce365e6a14c5615221044379e2b05173",
+      "size": 9624,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/check.test.mjs",
+      "sha256": "1a1ff09d21f0e73325d764637943ce9fcdcbbaf2bd1ea1a67ed5412bd7ef8cf8",
+      "size": 5475,
+      "mode": "100644"
+    },
+    {
+      "path": "tools/documentation/review.mjs",
+      "sha256": "fe32de1c2483099eccc4ef1734b576a2a7368f873905af75482bc36ac856a9e2",
+      "size": 992,
       "mode": "100644"
     },
     {

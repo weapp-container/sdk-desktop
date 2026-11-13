@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "repository": "weapp-container/sdk-desktop",
+  "defaultLocale": "zh-CN",
+  "locales": [
+    "zh-CN",
+    "en"
+  ],
+  "pages": [
+    {
+      "id": "ACCOUNT-SERVICES",
+      "zh": "ACCOUNT-SERVICES.md",
+      "en": "ACCOUNT-SERVICES.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "ACCOUNT-SERVICES.md"
+      },
+      "reviewedChineseSummary": "桌面宿主账号、授权与支付；接入顺序；网络与授权 UI；桌面支付边界；异步清理与身份快照；C ABI 兼容；验证范围与剩余接入",
+      "reviewedChineseSha256": "075467a368728447de45e27d086264ef6cebd9b39b0dd99ca3a1f90b2326a72a",
+      "legacyHeadingIds": [
+        "c-abi-兼容",
+        "异步清理与身份快照",
+        "接入顺序",
+        "桌面宿主账号授权与支付",
+        "桌面支付边界",
+        "网络与授权-ui",
+        "验证范围与剩余接入"
+      ]
+    },
+    {
+      "id": "CONTRACT",
+      "zh": "CONTRACT.md",
+      "en": "CONTRACT.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "CONTRACT.md"
+      },
+      "reviewedChineseSummary": "SDK 协议 v1；会话与调度；内部命令；开发重载（预览.4）；呈现；小程序 API；原生宿主 Chrome（预览版 4）；账户清理和 C ABI",
+      "reviewedChineseSha256": "a5a984c4cb8f98ac1c7eb18360deccf42a8171c3d848c328cb820b804706c333",
+      "legacyHeadingIds": [
+        "account-cleanup-and-c-abi",
+        "development-reload-preview4",
+        "internal-commands",
+        "mini-program-api",
+        "native-host-chrome-preview4",
+        "presentation",
+        "sdk-contract-v1",
+        "session-and-scheduling"
+      ]
+    },
+    {
+      "id": "OPEN_SOURCE",
+      "zh": "OPEN_SOURCE.md",
+      "en": "OPEN_SOURCE.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "OPEN_SOURCE.md"
+      },
+      "reviewedChineseSummary": "开源运行时集成",
+      "reviewedChineseSha256": "253d2545971cb8d03ebea4859913da305b00e0c902bdad63b5f643f32eaec77b",
+      "legacyHeadingIds": [
+        "open-source-runtime-integration"
+      ]
+    },
+    {
+      "id": "README",
+      "zh": "README.md",
+      "en": "README.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "README.md"
+      },
+      "reviewedChineseSummary": "同步最新公开发行工作流入口，保留固定 preview.6 源码用法与 preview.7 发行候选的独立边界。；已复核 preview.7 公开发行、工具链与生命周期更新",
+      "reviewedChineseSha256": "e5ffcda388e2b00c03cdacc22679e4ba3f20d3d83c74b4643bb8e63a59b7bae7",
+      "legacyHeadingIds": [
+        "weapp-container-desktop-sdk",
+        "准备环境",
+        "创建视图并加载-pack",
+        "接入已有-cmake-工程",
+        "生命周期与存储",
+        "获取运行库并构建",
+        "运行消费示例与检查",
+        "进一步阅读"
+      ]
+    },
+    {
+      "id": "WINDOWS-AUDIO",
+      "zh": "WINDOWS-AUDIO.md",
+      "en": "WINDOWS-AUDIO.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "WINDOWS-AUDIO.md"
+      },
+      "reviewedChineseSummary": "Windows 内部音频上下文源实现；源和格式边界；原生所有权和可观察行为；验证和剩余验收",
+      "reviewedChineseSha256": "6a0ea955a9bb1c0165b94b5099a3750dc43fc0fad4757cb35f278e7983d0945c",
+      "legacyHeadingIds": [
+        "native-ownership-and-observable-behavior",
+        "sources-and-format-boundary",
+        "verification-and-remaining-acceptance",
+        "windows-inneraudiocontext-source-implementation"
+      ]
+    },
+    {
+      "id": "WINDOWS-SENSORS",
+      "zh": "WINDOWS-SENSORS.md",
+      "en": "WINDOWS-SENSORS.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "WINDOWS-SENSORS.md"
+      },
+      "reviewedChineseSummary": "Windows 传感器",
+      "reviewedChineseSha256": "00267ad4fbeb98b48414803fdc3770ea8224126e1ab550e31c2c54bcacd6a32e",
+      "legacyHeadingIds": [
+        "windows-sensors"
+      ]
+    },
+    {
+      "id": "docs/EMBEDDING",
+      "zh": "docs/EMBEDDING.md",
+      "en": "docs/EMBEDDING.en.md",
+      "section": "runtime",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "docs/EMBEDDING.md"
+      },
+      "reviewedChineseSummary": "Weapp 容器桌面 SDK 预览；构建和消费；C++ 插入；已安装的消费者验证；原生设备服务",
+      "reviewedChineseSha256": "3ae1e54f10481d9adfa94e77ca6a488a1d3a02ed7f1783468e4f34cf343cde2e",
+      "legacyHeadingIds": [
+        "build-and-consume",
+        "c-embedding",
+        "installed-consumer-verification",
+        "native-device-services",
+        "weapp-container-desktop-sdk-preview"
+      ]
+    },
+    {
+      "id": "docs/windows-bluetooth",
+      "zh": "docs/windows-bluetooth.md",
+      "en": "docs/windows-bluetooth.en.md",
+      "section": "runtime",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "docs/windows-bluetooth.md"
+      },
+      "reviewedChineseSummary": "Windows Bluetooth LE 宿主后端",
+      "reviewedChineseSha256": "313714994b4aab11628cd3b1f5bbc20055c94c68678917b7f4b88a44774305d8",
+      "legacyHeadingIds": [
+        "windows-bluetooth-le-host-backend"
+      ]
+    },
+    {
+      "id": "tools/documentation/README",
+      "zh": "tools/documentation/README.md",
+      "en": "tools/documentation/README.en.md",
+      "section": "tools",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "tools/documentation/README.md"
+      },
+      "reviewedChineseSummary": "双语文档维护；更新一组文档；网站快照；检查与测试",
+      "reviewedChineseSha256": "6c0d12dd12a6cd4a1076e912f2a09d959772638769da314e76d1708cc7c5a64e",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "public-release",
+      "zh": "PUBLIC-RELEASE.md",
+      "en": "PUBLIC-RELEASE.en.md",
+      "section": "tools",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "PUBLIC-RELEASE.md"
+      },
+      "reviewedChineseSummary": "维护者发行顺序、认证、不可变资产与平台独立验收条件；不会自动发布或修改历史发行物。；已复核 preview.7 公开发行、工具链与生命周期更新",
+      "reviewedChineseSha256": "7dbd75c500eb52616f16b8c64d4a9334b4fa351ed22f272edc193c8f39b95184",
+      "legacyHeadingIds": []
+    }
+  ],
+  "excluded": [],
+  "assets": []
+}

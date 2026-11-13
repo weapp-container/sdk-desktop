@@ -1,27 +1,26 @@
-# Weapp Container desktop SDK preview
+<a id="weapp-container-desktop-sdk-preview"></a>
+# Weapp 容器桌面 SDK 预览
 
-The installed CMake package embeds one real QuickJS/Skia runtime per session in
-an application-owned NSView, child HWND, or GTK3 drawing area. The application
-owns its main loop and top-level windows. There is no WebView or JavaScript
-bridge carrying pixels. This preview is locally installable and is not published
-to a registry.
+**简体中文** · [English](EMBEDDING.en.md)
 
-| Target | Native presentation | Baseline |
+
+安装的 CMake 包在每个会话中嵌入一个真实的 QuickJS/Skia 运行时，该运行时位于应用程序拥有的 NSView、子 HWND 或 GTK3 绘制区域中。应用程序拥有其主线程和顶层窗口。没有 WebView 或 JavaScript 桥接传输像素。此预览可在本地安装，且不会发布到注册表。
+
+| 目标 | 原生呈现 | 基线 |
 | --- | --- | --- |
-| macOS | NSView + CAMetalLayer, GPU completion before detach | macOS 12+, arm64/x86_64 universal archive |
-| Windows | child HWND + premultiplied BGRA DIB/AlphaBlend | Windows 10 x64, MSVC, host per-monitor DPI awareness |
-| Linux | GtkDrawingArea + Cairo, Skia CPU snapshots | Ubuntu 22.04 x64, glibc 2.35+, GTK 3.24, X11/Wayland |
+| macOS | NSView + CAMetalLayer，GPU完成操作在分离前 | macOS 12+，arm64/x86_64 通用归档 |
+| Windows | child HWND + 预乘 BGRA DIB/AlphaBlend | Windows 10 x64, MSVC, 宿主每显示器 DPI 意识 |
+| Linux | GtkDrawingArea + Cairo, Skia CPU 帧捕获 | Ubuntu 22.04 x64, glibc 2.35+, GTK 3.24, X11/Wayland |
 
-Source availability does not certify a target. The package receipt and consumer
-logs record the platforms actually built and run. Rosetta execution is explicitly
-not an Intel hardware result. Native input includes mouse/touch, wheel and key
-events; this preview does not provide native text-entry controls or IME composition.
+源可用性并不能保证目标的可用性。包回执和消费者日志记录了实际构建和运行的平台。Rosetta 执行明确不是 Intel 硬件的结果。原生输入包括鼠标/触摸、滚轮和键盘事件；本预览不提供原生文本输入控件或 IME 组合功能。
 
-## Build and consume
+<a id="build-and-consume"></a>
+## 构建和消费
 
-Use the standalone commands in [the root README](../README.md). Runtime archives are supplied independently under private binary terms; no parent source checkout or Rust compiler is required.
+使用 [根目录 README](../README.md) 中的独立命令。运行时存档在私有二进制条款下单独提供；无需父源代码检出或 Rust 编译器。
 
-## C++ embedding
+<a id="c-embedding"></a>
+## C++ 插入
 
 ```cpp
 #include <weapp/desktop.hpp>
@@ -38,287 +37,85 @@ status = session->register_host_method("account.current");
 status = session->load(unpacked_portable_pack_directory);
 ```
 
-`View::native_handle()` returns the native child object. Put it in the host's
-layout and call `set_bounds` for manual layout; bounds are logical pixels. GTK
-non-fixed containers govern actual allocation, so their layout wins over a size
-request. The SDK observes display scale changes. A zero-sized view hides
-presentation while preserving the last positive viewport. GTK hosts must allow the first real size allocation before load; otherwise load
-returns `ERR_NOT_LAID_OUT`. A session may have
-one view at a time, enforced for GPU and raster presenters. Destroying a view
-preserves its session; attaching a new view resumes it.
+`View::native_handle()` 返回原生子对象。将其放入宿主的布局中，并调用 `set_bounds` 进行手动布局；边界以逻辑像素为单位。GTK 非固定容器控制实际分配，因此其布局优先于大小请求。SDK 会观察显示缩放变化。零大小的视图会隐藏呈现，但保留最后一个正的视口。GTK 宿主必须在加载前允许首次实际大小分配；否则加载将返回 `ERR_NOT_LAID_OUT`。一个会话一次只能有一个视图，这对 GPU 和位图呈现器有强制要求。销毁视图会保留其会话；附加新视图将恢复该会话。
 
-Session construction is lazy: first load requires actual positive view/display
-metrics. Native layout supplies these, or a headless host supplies `Config.metrics`.
-Module-scope window APIs therefore see host observations on their first execution.
-Storage is memory-only unless both `storage_key` and `storage_root` are supplied.
-Use application/account-specific keys and app-private directories.
+会话构建是惰性的：首次加载需要实际的视图/显示指标。原生布局提供这些指标，或者无头宿主提供 `Config.metrics`。因此，模块作用域的窗口 API 在首次执行时会看到宿主的观察结果。
+除非同时提供了 `storage_key` 和 `storage_root`，否则存储仅存在于内存中。
+使用应用程序/账户特定的键和应用私有目录。
 
-Every Session/View method, callback and destruction belongs to the creating UI
-thread. macOS requires the AppKit main thread; GTK requires an initialized host
-GTK display. The SDK installs a per-session timer on the host loop. Timers continue
-servicing HTTP, host calls and storage while the view is hidden or closing;
-JavaScript timers, input and presentation pause when hidden. Explicit `pump()` is
-available for deterministic host integration, but does not replace the host loop.
-A wrong-thread command returns an error. Destroying C++ objects on a foreign
-thread is a contract violation and terminates rather than touching thread-bound
-runtime state. Immutable `Frame` copies can cross threads and outlive the session.
+每个会话/视图方法、回调和销毁操作都属于创建 UI 线程。macOS 要求使用 AppKit 主线程；GTK 需要初始化的宿主 GTK 显示。SDK 在宿主循环中为每个会话安装一个定时器。当视图被隐藏或关闭时，定时器仍会继续处理 HTTP 请求、宿主调用和存储操作；而 JavaScript 定时器、输入和呈现操作则在隐藏时暂停。可显式调用 `pump()` 以实现确定性的宿主集成，但不能替代宿主循环。在非主线程执行命令将返回错误。在异线程上销毁 C++ 对象属于合同违规，将直接终止，而不是触碰线程绑定的运行时状态。不可变的 `Frame` 复制可以跨线程传递，并且可存活于会话之外。
 
-`navigate`, `back`, `send_message`, `register_host_method`, `complete_host_call`,
-`fail_host_call`, `pointer`, `wheel`, `key`, `flush_storage` and `close` are typed
-methods. `Value` is a typed business data tree; protocol envelopes stay internal.
-HostCall events include `callId`, `method` and `payload` in `fields`. Forward
-business work to another queue as needed, then deliver completion on the owner UI
-thread. `fail_host_call` maps a host failure to the runtime's `invalid_request`
-error with the supplied message. Ready, navigation, frame, message, cancellation,
-error, storage and closed events are delivered outside runtime invocations.
+`navigate`、`back`、`send_message`、`register_host_method`、`complete_host_call`、`fail_host_call`、`pointer`、`wheel`、`key`、`flush_storage` 和 `close` 是类型化方法。`Value` 是一种类型化的业务数据树；协议信封保留在内部。HostCall 事件在 `fields` 中包含 `callId`、`method` 和 `payload`。根据需要将业务工作转发到另一个队列，然后在拥有者 UI 线程上交付完成。`fail_host_call` 将主机失败映射为运行时的 `invalid_request` 错误，并附带提供的消息。就绪、导航、帧、消息、取消、错误、存储和关闭事件在运行时调用之外被传递。
 
-Load replacement stops presentation and drains/detaches the GPU before candidate
-startup. A failed candidate preserves and reattaches the previous runtime.
-`close()` also detaches safely and starts an asynchronous durable close. Keep the
-host loop running until `EventType::Closed`, inspect its error fields, then destroy
-the view and session. The C++ destructor is a synchronous last-resort cleanup;
-explicit close gives the host observable persistence completion. Callbacks may
-change the listener or initiate another operation; nested event loops do not
-recursively drain callbacks. Do not throw from callbacks.
+加载替换在候选者启动前停止呈现并回收/断开GPU。如果候选者失败，则保留并重新连接之前的运行时。
+`close()` 也会安全断开并启动一个异步的持久关闭。在收到 `EventType::Closed` 之前持续运行宿主循环，检查其错误字段，然后销毁视图和会话。C++析构函数是同步的最后清理手段；显式关闭可使宿主可观测到持久化完成。回调可能更改监听器或启动其他操作；嵌套事件循环不会递归回收回调。回调中不得抛出异常。
 
-C consumers use `weapp/desktop.h`, including opaque typed Value builders/accessors.
-No C function accepts a raw command name or JSON string. Borrowed callback fields
-last for that callback; use `weapp_desktop_value_clone` to retain them. C session
-`destroy` requires the Closed state and clears the caller's handle on success.
+C 消费者使用 `weapp/desktop.h`，包括无类型指针的 Value 构建器/访问器。
+没有 C 函数接受原始命令名或 JSON 字符串。回调字段的借用用于此目的；使用 `weapp_desktop_value_clone` 保留它们。C 会话的 `destroy` 要求处于关闭状态，并在成功时清除调用者的句柄。
 
-## Installed consumer verification
+<a id="installed-consumer-verification"></a>
+## 已安装的消费者验证
 
-`consumer` is an independent CMake project; it includes installed
-headers only. It tests C and C++ linkage, two sessions/views, native pointer/key
-adapters, state isolation, a failed candidate rollback, DPR resize, hidden
-service pumping, cross-thread rejection, durable close, retained frame lifetime
-and storage-lock reopen. On Linux execute the same consumer with both a display
-from `xvfb-run` and a headless Weston compositor using `GDK_BACKEND=wayland`.
-The consumer creates and destroys its own host window and temporary storage.
+`consumer` 是一个独立的 CMake 项目；它仅包含已安装的头文件。它测试了 C 和 C++ 链接、两个会话/视图、原生指针/键适配器、状态隔离、失败候选回滚、DPR 缩放、隐藏服务泵送、跨线程拒绝、持久关闭、保留帧生命周期和存储锁重新打开。在 Linux 上，使用 `xvfb-run` 和无头的 Weston 合成器（通过 `GDK_BACKEND=wayland`）分别执行相同的 consumer。consumer 会创建和销毁自己的宿主窗口和临时存储。
 
-The internal codec is nlohmann/json 3.11.3 (MIT), vendored from its upstream tagged
-single header. Its license ships with the installation. Native distribution
-license inventory is copied by the packager when present; release packaging must
-retain the full third-party inventory produced by `the private runtime distribution`.
+内部编码器为 nlohmann/json 3.11.3（MIT），来自其上游标记的单个头文件。其许可证随安装包一同提供。如果存在，打包工具会复制原生分发的许可证清单；发布打包必须保留 `the private runtime distribution` 生成的完整第三方清单。
 
 
-## Native device services
+<a id="native-device-services"></a>
+## 原生设备服务
 
-C++ hosts opt in before session creation with `Config.native_device_apis =
-std::make_shared<DeviceApiOptions>()` from `weapp/device_apis.hpp`. Configure
-`allowed_network_origins` with exact HTTPS origins; an empty list denies native
-network access. `private_root` selects the SDK's durable managed file store.
-The core supplies the application/account lease and real native directory;
-guest modules see only the protected `wx.env.USER_DATA_PATH` value
-`wxfile://user`. Do not supply a filesystem root from guest options.
+C++ 在会话创建前通过 `Config.native_device_apis =
+std::make_shared<DeviceApiOptions>()`（来自 `weapp/device_apis.hpp`）启用选项。使用精确的 HTTPS 原点配置 `allowed_network_origins`；空列表将拒绝原生网络访问。`private_root` 选择 SDK 的持久化管理文件存储。核心部分提供应用程序/账户租约和真实的原生目录；来宾模块只能看到受保护的 `wx.env.USER_DATA_PATH` 值 `wxfile://user`。不要从来宾选项中提供文件系统根目录。
 
-The SDK installs platform handlers before module evaluation and handles their
-completions on the creating UI thread. The reusable `DeviceApis` interface also
-supports a borrowed native session (for example Flutter): its command callback
-must use that session, its platform view must supply `set_native_parent`, and
-its owner loop must call `pump`, `update_components`, `set_foreground` and
-`retire`. It must not create a second session for device operations.
+SDK 在模块求值之前安装平台处理程序，并在创建 UI 线程上处理它们的完成。可重用的 `DeviceApis` 接口也支持借用原生会话（例如 Flutter）：其命令回调必须使用该会话，其平台视图必须提供 `set_native_parent`，且其拥有者循环必须调用 `pump`、`update_components`、`set_foreground` 和 `retire`。它不得为设备操作创建第二个会话。
 
-Managed synchronous filesystem calls perform real disk operations inside the
-current JavaScript turn. Asynchronous filesystem operations and native media
-publication use the same scope lock, quotas and atomic replacement. Individual
-binary/read/write chunks are limited to one MiB, the managed scope to 32 MiB,
-and directory enumeration to 4096 entries. Saved settings and permission
-consent live in the core's private auxiliary directory. Account changes retire
-native resources before the core acknowledges cleanup and releases its file
-lease. Native callbacks cannot publish files after that acknowledgement.
+管理同步文件系统调用在当前 JavaScript 执行周期内执行实际的磁盘操作。异步文件系统操作和原生媒体发布使用相同的范围锁、配额和原子替换。单个二进制/读/写数据块限制为 1 MiB，管理范围限制为 32 MiB，目录枚举限制为 4096 个条目。保存的设置和权限同意存储在核心的私有辅助目录中。账户变更会在核心确认清理之前释放原生资源，并在核心确认清理后释放其文件租约。原生回调在该确认之后无法发布文件。
 
-On macOS the driver uses NSURLSession HTTPS/WSS, AppKit dialogs/clipboard,
-CoreLocation, CoreWLAN, CoreBluetooth central/GATT, AVFoundation audio/camera,
-Contacts and EventKit. The containing app must declare camera, microphone,
-location, Bluetooth, contacts and calendar usage descriptions for the services
-it enables, plus normal sandbox/network/device entitlements when sandboxed.
-Recording requires explicit AAC or WAV; encoded frame callbacks are currently
-unavailable. Native video/audio sources must be managed files, downloaded
-through the trusted networking policy first. Camera/video pixels enter the
-normal Skia paint order with clipping and transforms. No child overlay view
-bypasses composition. Application permission denials persist until the user
-resets them in application settings; reset stops sensitive active resources.
-Biometric support/enrollment detection is native, while SOTER signature
-production remains unsupported because LocalAuthentication cannot produce a
-WeChat SOTER proof.
+在 macOS 上，驱动程序使用 NSURLSession 的 HTTPS/WSS、AppKit 对话框/剪贴板、CoreLocation、CoreWLAN、CoreBluetooth 中心端/GATT、AVFoundation 音频/摄像头、Contacts 和 EventKit。包含的应用程序必须声明摄像头、麦克风、位置、蓝牙、联系人和日历的使用描述，以启用其服务，同时在沙盒环境中还需声明正常的沙盒/网络/设备权限。录制需要明确的 AAC 或 WAV 格式；当前无法获取编码帧回调。原生的视频/音频源必须是管理文件，并且首先需通过受信任的网络策略下载。摄像头/视频像素将按照正常的 Skia 绘制顺序进入，包含裁剪和变换。没有子层叠加视图可以绕过合成。应用权限拒绝将持续存在，直到用户在应用设置中重置这些权限；重置将停止敏感的活动资源。生物识别支持/注册检测是原生的，而 SOTER 签名生成仍不支持，因为 LocalAuthentication 无法生成微信 SOTER 证明。
 
-Windows uses WinHTTP, system clipboard/dialogs/power information, native WLAN
-scan/connection notifications and system settings/map handlers. Wi-Fi connection
-supports open or WPA2 personal networks with a temporary profile; accepted OS
-connection attempts may finish after cancellation, while their canceled guest
-continuations remain retired. Linux uses GTK/GIO, optional libcurl 7.85+,
-NetworkManager Wi-Fi discovery/current access points, the freedesktop screen
-inhibitor and sysfs backlight control. Linux services may reject unavailable
-hardware, missing daemons or insufficient OS permissions. NetworkManager lists
-its observed access-point cache after requesting a scan.
+Windows 使用 WinHTTP、系统剪贴板/对话框/电源信息、原生 WLAN 扫描/连接通知以及系统设置/地图处理程序。Wi-Fi 连接支持开放或 WPA2 个人网络，使用临时配置文件；已接受的操作系统连接尝试在被取消后可能仍会完成，而被取消的访客连接则会保持终止状态。Linux 使用 GTK/GIO、可选的 libcurl 7.85+、NetworkManager 的 Wi-Fi 发现/当前接入点、freedesktop 屏幕抑制器以及 sysfs 背光控制。Linux 服务可能因硬件不可用、服务缺失或操作系统权限不足而拒绝连接。NetworkManager 在请求扫描后会列出其观察到的接入点缓存。
 
-Foreground location uses CoreLocation on macOS, C++/WinRT Geolocator on Windows
-when its SDK headers and runtime activation are available, and GeoClue on Linux
-when a system service is owned or activatable. Linux hosts must set the trusted
-`DeviceApiOptions::linux_desktop_id` to their installed desktop-file ID (with or
-without `.desktop`); empty disables location routes. Guest parameters cannot
-supply this identity. GeoClue service policy and OS consent still apply. Windows
-permission acquisition requires the attached visible host HWND, its UI thread
-and foreground root window. Missing capabilities leave the routes unregistered.
+前景定位在 macOS 上使用 CoreLocation，在 Windows 上使用 C++/WinRT Geolocator（当 SDK 头文件和运行时激活可用时），在 Linux 上使用 GeoClue（当系统服务被拥有或可激活时）。Linux 宿主必须将可信的 `DeviceApiOptions::linux_desktop_id` 设置为其已安装的桌面文件 ID（带或不带 `.desktop` 后缀）；空值将禁用定位路由。来宾参数无法提供此身份。GeoClue 服务策略和操作系统许可仍然适用。Windows 权限获取需要附加的可见宿主 HWND、其 UI 线程和前景根窗口。缺少这些能力将导致路由未注册。
 
-All three drivers accept WGS84 only; unsupported coordinate systems are rejected.
-`wx.getFuzzyLocation` requests `scope.userFuzzyLocation`, rounds coordinates to
-0.01 degrees, reports accuracy of at least 1500 metres and removes altitude and
-speed metadata. Precise calls request `scope.userLocation`. Location timeout is
-100..120000 milliseconds (default 30000). Starting a watch waits for its initial
-native startup/fix; an active watch accepts repeated starts with identical
-options, while a changed accuracy or timeout requires stopping it first. Windows
-polls Geolocator fixes at one-second intervals; Linux observes GeoClue's client
-location at 500ms intervals. Neither implementation promises an OS event stream.
+所有三个驱动程序仅接受 WGS84 坐标系；不支持的坐标系将被拒绝。
+`wx.getFuzzyLocation` 请求 `scope.userFuzzyLocation`，将坐标四舍五入到 0.01 度，报告精度至少为  1500 米，并移除海拔和速度元数据。 精确位置请求使用 `scope.userLocation`。 位置超时时间为 100..120000 毫秒（默认值为 30000）。 启动监听会等待其初始的原生启动/定位；一个活跃的监听器可接受相同选项的重复启动，但若精度或超时时间发生变更，则必须先停止监听器。 Windows 每一秒查询一次定位器的定位结果；Linux 每 500 毫秒观察一次 GeoClue 客户端的定位信息。 两种实现均不保证提供操作系统事件流。
 
-Stop invalidates queued watch delivery and pending application/native grants.
-Windows/Linux stop receipts wait until their native source is destroyed, including
-late acquisition after cancellation; cancelled workers retain their slots within
-the eight-owner limit until cleanup completes. Windows retains the same async
-operation until a completion callback or terminal status permits `Close`, and
-retries uncertain close failures without releasing the operation or apartment.
-GeoClue tries Stop/DeleteClient, then confirms closure of its private D-Bus
-connection; GeoClue documents private disconnect as client cleanup. Failed
-connection closure retains the connection for retry. A persistent native cleanup
-failure keeps stop/retirement pending rather than acknowledging released resources.
-`DeviceApis::retire` returns `ERR_RESOURCE_CLEANUP_PENDING` while native workers
-drain and returns control to the owner loop. Hosts retain the owner and retry
-retirement; they must obtain success before destroying it. The desktop account
-switch loop retries automatically and sends the core cleanup acknowledgement
-only after success. Destruction without successful explicit retirement retains
-a synchronous safety fallback and may wait for native cleanup.
-macOS detaches the old manager/delegate and captures a new generation before a
-fresh watch; queued callbacks from a retired manager cannot enter that watch.
-Ingress saturation stops the manager on its owner and emits a bounded terminal
-error instead of silently continuing to collect discarded location updates.
-Reset, background and retirement revoke both queued delivery and pending grants;
-returning to foreground requires a fresh start. Other desktop device families
-remain unsupported unless a host adds its own registered handlers.
+停止会取消排队的监视器交付和待处理的应用程序/原生授权。
+Windows/Linux 停止回执会等待其原生源被销毁，包括在取消后延迟获取；已取消的工作程序会保留其槽位，直到清理完成，且不超过八个拥有者限制。Windows 会保留相同的异步操作，直到完成回调或终端状态允许 `Close`，在重试不确定的关闭失败时不会释放操作或会话。GeoClue 会尝试 Stop/DeleteClient，然后确认其私有 D-Bus 连接的关闭；GeoClue 将私有断开记录为客户端清理。连接关闭失败会保留连接以供重试。原生清理失败持续存在会保持停止/退休待处理，而不是确认已释放资源。`DeviceApis::retire` 在原生工作程序耗尽时返回 `ERR_RESOURCE_CLEANUP_PENDING`，并将其控制权交还给拥有者循环。宿主会保留拥有者并重试退休；它们必须在成功之前销毁它。桌面账户切换循环会自动重试，并且只有在成功后才会发送核心清理确认。没有成功明确退休的销毁会保留同步安全回退，并可能等待原生清理。
+macOS 会分离旧的管理器/代理，并在获取新版本前捕获新版本；已退休管理器的排队回调无法进入该监视器。入口饱和会停止管理器在其拥有者上运行，并发出有界终端错误，而不是静默继续收集被丢弃的位置更新。重置、后台和退休操作都会取消排队交付和待处理授权；返回前台需要重新启动。其他桌面设备家族在宿主未添加其自身注册处理器之前均不支持。
 
-Windows BLE central uses C++/WinRT when the Bluetooth SDK headers and runtime
-activation are available. Windows native implementation and SDK header probes
-use C++20 for the projection's standard coroutine support; public wrapper headers
-remain compatible with C++17 consumers. Native discovery supplies device identity and address
-type; guest parameters cannot replace that metadata. Connection permission
-preparation runs on the attached foreground host UI thread. Async operations
-remain owned through terminal completion, including late connection results after
-cancellation, and cleanup releases the exact watcher, event registrations, GATT
-services/session and device references. `wx.getBLEMTU` reports the native GATT
-session's maximum PDU size; pairing, peripheral/server mode and MTU mutation are
-not registered by these desktop backends.
+Windows BLE 中心在可用的蓝牙 SDK 头文件和运行时激活时使用 C++/WinRT。Windows 原生实现和 SDK 头文件探针使用 C++20 以支持投影的标准协程功能；公共包装头文件仍与 C++17 消费者兼容。原生发现提供设备身份和地址类型；客体参数无法替代该元数据。连接权限准备在附加的前台宿主 UI 线程上运行。异步操作在完成时仍保持所有权，包括取消后的延迟连接结果，清理操作会释放精确的观察器、事件注册、GATT 服务/会话和设备引用。`wx.getBLEMTU` 报告原生 GATT 会话的最大 PDU 大小；配对、外围/服务器模式以及 MTU 变更不会由这些桌面后端注册。
 
-Linux BLE uses BlueZ over a private system D-Bus connection. The default exposes
-adapter state, LE discovery and observed devices. Discovery filters and sessions
-belong to that private client; cleanup never powers the global adapter on/off or
-removes paired devices. Central connection/GATT APIs require the trusted host to
-set `DeviceApiOptions::linux_bluetooth_exclusive=true` (Flutter host option
-`linuxBluetoothExclusive`). This asserts that the deployment fences other clients
-from the target devices: BlueZ Device1 Connect/Disconnect operate globally, and
-Disconnect can terminate all profiles. This option is therefore a deployment
-contract, not OS-enforced isolation. The SDK also rejects already connected
-devices and conflicting leases in the same SDK instance. It retains each lease
-until Disconnect and a false Connected property acknowledge cleanup; losing the
-private D-Bus peer is never substituted for that device acknowledgement.
+Linux BLE 通过私有系统 D-Bus 连接使用 BlueZ。默认情况下，它暴露适配器状态、低功耗发现和已观察到的设备。发现过滤器和会话属于该私有客户端；清理操作不会开启或关闭全局适配器，也不会移除配对设备。中心连接/GATT API 要求可信主机设置 `DeviceApiOptions::linux_bluetooth_exclusive=true`（Flutter 主机选项 `linuxBluetoothExclusive`）。这表示部署将阻止其他客户端访问目标设备：BlueZ 设备1 连接/断开操作是全局的，断开连接可终止所有配置文件。因此，此选项是一种部署协议，而非操作系统强制的隔离。SDK 还会拒绝已连接的设备以及同一 SDK 实例中存在冲突的租约。它会保留每个租约，直到断开连接且虚假的 Connected 属性确认清理完成；丢失私有 D-Bus 对等端不会被用作该设备确认的替代。
 
-BlueZ GATT discovery rejects ambiguous duplicate UUIDs, bounds each device to
-64 services and the owner to 256 characteristics, uses actual ReadValue/
-WriteValue operations, and observes notification Value signals. BlueZ writes
-are limited to 512 bytes. Neither BlueZ nor Windows registers a synthetic
-`wx.getBLEDeviceRSSI`; advertised RSSI remains part of observed device records
-where native discovery supplies it. BlueZ also leaves `wx.getBLEMTU` absent
-because this backend has no general client MTU query. Unsupported routes stay
-unregistered.
+BlueZ GATT 发现拒绝模糊的重复 UUID，将每个设备绑定到 64 个服务，将每个宿主绑定到 256 个特性，使用实际的 ReadValue/WriteValue 操作，并观察通知 Value 信号。BlueZ 写入操作限制为 512 字节。BlueZ 和 Windows 均不注册合成的 `wx.getBLEDeviceRSSI`；广告的 RSSI 仍保留在观察到的设备记录中，由原生发现提供。BlueZ 也未提供 `wx.getBLEMTU`，因为该后端没有通用的客户端 MTU 查询功能。不支持的路由保持未注册。
 
-The shared Windows/Linux BLE owner permits eight native owners, including
-cancelled owners still draining, 32 outstanding commands, 256 observed devices
-and 256 notification delivery tokens. Close adapter waits for every prior native
-owner. Stop discovery invalidates a queued start; notification disable and device
-close revoke queued characteristic delivery before their native release finishes.
-Read events carry their request cancellation token. Reset/background/retirement
-revoke the adapter and pending grants; a foreground return requires a fresh open.
-Native disconnection revokes queued notification delivery; an invalidated BlueZ
-service database retires the owner before cached attribute paths can be reused.
-Ingress saturation terminates collection through the bounded owner queue;
-rejected command receipts retain an error completion until the owner can drain it.
-The `weapp_device_bluetooth_test` executable checks these boundaries using a fake
-OS backend and actual linked core catalog configuration. Isolated compilation of
-the real BlueZ source against local GIO headers checks C++/GIO compatibility;
-it does not execute BlueZ. Windows target compilation, complete Linux GTK builds,
-physical radio/GATT behavior and OS consent remain separate acceptance work.
+共享的 Windows/Linux BLE 主体允许八个原生主体，包括已取消但仍在回收的主体，32 个待处理命令，256 个观察到的设备和 256 个通知传递令牌。关闭适配器会等待所有先前的原生主体。停止发现会作废已排队的启动请求；禁用通知和设备关闭会在原生释放完成前撤销已排队的特征数据传递。读取事件携带其请求取消令牌。重置/后台/退休操作会撤销适配器和待处理授权；前台返回需要重新打开。原生断开连接会撤销已排队的通知传递；已作废的 BlueZ 服务数据库会在缓存的属性路径可被重用之前退场。入口饱和会终止通过有界主体队列的收集；被拒绝的命令回执会保留错误完成状态，直到主体可以回收它。可执行文件 `weapp_device_bluetooth_test` 使用虚拟的 OS 后端和实际的链接核心目录配置检查这些边界。将真实 BlueZ 源码与本地 GIO 头文件进行隔离编译，以验证 C++/GIO 兼容性；它不会执行 BlueZ。Windows 目标编译、完整的 Linux GTK 构建、物理射频/GATT 行为和操作系统许可均属于独立的验收工作。
 
-The macOS source has a local CMake archive-build check. This is not camera,
-Bluetooth, microphone, contact, calendar or privacy-dialog acceptance evidence.
-Windows target compilation, a complete Linux GTK target build and physical
-device verification remain separate requirements; available source routes do
-not establish OS parity. The GeoClue source has an isolated compile check against
-real GIO headers on the local macOS machine; this does not execute GeoClue.
+macOS 源代码有一个本地的 CMake 构建检查。这并非摄像头、蓝牙、麦克风、联系人、日历或隐私对话框的接受证据。Windows 目标编译、完整的 Linux GTK 目标构建以及物理设备验证仍为独立要求；现有的源码路径无法证明操作系统的一致性。GeoClue 源代码在本地 macOS 机器上针对真实的 GIO 头文件进行独立编译检查；此过程不会执行 GeoClue。
 
-The optional CMake `WEAPP_DESKTOP_BUILD_TESTS=ON` target builds
-`weapp_device_permissions_test`; run it with `ctest --test-dir <build-dir>
---output-on-failure`. It exercises the production dispatcher, persisted consent,
-owner queue and retained-object cleanup with fake OS consent callbacks. Pending
-application grants, delayed OS grants and queued successful completions cannot
-escape a permission reset; fresh authorization can recover afterward. This is
-an executable lifecycle contract check, not hardware or privacy-dialog acceptance.
-The `weapp_device_location_test` executable additionally uses fake native sources
-to verify fuzzy projection/scopes, queued-event revocation, delayed acquisition,
-stop/drain ordering, cleanup failure recovery, background behavior and bounded
-cancelled workers. It submits the adapter's complete configuration through the
-actual linked core C ABI; this validates catalog registration, not OS location.
+可选的 CMake `WEAPP_DESKTOP_BUILD_TESTS=ON` 目标会构建 `weapp_device_permissions_test`；使用命令 `ctest --test-dir <build-dir>
+--output-on-failure` 运行该测试。该测试使用伪造的 OS 同意回调来验证生产调度器、持久化同意、所有者队列和保留对象清理功能。待处理的应用程序授权、延迟的 OS 授权以及已排队的完成操作在权限重置后都无法逃脱；新的授权可以在之后恢复。这是一项可执行生命周期契约的验证，而非硬件或隐私对话的接受。`weapp_device_location_test` 可执行文件还使用伪造的原生源码来验证模糊投影/作用域、已排队事件撤销、延迟获取、停止/清空顺序、清理失败恢复、后台行为以及有界取消的工作者。它通过实际链接的核心 C ABI 提交适配器的完整配置；这验证了目录注册，而非操作系统位置。
 
-Native request cancellation and managed-file publication share a completion
-barrier on macOS, Windows and Linux. Cancellation before publication prevents
-the download file and result enqueue. A write already accepted by that barrier
-finishes its bounded file publication and result enqueue before cancellation
-returns; cancellation does not roll back an accepted file. The optional
-`weapp_device_publication_test` executable checks both orderings using real
-managed files and controlled worker timing, plus rejection after owner retirement.
-It does not establish WinHTTP, libcurl, NSURLSession or hardware acceptance.
+原生请求取消和管理文件发布在 macOS、Windows 和 Linux 上共享一个完成屏障。在发布之前取消会阻止下载文件和结果入队。一个已由该屏障接受的写入操作会在取消返回前完成其有界文件发布和结果入队；取消不会回滚已接受的文件。可选的 `weapp_device_publication_test` 可执行文件使用真实的管理文件和受控的工作器时序，以及所有者退休后的拒绝来检查两种顺序。它不建立 WinHTTP、libcurl、NSURLSession 或硬件验收。
 
-Windows advertises `wx.connectSocket` and the `SocketTask` send, close and
-Open/Message/Error/Close event family through asynchronous WinHTTP. Linux
-advertises that same family only when built against libcurl **8.16+**, both
-WebSocket symbols link, and the loaded library reports the `wss` protocol.
-The installed CMake package requires 8.16+ if its archive contains this route;
-an HTTP-only archive retains its 7.85+ dependency. A missing gate leaves the
-entire SocketTask family absent from the native service configuration.
+Windows 提供 `wx.connectSocket`，且 `SocketTask` 通过异步 WinHTTP 发送、关闭以及 Open/Message/Error/Close 事件族。Linux 仅在链接了 libcurl **8.16+** 时才会提供该事件族，同时 WebSocket 符号也存在，且加载的库报告了 `wss` 协议。如果其归档文件包含此路由，则安装的 CMake 包要求版本为 8.16+；仅包含 HTTP 的归档文件仍保留对 7.85+ 的依赖。缺少该开关将导致整个 SocketTask 事件族在原生服务配置中缺失。
 
-| Source route | Platform transport | Activation requirement | Acceptance still required |
+| 源路由 | 平台传输 | 激活要求 | 验收仍需 |
 | --- | --- | --- | --- |
-| HTTPS request/download/upload | WinHTTP / optional libcurl | Windows 10 SDK / libcurl 7.85+ | Target build and real transfer/cancellation |
-| WSS SocketTask | Async WinHTTP WebSocket | Windows 10 SDK | Windows build and real TLS/close/cancellation |
-| WSS SocketTask | libcurl WebSocket | Headers/library 8.16+, linked APIs, runtime `wss` protocol | Linux build and real TLS/close/cancellation |
-| BLE central/GATT | C++/WinRT | Bluetooth SDK headers, activation, foreground host UI for connection consent | Windows build and real radio/GATT/late-result cleanup |
-| LE discovery | BlueZ private D-Bus client | Running or activatable BlueZ service, powered adapter | Linux build and client-scoped discovery cleanup |
-| BLE central/GATT | BlueZ private D-Bus client + exclusive target lease | Explicit trusted host exclusivity, no preexisting connection | Linux build and real GATT/disconnect/recovery |
+| HTTPS 请求/下载/上传 | WinHTTP / 可选 libcurl | Windows 10 SDK / libcurl 7.85+ | 目标构建和实际传输/取消 |
+| WSS SocketTask | Async WinHTTP WebSocket | Windows 10 SDK | Windows 构建和真实的 TLS/关闭/取消 |
+| WSS SocketTask | libcurl WebSocket | Headers/library 8.16+，链接的 API，运行时 `wss` 协议 | Linux 构建和真实的 TLS/关闭/取消 |
+| BLE 中心端/GATT | C++/WinRT | Bluetooth SDK 头文件、激活、连接同意的宿主前端 UI | Windows 构建和实际无线电/GATT/延迟结果清理 |
+| LE 发现 | BlueZ 私有 D-Bus 客户端 | 运行或可激活的 BlueZ 服务，供电适配器 | Linux 构建和客户端范围的发现清理 |
+| BLE 中心/GATT | BlueZ 私有 D-Bus 客户端 + 排他性目标租用 | 显式可信宿主排他性，无预先存在的连接 | Linux 构建和真实的 GATT/断开/恢复 |
 
-These WSS routes accept only ASCII credential-free URLs without fragments and
-match their canonical **HTTPS origin** against `allowed_network_origins`.
-They retain system certificate/hostname verification, reject redirects,
-validate offered and selected subprotocols, and reject reserved or injected
-request headers. Text/binary messages are limited to one MiB; each socket has
-32 queued commands and four MiB of queued outgoing bytes. Each owner has at
-most eight native socket workers, including cancelled workers still draining.
-Inbound messages share the bounded owner queue; saturation closes the transport
-and reserves space for Error/Close notifications. All guest events and results
-are delivered by the owner thread. Close completion follows native handle
-cleanup; retirement cancels and joins the workers. WinHTTP callback state
-survives the final `HANDLE_CLOSING` notifications.
+这些 WSS 路由仅接受无片段的 ASCII 无凭据 URL，并将它们的规范 **HTTPS 源** 与 `allowed_network_origins` 进行匹配。
+它们保留系统证书/主机名验证，拒绝重定向，验证提供和选定的子协议，并拒绝保留或注入的请求头。文本/二进制消息限制为 1 MiB；每个套接字有 32 个排队命令和 4 MiB 的排队输出字节。每个所有者最多有八个原生套接字工作线程，包括已取消但仍正在处理的线程。入站消息共享有界的所有者队列；饱和时会关闭传输并为错误/关闭通知保留空间。所有客体事件和结果均由所有者线程传递。原生句柄清理完成后，关闭操作才算完成；退休会取消并等待工作线程结束。WinHTTP 回调状态在最终的 `HANDLE_CLOSING` 通知后仍保持有效。
 
 With `WEAPP_DESKTOP_BUILD_TESTS=ON`, `weapp_device_socket_protocol_test`
-checks strict inputs, fragments, binary bytes, quotas, terminal queue capacity
-and UTF-8 handling without linking a runtime or contacting a server.
-`weapp_device_socket_test` links the SDK and exercises its actual dispatcher,
-owner delivery, cancellation bounds and worker drain with a fake OS transport.
-It also submits the adapter's complete configuration to the actual runtime
-through `configureHostServices`, checks rejection of an API absent from the
-locked catalog, and checks that a rejected update preserves valid configuration.
-SocketTask and RecorderManager expose only catalogued `on` events; the runtime
-releases subscriptions through their lifecycle without invented `off` APIs.
-On UNIX with libcurl 8.16+, `weapp_curl_socket_compile` compiles the actual
-optional transport against real headers, and `weapp_curl_socket_headers_test`
-executes the bounded C callback with malformed and duplicate response headers.
-These checks do not establish a Linux
-target build, a Windows build or real network/device acceptance. The older
-macOS NSURLSession SocketTask implementation is a separate source route.
+检查严格的输入、片段、二进制字节、配额、终端队列容量和 UTF-8 处理，无需链接运行时或联系服务器。
+`weapp_device_socket_test` 链接 SDK 并测试其实际调度器、所有者交付、取消边界和工作线程回收，使用虚拟的 OS 传输。它还通过 `configureHostServices` 将适配器的完整配置提交给实际运行时，检查未在锁定目录中列出的 API 被拒绝的情况，并检查被拒绝的更新是否保留有效配置。
+SocketTask 和 RecorderManager 仅暴露已登记的 `on` 事件；运行时通过生命周期管理释放订阅，没有虚构的 `off` API。
+在 UNIX 系统中，使用 libcurl 8.16+，`weapp_curl_socket_compile` 使用真实头文件编译实际的可选传输，`weapp_curl_socket_headers_test` 执行有界 C 回调，处理格式错误和重复的响应头。
+这些检查并不能建立 Linux 目标构建、Windows 构建或真实的网络/设备验收。较旧的 macOS NSURLSession SocketTask 实现是独立的源代码路径。
