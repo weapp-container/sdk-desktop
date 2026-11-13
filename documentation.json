@@ -74,8 +74,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "复核候选源码7.1与已公开7.0下载和锁的区别，保留当前安装状态",
-      "reviewedChineseSha256": "8885dc9ed6a6fcb494e71bf2ae984f3d22e5f95db64bf5c2a93460ad6017b6db",
+      "reviewedChineseSummary": "Desktop SDK `.7.1` candidate, pending GitHub release and CocoaPods Trunk publication",
+      "reviewedChineseSha256": "1a2b25265bfbb7ddae044aacda9c22e19a00007e694bd8e36124ef95a973d2fc",
       "legacyHeadingIds": [
         "weapp-container-desktop-sdk",
         "准备环境",
@@ -176,8 +176,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "PUBLIC-RELEASE.md"
       },
-      "reviewedChineseSummary": "维护者发行顺序、认证、不可变资产与平台独立验收条件；不会自动发布或修改历史发行物。；已复核 preview.7 公开发行、工具链与生命周期更新",
-      "reviewedChineseSha256": "7dbd75c500eb52616f16b8c64d4a9334b4fa351ed22f272edc193c8f39b95184",
+      "reviewedChineseSummary": "Desktop `.7.1` release workflow, archive pins, and pending registry acceptance",
+      "reviewedChineseSha256": "7db7549344af61f2bd44ae4fcf9876c8bab189949d2e4552709b845e0d20fa3f",
       "legacyHeadingIds": []
     }
   ],

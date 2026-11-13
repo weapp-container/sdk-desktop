@@ -1,0 +1,68 @@
+name: Publish verified Desktop Pod to CocoaPods Trunk
+on:
+  workflow_dispatch:
+    inputs:
+      release_run_id:
+        description: Successful GitHub release publication run
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  publish:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Require the successful release publisher at this exact source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN_ID: ${{ inputs.release_run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const id = process.env.RELEASE_RUN_ID;
+          if (!/^\d+$/.test(id ?? '')) throw Error('A numeric publish-release run ID is required');
+          const run = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${id}`]));
+          if (run.status !== 'completed' || run.conclusion !== 'success'
+            || run.path !== '.github/workflows/publish-release.yml' || run.head_sha !== process.env.GITHUB_SHA) {
+            throw Error('A successful publish-release run at this exact source commit is required');
+          }
+          const pkg = JSON.parse(execFileSync(process.execPath, ['-e', "process.stdout.write(require('fs').readFileSync('package.json'))"]));
+          const version = pkg.version;
+          const release = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/releases/tags/v${version}`]));
+          if (release.draft || !release.prerelease || release.tag_name !== `v${version}`) throw Error('The exact public prerelease is unavailable');
+          NODE
+      - name: Download and verify the published release bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          mkdir -p artifacts/trunk
+          gh release download "v$version" --repo "$GITHUB_REPOSITORY" --dir artifacts/trunk
+          node tools/package-release.mjs --out artifacts/trunk --verify
+      - name: Install CocoaPods
+        run: gem install cocoapods --no-document
+      - name: Configure the owner-provided Trunk token
+        env:
+          COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
+        run: |
+          test -n "$COCOAPODS_TRUNK_TOKEN"
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          writeFileSync(join(process.env.HOME, '.netrc'), `machine trunk.cocoapods.org\n  password ${process.env.COCOAPODS_TRUNK_TOKEN}\n`, { mode: 0o600 });
+          NODE
+      - name: Submit the verified release Podspec
+        run: pod trunk push artifacts/trunk/WeappContainerDesktop.podspec --allow-warnings
+      - name: Verify anonymous Trunk registration
+        run: |
+          version=$(node -p "require('./package.json').version")
+          curl --fail --silent --show-error "https://trunk.cocoapods.org/api/v1/pods/WeappContainerDesktop/versions/$version" | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{const p=JSON.parse(s);if(p.version!=='$version')process.exit(1)})"

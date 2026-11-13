@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.1",
-  "sourceFilesSha256": "b643a673c7c1534d4d4e2794e1f48117a39e3189d9374ae881c31e59d8ad9beb",
-  "review": "Prepare the preview.7.1 runtime draft candidate; retain immutable public preview.7.0 pins and bind generated iOS SwiftPM to the local XCFramework.",
+  "sourceFilesSha256": "cfc773f7a34fabdecc107b73c6c294a3f27ae5927f9c0ed8a3334912d03730e2",
+  "review": "Bind the SDK source inventory to the anonymously verified preview.7.1 runtime and current publication inputs.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -61,6 +61,12 @@
       "path": ".github/workflows/publish-release.yml",
       "sha256": "dad325637fade3d1803dff379a7f7f8512c89fae5d376ab8967868df6ab163fa",
       "size": 1773,
+      "mode": "100644"
+    },
+    {
+      "path": ".github/workflows/publish-trunk.yml",
+      "sha256": "70f9c174d369d567d327d79af8b1de5290167e67564c6b80ac34348fa1cf121e",
+      "size": 3407,
       "mode": "100644"
     },
     {
@@ -137,26 +143,26 @@
     },
     {
       "path": "PUBLIC-RELEASE.en.md",
-      "sha256": "b90292e5ebe9404505e3b98f8523cb9d8cf9ac8bd179aa82992bb101f3d4cfb6",
+      "sha256": "cf8933bb377f21074c07939feba0daca1605a9a3daada17c563a663854c1f79b",
       "size": 3919,
       "mode": "100644"
     },
     {
       "path": "PUBLIC-RELEASE.md",
-      "sha256": "7dbd75c500eb52616f16b8c64d4a9334b4fa351ed22f272edc193c8f39b95184",
+      "sha256": "7db7549344af61f2bd44ae4fcf9876c8bab189949d2e4552709b845e0d20fa3f",
       "size": 3570,
       "mode": "100644"
     },
     {
       "path": "README.en.md",
-      "sha256": "e91d479c1c086748b42b518116a520eadf413fc6a70ca90b8eabfaba1e75c39c",
-      "size": 15794,
+      "sha256": "ec9d78d9ba27ffa54e3ec0463b178edb50af90e378028470ad0c10ec6bc12b1e",
+      "size": 15825,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "8885dc9ed6a6fcb494e71bf2ae984f3d22e5f95db64bf5c2a93460ad6017b6db",
-      "size": 13607,
+      "sha256": "1a2b25265bfbb7ddae044aacda9c22e19a00007e694bd8e36124ef95a973d2fc",
+      "size": 13584,
       "mode": "100644"
     },
     {
@@ -269,8 +275,8 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "ebda53173124cc72d7d1388cf0694fc8ef7ec0226e42044bf7818d6c9f9115f8",
-      "size": 6693,
+      "sha256": "38d643ae9760cdb6b4d93af52f6d408f7dc3fbabdd7e9ec271d9d0731c2b7bb3",
+      "size": 6580,
       "mode": "100644"
     },
     {
@@ -330,6 +336,12 @@
     {
       "path": "runtime-artifacts.0.1.0-preview.7.0.lock.json",
       "sha256": "d2e84fc87b761b29f02fce75ffcc34d48f2541f455ba65f96430f8d3258fa66c",
+      "size": 3377,
+      "mode": "100644"
+    },
+    {
+      "path": "runtime-artifacts.0.1.0-preview.7.1.lock.json",
+      "sha256": "9545f9922a1f9658d1ff724d78296f1434f3b20475ac9fd1afdfbaf7addb3e93",
       "size": 3377,
       "mode": "100644"
     },
@@ -881,8 +893,8 @@
     },
     {
       "path": "tools/prepare-runtime.mjs",
-      "sha256": "a8c6fafa14fe07ddb7da2ff0b7502b2efda78f49e3b7d66770684a217b0ecb2c",
-      "size": 4569,
+      "sha256": "ab322ebc11befc4f4a93e02b8598037f6a929e74636f0977502a7f2ec4ede9ed",
+      "size": 4566,
       "mode": "100644"
     },
     {
@@ -893,7 +905,7 @@
     },
     {
       "path": "tools/runtime-artifacts.mjs",
-      "sha256": "3246476e3a0a8a5161f0e5290a205e5ac88c19a53fe231fc79698d9bea58af18",
+      "sha256": "78855428f39a8ccac151f5c6e7ff1f89791ce39ebf3b242546167b7ee10e37df",
       "size": 21000,
       "mode": "100644"
     },

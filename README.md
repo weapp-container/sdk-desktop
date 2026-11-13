@@ -6,15 +6,15 @@
 <a id="public-distribution-candidate-preview7"></a>
 ## 公开发行候选：preview.7
 
-当前核心构建器与本页源码示例均使用 preview.7。核心运行库、iOS、Desktop 及公开 CocoaPods Specs 已提供下载；npm、Maven Central 和 pub.dev 尚未全部发布。使用安装命令前先核对[发布状态](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.md)，不要混用不同版本的包装层与运行库。源码公开、包发布、编译通过和设备验收分别记录。
+当前 SDK 源码是 `0.1.0-preview.7.1` 候选，核心运行库 `.7.1` 已发布；Desktop GitHub release 和 CocoaPods Trunk `.7.1` 尚未发布。Desktop 与 CocoaPods `.7.0` 入口仍可用。使用安装命令前先核对[发布状态](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.md)，不要混用不同版本的包装层与运行库。源码公开、包发布、编译通过和设备验收分别记录。
 
-首次公开发布正在准备；安装命令须在对应注册源出现本版本后使用。历史私有归档及其锁文件保持原样。
+`.7.1` 安装入口在 GitHub release 与 CocoaPods Trunk 发布并完成匿名消费验证后可用。历史私有归档及其锁文件保持原样。
 
-版本 `0.1.0-preview.7.0`；CMake 3.21+、C++17。公开 [GitHub prerelease](https://github.com/weapp-container/sdk-desktop/releases/tag/v0.1.0-preview.7.0) 提供：
+版本 `0.1.0-preview.7.1`；CMake 3.21+、C++17。以下是计划发布的归档名称；`.7.1` GitHub prerelease 尚未创建：
 
-- `WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz`：macOS 12+，arm64/x86_64。
-- `WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz`：x86_64，GTK 3.24+、GIO 2.66+、fontconfig、epoxy。
-- `WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz`：Windows x86_64，MSVC。
+- `WeappContainerDesktop-0.1.0-preview.7.1-macos-universal.tar.gz`：macOS 12+，arm64/x86_64。
+- `WeappContainerDesktop-0.1.0-preview.7.1-linux-x86_64.tar.gz`：x86_64，GTK 3.24+、GIO 2.66+、fontconfig、epoxy。
+- `WeappContainerDesktop-0.1.0-preview.7.1-windows-x86_64.tar.gz`：Windows x86_64，MSVC。
 
 先按 `SHA256SUMS` 验证归档，再解压至任意 SDK 安装目录。归档包含可迁移 CMake 配置、头文件、运行库和许可。消费工程无需 Rust 或兄弟源码仓库。
 
@@ -33,7 +33,7 @@ git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 
 在现有 macOS、Windows 或 Linux 应用中嵌入小程序。SDK 提供 C/C++ 的会话、原生视图、消息和生命周期接口，由宿主管理窗口及主事件循环。
 
-已复核源码示例版本：`0.1.0-preview.7.0`，C ABI：`1`。本仓库以 Apache-2.0 开源宿主封装、构建工具和消费示例；新构建的运行库采用 Apache-2.0，使用时需要保留其 `RUNTIME-LICENSE` 和第三方声明。
+已复核源码示例版本：`0.1.0-preview.7.1`，C ABI：`1`。本仓库以 Apache-2.0 开源宿主封装、构建工具和消费示例；新构建的运行库采用 Apache-2.0，使用时需要保留其 `RUNTIME-LICENSE` 和第三方声明。
 
 <a id="start-from-source-code"></a>
 ## 从当前源码开始
@@ -209,7 +209,7 @@ npm test
 
 历史安装命令（不作为首次接入默认路径）：
 
-准备脚本按 [当前公开锁](runtime-artifacts.0.1.0-preview.7.0.lock.json) 校验 preview.7.0、ABI、大小和 SHA-256，包含 macOS、Linux 和 Windows 的运行库与 SDK。旧 `runtime-artifacts.lock.json` 仅作历史兼容保留；不将它用于当前源码构建。公开归档的头文件版本宏限制见下方勘误。
+准备脚本按 [当前公开锁](runtime-artifacts.0.1.0-preview.7.1.lock.json) 校验 preview.7.0、ABI、大小和 SHA-256，包含 macOS、Linux 和 Windows 的运行库与 SDK。旧 `runtime-artifacts.lock.json` 仅作历史兼容保留；不将它用于当前源码构建。公开归档的头文件版本宏限制见下方勘误。
 
 获得运行库下载授权后，通过密钥管理器或 CI secret 注入 `WEAPP_CONTAINER_RUNTIME_TOKEN`，再执行：
 
@@ -241,6 +241,6 @@ node tools/prepare-runtime.mjs \
 <a id="published-preview-erratum"></a>
 ## 已发布预览版勘误
 
-不可变的 `0.1.0-preview.7.0` 归档中，C 头文件宏 `WEAPP_DESKTOP_VERSION` 仍为 `0.1.0-preview.6.0`。归档元数据和链接的运行库为 `0.1.0-preview.7.0`，ABI 1。当前源码已修正并检查版本协调；已有归档、标签和哈希保持原样，分发修正头文件须使用新版本。macOS、Linux 和 Windows 的公开归档消费者已通过。
+不可变的 `0.1.0-preview.7.1` 归档中，C 头文件宏 `WEAPP_DESKTOP_VERSION` 仍为 `0.1.0-preview.6.0`。归档元数据和链接的运行库为 `0.1.0-preview.7.1`，ABI 1。当前源码已修正并检查版本协调；已有归档、标签和哈希保持原样，分发修正头文件须使用新版本。macOS、Linux 和 Windows 的公开归档消费者已通过。
 
-源码候选版 `0.1.0-preview.7.1` 用于核心运行库草稿自动化。公开下载及不可变锁仍指向 `0.1.0-preview.7.0`；本次源码更新不代表新 SDK 包已发布。
+源码候选版 `0.1.0-preview.7.1` 用于核心运行库草稿自动化。公开下载及不可变锁仍指向 `0.1.0-preview.7.1`；本次源码更新不代表新 SDK 包已发布。

@@ -22,7 +22,7 @@ const matrix = {
 const target = platform === 'desktop' ? option(args, '--target', process.platform === 'darwin' ? 'macos-universal' : process.platform === 'win32' ? 'windows-x64' : 'linux-x64') : platform;
 const selected = matrix[target];
 if (!selected) throw new Error(`Unsupported SDK target: ${target}`);
-const manifestPath = resolve(option(args, '--manifest', resolve(root, 'runtime-artifacts.0.1.0-preview.7.0.lock.json')));
+const manifestPath = resolve(option(args, '--manifest', resolve(root, `runtime-artifacts.${SDK_VERSION}.lock.json`)));
 if (!existsSync(manifestPath)) throw new Error('The reviewed runtime-artifacts.lock.json is required; unpinned downloads are forbidden');
 const installationRoot = resolve(option(args, '--install-root', resolve(root, '.runtime/install')));
 const stage = `${installationRoot}.preparing-${process.pid}`;

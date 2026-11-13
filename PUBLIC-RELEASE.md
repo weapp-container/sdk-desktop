@@ -1,4 +1,4 @@
-# 公开预览发行 0.1.0-preview.7.0
+# 公开预览发行 0.1.0-preview.7.1
 
 **简体中文** · [English](PUBLIC-RELEASE.en.md)
 
