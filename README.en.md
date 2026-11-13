@@ -6,15 +6,15 @@
 <a id="公开发行候选preview7"></a>
 ## Public distribution candidate: preview.7
 
-The current core builder and these source examples use preview.7. Core runtime, iOS, Desktop and public CocoaPods Specs downloads are available; npm, Maven Central and pub.dev publication is incomplete. Check the [release status](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.en.md) before using installation commands. Match wrapper and runtime versions. Source availability, package publication, compilation and device acceptance are recorded separately.
+This SDK source is the `0.1.0-preview.7.1` candidate, and the `.7.1` core runtime is published; the Desktop GitHub release and CocoaPods Trunk entry are not published yet. The Desktop and CocoaPods `.7.0` entries remain available. Check the [release status](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.en.md) before using installation commands. Match wrapper and runtime versions. Source availability, package publication, compilation and device acceptance are recorded separately.
 
-First public publication is being prepared. Use these commands once this version is visible in its registry. Historical private archives and locks retain their original identities.
+The `.7.1` installation entries become usable after the GitHub release and CocoaPods Trunk publication pass anonymous consumer verification. Historical private archives and locks retain their original identities.
 
-Version `0.1.0-preview.7.0` requires CMake 3.21+ and C++17. The public [GitHub prerelease](https://github.com/weapp-container/sdk-desktop/releases/tag/v0.1.0-preview.7.0) provides:
+Version `0.1.0-preview.7.1` requires CMake 3.21+ and C++17. The following archive names are planned; the `.7.1` GitHub prerelease has not been created:
 
-- `WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz`: macOS 12+, arm64/x86_64.
-- `WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz`: x86_64, GTK 3.24+, GIO 2.66+, fontconfig and epoxy.
-- `WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz`: Windows x86_64, MSVC.
+- `WeappContainerDesktop-0.1.0-preview.7.1-macos-universal.tar.gz`: macOS 12+, arm64/x86_64.
+- `WeappContainerDesktop-0.1.0-preview.7.1-linux-x86_64.tar.gz`: x86_64, GTK 3.24+, GIO 2.66+, fontconfig and epoxy.
+- `WeappContainerDesktop-0.1.0-preview.7.1-windows-x86_64.tar.gz`: Windows x86_64, MSVC.
 
 Verify `SHA256SUMS` before extracting to your installation directory. Archives include relocatable CMake configuration, headers, runtime libraries and licenses. Consumers need no Rust or sibling source checkout.
 
@@ -33,7 +33,7 @@ git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 
 Embed WeChat Mini Programs into existing macOS, Windows, or Linux applications. The SDK provides C/C++ session, native view, message, and lifecycle interfaces, with the host managing the window and main event loop.
 
-Reviewed source example version: `0.1.0-preview.7.0`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
+Reviewed source example version: `0.1.0-preview.7.1`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
 
 <a id="从当前源码开始"></a>
 ## Start from Source Code
@@ -209,7 +209,7 @@ The core runtime and SDK own source code use Apache-2.0. You can build the curre
 
 Historical installation commands (not used as the default path for first access):
 
-The preparation script verifies preview.7.0, ABI, size and SHA-256 against the [current public lock](runtime-artifacts.0.1.0-preview.7.0.lock.json), which includes macOS, Linux and Windows runtimes and SDKs. The old `runtime-artifacts.lock.json` remains for historical compatibility; do not use it to build current source. See the published-preview erratum below for the header version macro limitation.
+The preparation script verifies preview.7.0, ABI, size and SHA-256 against the [current public lock](runtime-artifacts.0.1.0-preview.7.1.lock.json), which includes macOS, Linux and Windows runtimes and SDKs. The old `runtime-artifacts.lock.json` remains for historical compatibility; do not use it to build current source. See the published-preview erratum below for the header version macro limitation.
 
 After obtaining the authorization to download the runtime library, inject `WEAPP_CONTAINER_RUNTIME_TOKEN` through the key manager or CI secret, and then execute:
 
@@ -241,6 +241,6 @@ The target options are `macos-universal`, `macos-arm64`, `macos-x64`, `windows-x
 <a id="published-preview-erratum"></a>
 ## Published preview erratum
 
-The immutable `0.1.0-preview.7.0` archives contain a stale `WEAPP_DESKTOP_VERSION` C header macro (`0.1.0-preview.6.0`). Archive metadata and the linked runtime are `0.1.0-preview.7.0`, ABI 1. Current source corrects the macro and checks version coordination. Existing archives, tags and hashes are retained; distributing the corrected header requires a new version. Public archive consumers passed on macOS, Linux and Windows.
+The immutable `0.1.0-preview.7.1` archives contain a stale `WEAPP_DESKTOP_VERSION` C header macro (`0.1.0-preview.6.0`). Archive metadata and the linked runtime are `0.1.0-preview.7.1`, ABI 1. Current source corrects the macro and checks version coordination. Existing archives, tags and hashes are retained; distributing the corrected header requires a new version. Public archive consumers passed on macOS, Linux and Windows.
 
-Source candidate `0.1.0-preview.7.1` is prepared for core runtime draft automation. Public downloads and immutable locks still refer to `0.1.0-preview.7.0`; this source update does not publish a new SDK package.
+Source candidate `0.1.0-preview.7.1` is prepared for core runtime draft automation. Public downloads and immutable locks still refer to `0.1.0-preview.7.1`; this source update does not publish a new SDK package.
