@@ -6,7 +6,7 @@
 <a id="public-distribution-candidate-preview7"></a>
 ## 公开发行候选：preview.7
 
-下列安装示例描述 preview.7 发行候选，使用前须确认对应注册源或 Release 已提供该版本；源码公开不代表包已发布或设备验收完成。本文后续源码构建示例使用下面固定的 preview.6 checkout。当前核心构建器仍输出 preview.6，不要将该运行库与 preview.7 包装层混用。
+当前核心构建器与本页源码示例均使用 preview.7。核心运行库、iOS、Desktop 及公开 CocoaPods Specs 已提供下载；npm、Maven Central 和 pub.dev 尚未全部发布。使用安装命令前先核对[发布状态](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.md)，不要混用不同版本的包装层与运行库。源码公开、包发布、编译通过和设备验收分别记录。
 
 首次公开发布正在准备；安装命令须在对应注册源出现本版本后使用。历史私有归档及其锁文件保持原样。
 
@@ -24,7 +24,7 @@
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git sdk-desktop-source
 cd sdk-desktop-source
-git checkout c27a715b06367957a24af0a91c969a1abec5627e
+git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 ```
 
 
@@ -33,7 +33,7 @@ git checkout c27a715b06367957a24af0a91c969a1abec5627e
 
 在现有 macOS、Windows 或 Linux 应用中嵌入小程序。SDK 提供 C/C++ 的会话、原生视图、消息和生命周期接口，由宿主管理窗口及主事件循环。
 
-已复核源码示例版本：`0.1.0-preview.6.0`，C ABI：`1`。本仓库以 Apache-2.0 开源宿主封装、构建工具和消费示例；新构建的运行库采用 Apache-2.0，使用时需要保留其 `RUNTIME-LICENSE` 和第三方声明。
+已复核源码示例版本：`0.1.0-preview.7.0`，C ABI：`1`。本仓库以 Apache-2.0 开源宿主封装、构建工具和消费示例；新构建的运行库采用 Apache-2.0，使用时需要保留其 `RUNTIME-LICENSE` 和第三方声明。
 
 <a id="start-from-source-code"></a>
 ## 从当前源码开始
@@ -65,7 +65,7 @@ node sdk/contract/fixtures/make-acceptance-pack.mjs --out artifacts/hello-pack
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git
 cd sdk-desktop
-git checkout c27a715b06367957a24af0a91c969a1abec5627e
+git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 ```
 
 <a id="obtain-runtime-and-build"></a>
@@ -236,3 +236,9 @@ node tools/prepare-runtime.mjs \
 离线输入仍执行相同校验。可用 `--manifest /absolute/reviewed-lock.json` 指定另一份已审核的锁文件；SDK 源码与运行库版本必须匹配，缺少条目或校验失败不会回退到旧版本。
 
 目标可选 `macos-universal`、`macos-arm64`、`macos-x64`、`windows-x64`、`linux-x64`，须在对应系统构建。产物默认位于 `artifacts/desktop/TARGET`。`--verify` 会运行安装后的独立消费程序，需要可用的桌面显示环境；不传该选项只构建、链接，不代表界面运行通过。
+
+
+<a id="published-preview-erratum"></a>
+## 已发布预览版勘误
+
+不可变的 `0.1.0-preview.7.0` 归档中，C 头文件宏 `WEAPP_DESKTOP_VERSION` 仍为 `0.1.0-preview.6.0`。归档元数据和链接的运行库为 `0.1.0-preview.7.0`，ABI 1。当前源码已修正并检查版本协调；已有归档、标签和哈希保持原样，分发修正头文件须使用新版本。macOS、Linux 和 Windows 的公开归档消费者已通过。

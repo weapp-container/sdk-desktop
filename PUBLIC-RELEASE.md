@@ -27,3 +27,6 @@
 ## Desktop 命令
 
 使用 `node tools/package-release.mjs --sdk <installation> --out <fresh-directory>` 打包每个已验证安装。在同一干净 SDK 提交上，通过 `--merge <comma-separated-paths> --out <fresh-directory>` 合并三个 `release.json` 路径，根据实际 macOS URL/哈希生成 `WeappContainerDesktop.podspec`。`--verify` 检查本地字节；`--publish` 在发布 prerelease 前验证远程 digest。
+
+
+发布工作流只接受与当前 checkout 提交完全一致且成功完成 finalize 的产物。iOS 在归档 pin 已复核并提交后，使用原成功 `build-public.yml` 的 run ID 执行 `finalize-public.yml`。Desktop 的 `build-public.yml` 自动将三个平台成功作业合并为 `finalized-public-release`，包含固定哈希的 macOS Podspec。finalize 和发布均复用原始归档字节。

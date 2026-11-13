@@ -6,7 +6,7 @@
 <a id="公开发行候选preview7"></a>
 ## Public distribution candidate: preview.7
 
-The installation examples below describe the preview.7 distribution candidate. Check the named registry or release before using them; source publication does not establish package publication or device acceptance. The source-build examples later in this document refer to the reviewed preview.6 checkout below. The core builder currently emits preview.6, so do not combine that runtime with preview.7 wrappers.
+The current core builder and these source examples use preview.7. Core runtime, iOS, Desktop and public CocoaPods Specs downloads are available; npm, Maven Central and pub.dev publication is incomplete. Check the [release status](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.en.md) before using installation commands. Match wrapper and runtime versions. Source availability, package publication, compilation and device acceptance are recorded separately.
 
 First public publication is being prepared. Use these commands once this version is visible in its registry. Historical private archives and locks retain their original identities.
 
@@ -24,7 +24,7 @@ Verify `SHA256SUMS` before extracting to your installation directory. Archives i
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git sdk-desktop-source
 cd sdk-desktop-source
-git checkout c27a715b06367957a24af0a91c969a1abec5627e
+git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 ```
 
 
@@ -33,7 +33,7 @@ git checkout c27a715b06367957a24af0a91c969a1abec5627e
 
 Embed WeChat Mini Programs into existing macOS, Windows, or Linux applications. The SDK provides C/C++ session, native view, message, and lifecycle interfaces, with the host managing the window and main event loop.
 
-Reviewed source example version: `0.1.0-preview.6.0`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
+Reviewed source example version: `0.1.0-preview.7.0`, C ABI: `1`. This repository uses Apache-2.0 for the host wrapper, build tools, and consumption examples; the newly built runtime library is licensed under Apache-2.0 and requires retention of its `RUNTIME-LICENSE` and third-party attribution statements.
 
 <a id="从当前源码开始"></a>
 ## Start from Source Code
@@ -65,7 +65,7 @@ The host application consumes a built installation without Rust or Cargo. Produc
 ```sh
 git clone https://github.com/weapp-container/sdk-desktop.git
 cd sdk-desktop
-git checkout c27a715b06367957a24af0a91c969a1abec5627e
+git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 ```
 
 
@@ -236,3 +236,9 @@ node tools/prepare-runtime.mjs \
 The same verification is still performed for offline input. You can use `--manifest /absolute/reviewed-lock.json` to specify another audited lock file; SDK source code and runtime version must match. Missing entries or verification failures will not fall back to the old version.
 
 The target options are `macos-universal`, `macos-arm64`, `macos-x64`, `windows-x64`, and `linux-x64`, which must be built on the corresponding system. Products are located at `artifacts/desktop/TARGET` by default. `--verify` will run the independent consumer program after installation and requires an available desktop display environment; if this option is not passed, it will only build and link, which does not mean that the interface has passed.
+
+
+<a id="published-preview-erratum"></a>
+## Published preview erratum
+
+The immutable `0.1.0-preview.7.0` archives contain a stale `WEAPP_DESKTOP_VERSION` C header macro (`0.1.0-preview.6.0`). Archive metadata and the linked runtime are `0.1.0-preview.7.0`, ABI 1. Current source corrects the macro and checks version coordination. Existing archives, tags and hashes are retained; distributing the corrected header requires a new version. Public archive consumers passed on macOS, Linux and Windows.

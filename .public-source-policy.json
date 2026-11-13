@@ -1,5 +1,16 @@
 {
   "schemaVersion": 1,
   "allowedSecrets": [],
-  "allowedLocalPaths": []
+  "allowedLocalPaths": [
+    {
+      "path": "test/public-release.test.mjs",
+      "sha256": "cfa78f61647922365207ca881961f637b77e2adff8f8eb2209de26e6d41639bd",
+      "reason": "Authored inert compiler-path regression fixture; must be rejected by public archive validation."
+    },
+    {
+      "path": "test/public-release.test.mjs",
+      "sha256": "7d2a25ac53dc73d48f34f0eb2c5d9529c4c4d4a1aacbb69285ea624f73d5e036",
+      "reason": "Authored inert compiler-path regression fixture; must be rejected by public archive validation."
+    }
+  ]
 }

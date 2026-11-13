@@ -74,8 +74,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "同步最新公开发行工作流入口，保留固定 preview.6 源码用法与 preview.7 发行候选的独立边界。",
-      "reviewedChineseSha256": "7b3907bbc8d6fc48d610f869cc278b5165389e783b93f3bc6f3c2fc9337be238",
+      "reviewedChineseSummary": "同步最新公开发行工作流入口，保留固定 preview.6 源码用法与 preview.7 发行候选的独立边界。；已复核 preview.7 公开发行、工具链与生命周期更新",
+      "reviewedChineseSha256": "e5ffcda388e2b00c03cdacc22679e4ba3f20d3d83c74b4643bb8e63a59b7bae7",
       "legacyHeadingIds": [
         "weapp-container-desktop-sdk",
         "准备环境",
@@ -176,8 +176,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "PUBLIC-RELEASE.md"
       },
-      "reviewedChineseSummary": "维护者发行顺序、认证、不可变资产与平台独立验收条件；不会自动发布或修改历史发行物。",
-      "reviewedChineseSha256": "400d910081fa478d23790b7fcc7bd4ea4afc911547bf40de43eb1995ba7e60c2",
+      "reviewedChineseSummary": "维护者发行顺序、认证、不可变资产与平台独立验收条件；不会自动发布或修改历史发行物。；已复核 preview.7 公开发行、工具链与生命周期更新",
+      "reviewedChineseSha256": "7dbd75c500eb52616f16b8c64d4a9334b4fa351ed22f272edc193c8f39b95184",
       "legacyHeadingIds": []
     }
   ],
