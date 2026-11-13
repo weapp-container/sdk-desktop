@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "19ee137c69dba609d22f7f6fcf1b0eb339034d71ff6250233400d7ff7e67d69f",
-  "review": "Merge current public release and reviewed bilingual documentation",
+  "sourceFilesSha256": "8c6f817215b02b5b647aeda1c2e772dbdf7c1f6c81693b9d7934999261994086",
+  "review": "Align integration documentation with the current public runtime lock; preserve historical lock bytes.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -149,14 +149,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "97a5d16cdf890e0fcd655a37dff8b0db6bee401d73398be1de07e05da29e009c",
-      "size": 15546,
+      "sha256": "bb7fb5694a6f403a6663a329249261f164368f6ec57f8eaf7f1ba451040fc624",
+      "size": 15581,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "e5ffcda388e2b00c03cdacc22679e4ba3f20d3d83c74b4643bb8e63a59b7bae7",
-      "size": 13382,
+      "sha256": "edc4cc1d71d3e2e9bc8efce1d0f3dfda6c1f1f70de732758d5e0627732eb2e1d",
+      "size": 13421,
       "mode": "100644"
     },
     {
@@ -269,8 +269,8 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "2b99de4e2d25d4ff05721fdac5ff1d7be01e9f65482ddad0e961959969be7ece",
-      "size": 6798,
+      "sha256": "59391c9516bd70da8e75c8868524f4451f18b2d9c9f4b5a5d519896cddf17937",
+      "size": 6854,
       "mode": "100644"
     },
     {

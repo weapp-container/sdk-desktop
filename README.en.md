@@ -209,7 +209,7 @@ The core runtime and SDK own source code use Apache-2.0. You can build the curre
 
 Historical installation commands (not used as the default path for first access):
 
-Prepare script to verify version, ABI, size and SHA-256 by [runtime-artifacts.lock.json](runtime-artifacts.lock.json). The current lock file contains preview.6.0's macOS and the Linux runtime. There is no Windows runtime entry yet; the Windows source code is available for access, and the default preparation process will fail due to the lack of corresponding entries.
+The preparation script verifies preview.7.0, ABI, size and SHA-256 against the [current public lock](runtime-artifacts.0.1.0-preview.7.0.lock.json), which includes macOS, Linux and Windows runtimes and SDKs. The old `runtime-artifacts.lock.json` remains for historical compatibility; do not use it to build current source. See the published-preview erratum below for the header version macro limitation.
 
 After obtaining the authorization to download the runtime library, inject `WEAPP_CONTAINER_RUNTIME_TOKEN` through the key manager or CI secret, and then execute:
 

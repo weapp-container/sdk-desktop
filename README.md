@@ -209,7 +209,7 @@ npm test
 
 历史安装命令（不作为首次接入默认路径）：
 
-准备脚本按 [runtime-artifacts.lock.json](runtime-artifacts.lock.json) 校验版本、ABI、大小和 SHA-256。当前锁文件包含 preview.6.0 的 macOS 与 Linux 运行库，尚无 Windows 运行库条目；Windows 源码可供接入，默认准备流程会因缺少对应条目而失败。
+准备脚本按 [当前公开锁](runtime-artifacts.0.1.0-preview.7.0.lock.json) 校验 preview.7.0、ABI、大小和 SHA-256，包含 macOS、Linux 和 Windows 的运行库与 SDK。旧 `runtime-artifacts.lock.json` 仅作历史兼容保留；不将它用于当前源码构建。公开归档的头文件版本宏限制见下方勘误。
 
 获得运行库下载授权后，通过密钥管理器或 CI secret 注入 `WEAPP_CONTAINER_RUNTIME_TOKEN`，再执行：
 

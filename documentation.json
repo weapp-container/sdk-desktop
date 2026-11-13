@@ -74,8 +74,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "同步最新公开发行工作流入口，保留固定 preview.6 源码用法与 preview.7 发行候选的独立边界。；已复核 preview.7 公开发行、工具链与生命周期更新",
-      "reviewedChineseSha256": "e5ffcda388e2b00c03cdacc22679e4ba3f20d3d83c74b4643bb8e63a59b7bae7",
+      "reviewedChineseSummary": "同步最新公开发行工作流入口，保留固定 preview.6 源码用法与 preview.7 发行候选的独立边界。；已复核 preview.7 公开发行、工具链与生命周期更新；核对当前 preview.7 公开锁与历史兼容边界",
+      "reviewedChineseSha256": "edc4cc1d71d3e2e9bc8efce1d0f3dfda6c1f1f70de732758d5e0627732eb2e1d",
       "legacyHeadingIds": [
         "weapp-container-desktop-sdk",
         "准备环境",
