@@ -242,3 +242,5 @@ The target options are `macos-universal`, `macos-arm64`, `macos-x64`, `windows-x
 ## Published preview erratum
 
 The immutable `0.1.0-preview.7.0` archives contain a stale `WEAPP_DESKTOP_VERSION` C header macro (`0.1.0-preview.6.0`). Archive metadata and the linked runtime are `0.1.0-preview.7.0`, ABI 1. Current source corrects the macro and checks version coordination. Existing archives, tags and hashes are retained; distributing the corrected header requires a new version. Public archive consumers passed on macOS, Linux and Windows.
+
+Source candidate `0.1.0-preview.7.1` is prepared for core runtime draft automation. Public downloads and immutable locks still refer to `0.1.0-preview.7.0`; this source update does not publish a new SDK package.

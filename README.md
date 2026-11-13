@@ -242,3 +242,5 @@ node tools/prepare-runtime.mjs \
 ## 已发布预览版勘误
 
 不可变的 `0.1.0-preview.7.0` 归档中，C 头文件宏 `WEAPP_DESKTOP_VERSION` 仍为 `0.1.0-preview.6.0`。归档元数据和链接的运行库为 `0.1.0-preview.7.0`，ABI 1。当前源码已修正并检查版本协调；已有归档、标签和哈希保持原样，分发修正头文件须使用新版本。macOS、Linux 和 Windows 的公开归档消费者已通过。
+
+源码候选版 `0.1.0-preview.7.1` 用于核心运行库草稿自动化。公开下载及不可变锁仍指向 `0.1.0-preview.7.0`；本次源码更新不代表新 SDK 包已发布。

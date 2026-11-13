@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
-  "sdkVersion": "0.1.0-preview.7.0",
-  "sourceFilesSha256": "8c6f817215b02b5b647aeda1c2e772dbdf7c1f6c81693b9d7934999261994086",
-  "review": "Align integration documentation with the current public runtime lock; preserve historical lock bytes.",
+  "sdkVersion": "0.1.0-preview.7.1",
+  "sourceFilesSha256": "b643a673c7c1534d4d4e2794e1f48117a39e3189d9374ae881c31e59d8ad9beb",
+  "review": "Prepare the preview.7.1 runtime draft candidate; retain immutable public preview.7.0 pins and bind generated iOS SwiftPM to the local XCFramework.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -149,14 +149,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "bb7fb5694a6f403a6663a329249261f164368f6ec57f8eaf7f1ba451040fc624",
-      "size": 15581,
+      "sha256": "e91d479c1c086748b42b518116a520eadf413fc6a70ca90b8eabfaba1e75c39c",
+      "size": 15794,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "edc4cc1d71d3e2e9bc8efce1d0f3dfda6c1f1f70de732758d5e0627732eb2e1d",
-      "size": 13421,
+      "sha256": "8885dc9ed6a6fcb494e71bf2ae984f3d22e5f95db64bf5c2a93460ad6017b6db",
+      "size": 13607,
       "mode": "100644"
     },
     {
@@ -269,13 +269,13 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "59391c9516bd70da8e75c8868524f4451f18b2d9c9f4b5a5d519896cddf17937",
-      "size": 6854,
+      "sha256": "ebda53173124cc72d7d1388cf0694fc8ef7ec0226e42044bf7818d6c9f9115f8",
+      "size": 6693,
       "mode": "100644"
     },
     {
       "path": "include/weapp/desktop.h",
-      "sha256": "1fc946ba62c6b669594a08263011dbf6361d4b72d609741ae0cc4e94a4663a3e",
+      "sha256": "bd2a2d7b7a853a99b8885a6a1e97e94387bbf86b23c2fbd1ec3dc4196c203a27",
       "size": 10951,
       "mode": "100644"
     },
@@ -317,7 +317,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "06e74aa497e10a1f3d7897e408f95f01244f1774c91b65f389f258755b9aa7ae",
+      "sha256": "d1383a15db242559a6594e2d614bc7818be7030727872feed132856a2fc73ddf",
       "size": 659,
       "mode": "100644"
     },
@@ -581,8 +581,8 @@
     },
     {
       "path": "test/current-runtime-lock.test.mjs",
-      "sha256": "7a0ce88b337997e7fe755972876beda43d1364af13cb2d2bc89a9e6752ce3c24",
-      "size": 2037,
+      "sha256": "5fd088cc7cd892992887fd411a0b0d1e0feb3f078e174604d9705d985985db5a",
+      "size": 2121,
       "mode": "100644"
     },
     {
@@ -869,7 +869,7 @@
     },
     {
       "path": "tools/native-input.mjs",
-      "sha256": "7e54d654c6d6776e47f3d486d4ee996c4f2d08fd1de9617d5b3908f9ae4ffd0e",
+      "sha256": "744de3cfc58069ced48ca6e593a28ec944272168626876c489b8c934d867835a",
       "size": 12493,
       "mode": "100644"
     },

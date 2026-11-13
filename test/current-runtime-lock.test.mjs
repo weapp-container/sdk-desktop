@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SDK_VERSION, selectArtifact } from '../tools/runtime-artifacts.mjs';
+import { SDK_VERSION as CANDIDATE_VERSION } from '../tools/native-input.mjs';
 
 test('C header version agrees with package and runtime identities', () => {
   const header = readFileSync(new URL('../include/weapp/desktop.h', import.meta.url), 'utf8');
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url)));
   assert.equal(header.match(/^#define WEAPP_DESKTOP_VERSION "([^"]+)"$/m)?.[1], pkg.version);
-  assert.equal(pkg.version, SDK_VERSION);
+  assert.equal(pkg.version, CANDIDATE_VERSION);
 });
 
 test('current public pin supplies every native target and wrapper without historical fallback', () => {
