@@ -1,0 +1,4 @@
+artifacts/
+.runtime/
+build/
+CMakeUserPresets.json

@@ -1,0 +1,20 @@
+{
+  "name": "@weapp-container/sdk-desktop-tools",
+  "version": "0.1.0-preview.7.1",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/weapp-container/sdk-desktop",
+  "engines": {
+    "node": ">=24"
+  },
+  "weappContainerPlatform": "desktop",
+  "scripts": {
+    "runtime:prepare": "node tools/prepare-runtime.mjs",
+    "build": "node tools/build.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check:origin": "node tools/check-origin.mjs",
+    "release:package": "node tools/package-release.mjs",
+    "docs:check": "node tools/documentation/check.mjs && node tools/documentation/check-content.mjs"
+  }
+}

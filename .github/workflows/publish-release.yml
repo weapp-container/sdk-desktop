@@ -1,0 +1,45 @@
+name: Publish verified GitHub prerelease
+on:
+  workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: Completed packaging run
+        required: true
+        type: string
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Require a successful finalizer at this exact source commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT_RUN_ID: ${{ inputs.artifact_run_id }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const id = process.env.ARTIFACT_RUN_ID;
+          if (!/^\d+$/.test(id ?? '')) throw Error('A numeric workflow run ID is required');
+          const run = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${id}`]));
+          const commit = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+          if (run.status !== 'completed' || run.conclusion !== 'success' || run.path !== '.github/workflows/build-public.yml' || run.head_sha !== commit) throw Error('A successful finalizer at this exact source commit is required');
+          NODE
+      - uses: actions/download-artifact@v4
+        with:
+          name: finalized-public-release
+          run-id: ${{ inputs.artifact_run_id }}
+          github-token: ${{ github.token }}
+          path: artifacts/public
+      - run: node tools/package-release.mjs --out artifacts/public --publish
+        env:
+          GH_TOKEN: ${{ github.token }}

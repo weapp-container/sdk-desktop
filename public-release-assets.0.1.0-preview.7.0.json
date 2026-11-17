@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "repository": "weapp-container/sdk-desktop",
+  "sdkVersion": "0.1.0-preview.7.0",
+  "tag": "v0.1.0-preview.7.0",
+  "sourceCommit": "4aa61aa1c8c1f4cb2b03f42114730220148524ea",
+  "sourceDirty": false,
+  "assets": [
+    {
+      "platform": "macos-universal",
+      "component": "desktop-sdk",
+      "fileName": "WeappContainerDesktop-0.1.0-preview.7.0-macos-universal.tar.gz",
+      "size": 50648210,
+      "sha256": "83bf03028a05e1622a825aa3c6e0d3a55d819518d758225010f1830bfa5d27df"
+    },
+    {
+      "platform": "linux-x86_64",
+      "component": "desktop-sdk",
+      "fileName": "WeappContainerDesktop-0.1.0-preview.7.0-linux-x86_64.tar.gz",
+      "size": 27847971,
+      "sha256": "a893bae826d939dd11ae34dd0a079ffe5f76b991f404c4f8f6bb573ffc8ecc71"
+    },
+    {
+      "platform": "windows-x86_64",
+      "component": "desktop-sdk",
+      "fileName": "WeappContainerDesktop-0.1.0-preview.7.0-windows-x86_64.tar.gz",
+      "size": 11762499,
+      "sha256": "5ac134b3bb7a13855d9c3474390e4fed46e3028da652039d300a4cf3d96b9e89"
+    },
+    {
+      "component": "cocoapods-spec",
+      "fileName": "WeappContainerDesktop.podspec",
+      "size": 1250,
+      "sha256": "becd50462c108e20d070e656920d7630c15c890550000f4a77633e7723dd0356"
+    }
+  ]
+}

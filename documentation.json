@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "repository": "weapp-container/sdk-desktop",
+  "defaultLocale": "zh-CN",
+  "locales": [
+    "zh-CN",
+    "en"
+  ],
+  "pages": [
+    {
+      "id": "CONTRACT",
+      "zh": "CONTRACT.md",
+      "en": "CONTRACT.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "CONTRACT.md"
+      },
+      "reviewedChineseSummary": "SDK 协议 v1",
+      "reviewedChineseSha256": "d70f2f16da6da04389173f7fffa1d7485cfd959dd1bd6508c0a2c4b74c235356",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "OPEN_SOURCE",
+      "zh": "OPEN_SOURCE.md",
+      "en": "OPEN_SOURCE.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "OPEN_SOURCE.md"
+      },
+      "reviewedChineseSummary": "开源运行时集成",
+      "reviewedChineseSha256": "253d2545971cb8d03ebea4859913da305b00e0c902bdad63b5f643f32eaec77b",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "PUBLIC-RELEASE",
+      "zh": "PUBLIC-RELEASE.md",
+      "en": "PUBLIC-RELEASE.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "PUBLIC-RELEASE.md"
+      },
+      "reviewedChineseSummary": "公开预览发行 0.1.0-preview.7.1",
+      "reviewedChineseSha256": "7db7549344af61f2bd44ae4fcf9876c8bab189949d2e4552709b845e0d20fa3f",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "README",
+      "zh": "README.md",
+      "en": "README.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "README.md"
+      },
+      "reviewedChineseSummary": "Weapp 容器桌面 SDK",
+      "reviewedChineseSha256": "ee782dacc5a2e7729ac8a58ed5d678b8046af2316cd0f1bd4e82a23a3b666666",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "WINDOWS-AUDIO",
+      "zh": "WINDOWS-AUDIO.md",
+      "en": "WINDOWS-AUDIO.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "WINDOWS-AUDIO.md"
+      },
+      "reviewedChineseSummary": "Windows 内部音频上下文源实现",
+      "reviewedChineseSha256": "6a0ea955a9bb1c0165b94b5099a3750dc43fc0fad4757cb35f278e7983d0945c",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "WINDOWS-SENSORS",
+      "zh": "WINDOWS-SENSORS.md",
+      "en": "WINDOWS-SENSORS.en.md",
+      "section": "overview",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "WINDOWS-SENSORS.md"
+      },
+      "reviewedChineseSummary": "Windows 传感器",
+      "reviewedChineseSha256": "737e7b4c79245f1d7ab13c2bab3a6348fff9804e830636dff6284e91114189b5",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "docs/EMBEDDING",
+      "zh": "docs/EMBEDDING.md",
+      "en": "docs/EMBEDDING.en.md",
+      "section": "architecture",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "docs/EMBEDDING.md"
+      },
+      "reviewedChineseSummary": "Weapp 容器桌面 SDK 预览",
+      "reviewedChineseSha256": "09e3b32922f8027d79e9eef5281e178ea4ace1a02e63694ba6355caaf663c804",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "docs/windows-bluetooth",
+      "zh": "docs/windows-bluetooth.md",
+      "en": "docs/windows-bluetooth.en.md",
+      "section": "architecture",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "docs/windows-bluetooth.md"
+      },
+      "reviewedChineseSummary": "Windows Bluetooth LE 宿主后端",
+      "reviewedChineseSha256": "313714994b4aab11628cd3b1f5bbc20055c94c68678917b7f4b88a44774305d8",
+      "legacyHeadingIds": []
+    },
+    {
+      "id": "tools/documentation/README",
+      "zh": "tools/documentation/README.md",
+      "en": "tools/documentation/README.en.md",
+      "section": "tools",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "tools/documentation/README.md"
+      },
+      "reviewedChineseSummary": "双语文档维护",
+      "reviewedChineseSha256": "6c0d12dd12a6cd4a1076e912f2a09d959772638769da314e76d1708cc7c5a64e",
+      "legacyHeadingIds": []
+    }
+  ],
+  "excluded": [],
+  "assets": []
+}
