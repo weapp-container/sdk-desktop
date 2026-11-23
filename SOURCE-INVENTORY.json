@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.1",
-  "sourceFilesSha256": "83606e850609266948c4d72bd62bd3ced111fe699619287e96100f4b8ff5cb8d",
-  "review": "Refresh reviewed inventory for the preview.7.1 desktop source baseline.",
+  "sourceFilesSha256": "fb045226553d0a6b1ba15ca71361d21db64d80a5d4ded9d32f216f90aa9450d7",
+  "review": "Import LocalAuthentication for macOS device API compilation.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -359,8 +359,8 @@
     },
     {
       "path": "src/device_apis_macos.mm",
-      "sha256": "bb11f51dd36fd99ea48957aaed6ae5ee3357e2f21e65394e5dd68c96ce7552cd",
-      "size": 96065,
+      "sha256": "2ad3ea4db24cd9d73459f9714fea718d2d85143774efb428db247bb17adb6de4",
+      "size": 96117,
       "mode": "100644"
     },
     {

@@ -12,6 +12,7 @@
 #import <CoreBluetooth/CoreBluetooth.h>
 #import <Contacts/Contacts.h>
 #import <EventKit/EventKit.h>
+#import <LocalAuthentication/LocalAuthentication.h>
 #import <objc/runtime.h>
 #include "device_location_common.hpp"
 #include <cmath>
