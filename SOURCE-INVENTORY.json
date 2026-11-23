@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.1",
-  "sourceFilesSha256": "90469f7e7a2fe24b734e22fd3dc578e79dea017e14ed400dd1e4462c210de16e",
-  "review": "Review generic host capability adapters and lifecycle boundaries.",
+  "sourceFilesSha256": "83606e850609266948c4d72bd62bd3ced111fe699619287e96100f4b8ff5cb8d",
+  "review": "Refresh reviewed inventory for the preview.7.1 desktop source baseline.",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -155,8 +155,8 @@
     },
     {
       "path": "WINDOWS-AUDIO.en.md",
-      "sha256": "3906fe16d9347a9043bf37ecccb23faa8865e11e0f9b7e91909aacc819f0d99a",
-      "size": 6835,
+      "sha256": "fb951e3a0c2b0cdf5e0ad513fb4a7065e1a68a2ab6b4ac74350eb91b3d095349",
+      "size": 6817,
       "mode": "100644"
     },
     {
@@ -167,14 +167,14 @@
     },
     {
       "path": "WINDOWS-SENSORS.en.md",
-      "sha256": "9dcd10fb96ba8262f8b1287b672de7dfbaefd23dd0cd69026af544bbd73caffb",
-      "size": 3533,
+      "sha256": "2e33afb83dca88e5989eedbd9e7d6c6f9411dc5921b15b7830a416bd3db8e6d3",
+      "size": 3477,
       "mode": "100644"
     },
     {
       "path": "WINDOWS-SENSORS.md",
-      "sha256": "65c9612c3e90cfd294ec43e12fedfa65d609a87d9a91c4a7c2f708d6c1e8af4e",
-      "size": 3274,
+      "sha256": "737e7b4c79245f1d7ab13c2bab3a6348fff9804e830636dff6284e91114189b5",
+      "size": 3225,
       "mode": "100644"
     },
     {
@@ -245,8 +245,8 @@
     },
     {
       "path": "docs/windows-bluetooth-sdk-review.json",
-      "sha256": "89e7b3fc6f45138cd91da17cd91c8ab8754b29b6dbd9cd1affb44dd962a4147f",
-      "size": 25769,
+      "sha256": "ea45e41fd4ccd58221e7b19927d92fb95d29c7cc9e4c1d1c7f9fa6184b83f62a",
+      "size": 25756,
       "mode": "100644"
     },
     {
@@ -263,8 +263,8 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "a4c103781b29b5fb128e41ce7b8c0ccbaeac188fa1c2a40e3d309f77c12b0e8f",
-      "size": 5746,
+      "sha256": "8f077493468d8b0b083f2504a1181785bdd8e6b486a3b22ccc7c568b0f0b4b7c",
+      "size": 4226,
       "mode": "100644"
     },
     {
