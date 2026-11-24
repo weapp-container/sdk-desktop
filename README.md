@@ -6,17 +6,15 @@
 <a id="public-distribution-candidate-preview7"></a>
 ## 公开发行候选：preview.7
 
-当前 SDK 源码是 `0.1.0-preview.7.1` 候选，核心运行库 `.7.1` 已发布；Desktop GitHub release 和 CocoaPods Trunk `.7.1` 尚未发布。Desktop 与 CocoaPods `.7.0` 入口仍可用。使用安装命令前先核对[发布状态](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.md)，不要混用不同版本的包装层与运行库。源码公开、包发布、编译通过和设备验收分别记录。
+核心 prerelease `runtime-v0.1.0-preview.7.1` 已包含可匿名下载的 macOS、Linux 和 Windows Desktop SDK tarball。其 SHA-256 分别为 `51523e43c6d7298fbd6798e7de5a55b51428e0eaaa1818f70586b3d49ec16f65`、`7bfcc4dbbf75334a6981f3a28c51a39607729423b443f9787db7ab46f75cc1cc` 和 `81a185890d93f1806f2d15c4fcb51bade2ddd96640ce90827e9adde19306126f`。独立 Desktop GitHub release 与 CocoaPods Trunk `.7.1` 入口仍未发布。当前仍是预览版，没有稳定版。状态见[SDK 发行状态](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.md)。
 
-`.7.1` 安装入口在 GitHub release 与 CocoaPods Trunk 发布并完成匿名消费验证后可用。历史私有归档及其锁文件保持原样。
+版本 `0.1.0-preview.7.1`；CMake 3.21+、C++17。核心 prerelease 提供可匿名下载的 SDK 归档：
 
-版本 `0.1.0-preview.7.1`；CMake 3.21+、C++17。以下是计划发布的归档名称；`.7.1` GitHub prerelease 尚未创建：
+- [macOS universal](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-macos-universal.tar.gz)，macOS 12+，arm64/x86_64，SHA-256 `51523e43c6d7298fbd6798e7de5a55b51428e0eaaa1818f70586b3d49ec16f65`。
+- [Linux x86_64](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-linux-x86_64.tar.gz)，GTK 3.24+、GIO 2.66+、fontconfig、epoxy，SHA-256 `7bfcc4dbbf75334a6981f3a28c51a39607729423b443f9787db7ab46f75cc1cc`。
+- [Windows x86_64](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-windows-x86_64.tar.gz)，MSVC，SHA-256 `81a185890d93f1806f2d15c4fcb51bade2ddd96640ce90827e9adde19306126f`。
 
-- `WeappContainerDesktop-0.1.0-preview.7.1-macos-universal.tar.gz`：macOS 12+，arm64/x86_64。
-- `WeappContainerDesktop-0.1.0-preview.7.1-linux-x86_64.tar.gz`：x86_64，GTK 3.24+、GIO 2.66+、fontconfig、epoxy。
-- `WeappContainerDesktop-0.1.0-preview.7.1-windows-x86_64.tar.gz`：Windows x86_64，MSVC。
-
-先按 `SHA256SUMS` 验证归档，再解压至任意 SDK 安装目录。归档包含可迁移 CMake 配置、头文件、运行库和许可。消费工程无需 Rust 或兄弟源码仓库。
+下载后按上列 SHA-256 校验，再解压至 SDK 安装目录。归档包含可迁移 CMake 配置、头文件、运行库和许可。消费工程无需 Rust 或兄弟源码仓库。
 
 <a id="reviewed-source-build-checkout"></a>
 ### 已复核的源码构建版本
@@ -74,12 +72,14 @@ git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 在公开核心仓库的干净 checkout 根目录操作。Apple Silicon macOS 示例：
 
 ```sh
-pnpm sdk:build:native -- --target aarch64-apple-darwin --profile release
-pnpm sdk:licenses -- --target aarch64-apple-darwin --features quickjs-native,skia-gpu-metal
-pnpm sdk:build:desktop -- --target macos-arm64 --pack artifacts/hello-pack --verify
+node scripts/sdk-native-build.mjs --target aarch64-apple-darwin --out artifacts/sdk/native
+node scripts/sdk-licenses.mjs --target aarch64-apple-darwin --features quickjs-native,skia-gpu-metal
+node sdk/desktop/tools/build.mjs --target macos-arm64 \
+  --native-root artifacts/sdk/native --licenses-root artifacts/sdk/licenses \
+  --pack artifacts/hello-pack --out artifacts/sdk/desktop --verify
 ```
 
-输出在 `artifacts/sdk/desktop/macos-arm64/`。Intel、通用 macOS、Windows 和 Linux 的 triple、平台工具链与打包流程见[源码构建](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-source-build.md)。目标系统上的构建与窗口验收分别记录。
+安装目录在 `artifacts/sdk/desktop/macos-arm64/`。Intel、通用 macOS、Windows 和 Linux 的 triple、平台工具链与打包流程见[源码构建](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-source-build.md)。目标系统上的构建与窗口验收分别记录。
 
 <a id="integrate-with-existing-cmake-project"></a>
 ## 接入已有 CMake 工程

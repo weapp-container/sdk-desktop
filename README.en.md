@@ -6,17 +6,15 @@
 <a id="公开发行候选preview7"></a>
 ## Public distribution candidate: preview.7
 
-This SDK source is the `0.1.0-preview.7.1` candidate, and the `.7.1` core runtime is published; the Desktop GitHub release and CocoaPods Trunk entry are not published yet. The Desktop and CocoaPods `.7.0` entries remain available. Check the [release status](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.en.md) before using installation commands. Match wrapper and runtime versions. Source availability, package publication, compilation and device acceptance are recorded separately.
+The core prerelease `runtime-v0.1.0-preview.7.1` contains anonymously downloadable macOS, Linux and Windows Desktop SDK tarballs. Their SHA-256 values are `51523e43c6d7298fbd6798e7de5a55b51428e0eaaa1818f70586b3d49ec16f65`, `7bfcc4dbbf75334a6981f3a28c51a39607729423b443f9787db7ab46f75cc1cc` and `81a185890d93f1806f2d15c4fcb51bade2ddd96640ce90827e9adde19306126f`, respectively. The standalone Desktop GitHub release and CocoaPods Trunk `.7.1` entry remain unpublished. This remains a prerelease, with no stable version available. See the [SDK release status](https://github.com/weapp-container/weapp-container/blob/main/docs/public-sdk-release.en.md).
 
-The `.7.1` installation entries become usable after the GitHub release and CocoaPods Trunk publication pass anonymous consumer verification. Historical private archives and locks retain their original identities.
+Version `0.1.0-preview.7.1` requires CMake 3.21+ and C++17. The core prerelease provides these anonymously downloadable SDK archives:
 
-Version `0.1.0-preview.7.1` requires CMake 3.21+ and C++17. The following archive names are planned; the `.7.1` GitHub prerelease has not been created:
+- [macOS universal](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-macos-universal.tar.gz), macOS 12+, arm64/x86_64, SHA-256 `51523e43c6d7298fbd6798e7de5a55b51428e0eaaa1818f70586b3d49ec16f65`.
+- [Linux x86_64](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-linux-x86_64.tar.gz), GTK 3.24+, GIO 2.66+, fontconfig and epoxy, SHA-256 `7bfcc4dbbf75334a6981f3a28c51a39607729423b443f9787db7ab46f75cc1cc`.
+- [Windows x86_64](https://github.com/weapp-container/weapp-container/releases/download/runtime-v0.1.0-preview.7.1/desktop-sdk-0.1.0-preview.7.1-windows-x86_64.tar.gz), MSVC, SHA-256 `81a185890d93f1806f2d15c4fcb51bade2ddd96640ce90827e9adde19306126f`.
 
-- `WeappContainerDesktop-0.1.0-preview.7.1-macos-universal.tar.gz`: macOS 12+, arm64/x86_64.
-- `WeappContainerDesktop-0.1.0-preview.7.1-linux-x86_64.tar.gz`: x86_64, GTK 3.24+, GIO 2.66+, fontconfig and epoxy.
-- `WeappContainerDesktop-0.1.0-preview.7.1-windows-x86_64.tar.gz`: Windows x86_64, MSVC.
-
-Verify `SHA256SUMS` before extracting to your installation directory. Archives include relocatable CMake configuration, headers, runtime libraries and licenses. Consumers need no Rust or sibling source checkout.
+Verify the selected archive against its SHA-256 before extracting it to your SDK installation directory. Archives include relocatable CMake configuration, headers, runtime libraries and licenses. Consumers need no Rust or sibling source checkout.
 
 <a id="已复核的源码构建版本"></a>
 ### Reviewed source-build checkout
@@ -75,12 +73,14 @@ git checkout 8bcd081a1a08410bc761f58a54b9747cbab89743
 Operate within the clean checkout root directory of the public core repository. Apple Silicon macOS example:
 
 ```sh
-pnpm sdk:build:native -- --target aarch64-apple-darwin --profile release
-pnpm sdk:licenses -- --target aarch64-apple-darwin --features quickjs-native,skia-gpu-metal
-pnpm sdk:build:desktop -- --target macos-arm64 --pack artifacts/hello-pack --verify
+node scripts/sdk-native-build.mjs --target aarch64-apple-darwin --out artifacts/sdk/native
+node scripts/sdk-licenses.mjs --target aarch64-apple-darwin --features quickjs-native,skia-gpu-metal
+node sdk/desktop/tools/build.mjs --target macos-arm64 \
+  --native-root artifacts/sdk/native --licenses-root artifacts/sdk/licenses \
+  --pack artifacts/hello-pack --out artifacts/sdk/desktop --verify
 ```
 
-Output is located at `artifacts/sdk/desktop/macos-arm64/`. Intel, universal macOS, Windows, and Linux triples, platform toolchains, and packaging workflows are detailed in [Source Build](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-source-build.en.md). Build and window validation records are generated for the target system.
+The installation is located at `artifacts/sdk/desktop/macos-arm64/`. Intel, universal macOS, Windows, and Linux triples, platform toolchains, and packaging workflows are detailed in [Source Build](https://github.com/weapp-container/weapp-container/blob/main/docs/sdk-source-build.en.md). Build and window validation records are generated for the target system.
 
 <a id="接入已有-cmake-工程"></a>
 ## Integrate with Existing CMake Project

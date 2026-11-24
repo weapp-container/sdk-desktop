@@ -55,9 +55,22 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "Weapp 容器桌面 SDK",
-      "reviewedChineseSha256": "ee782dacc5a2e7729ac8a58ed5d678b8046af2316cd0f1bd4e82a23a3b666666",
+      "reviewedChineseSummary": "Desktop SDK 与公开发行说明",
+      "reviewedChineseSha256": "fd15b193d6c52d6ee529686f579113cac09f188a5d4f88a183158ae6bdfca1d2",
       "legacyHeadingIds": []
+    },
+    {
+      "id": "consumer/README",
+      "zh": "consumer/README.md",
+      "en": "consumer/README.en.md",
+      "section": "examples",
+      "source": {
+        "repository": "weapp-container/sdk-desktop",
+        "path": "consumer/README.md"
+      },
+      "reviewedChineseSummary": "Desktop consumer 示例应用",
+      "legacyHeadingIds": [],
+      "reviewedChineseSha256": "1d551c6c1293f33973ebfcfb97b4db027830b1d33a2eb99c46a8145e0d2189c7"
     },
     {
       "id": "WINDOWS-AUDIO",

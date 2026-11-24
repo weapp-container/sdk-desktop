@@ -1,8 +1,8 @@
 {
   "schemaVersion": 2,
   "sdkVersion": "0.1.0-preview.7.1",
-  "sourceFilesSha256": "fb045226553d0a6b1ba15ca71361d21db64d80a5d4ded9d32f216f90aa9450d7",
-  "review": "Import LocalAuthentication for macOS device API compilation.",
+  "sourceFilesSha256": "9d4e6328be65ae23cd9d824d53aacf188f6f4d0a3c2ee3771b54425085a0af38",
+  "review": "Add runnable Desktop consumer and current release documentation",
   "scope": "Current reviewed SDK wrapper source bytes only; this inventory is not build, artifact, device or parity acceptance evidence.",
   "historicalOrigin": {
     "path": "ORIGIN.json",
@@ -143,14 +143,14 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "24150863469922ff4b459c3fe824f0d0a1fd499909fe20b4ead822ea22fde7fc",
-      "size": 15754,
+      "sha256": "67764af984c079b084c30f1fbdca3987ca2449d8e769b30b4baa7ed839852fa0",
+      "size": 16347,
       "mode": "100644"
     },
     {
       "path": "README.md",
-      "sha256": "ee782dacc5a2e7729ac8a58ed5d678b8046af2316cd0f1bd4e82a23a3b666666",
-      "size": 13540,
+      "sha256": "fd15b193d6c52d6ee529686f579113cac09f188a5d4f88a183158ae6bdfca1d2",
+      "size": 14159,
       "mode": "100644"
     },
     {
@@ -187,6 +187,18 @@
       "path": "consumer/CMakeLists.txt",
       "sha256": "f178aa67ce8b3270c2bf4af3781af9a6296c52e090a228ea00537d16b1416f73",
       "size": 879,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/README.en.md",
+      "sha256": "560cf2e460ed08becf0012d93551629c1f3f067a61bec6d627c0d53e8db8100f",
+      "size": 1743,
+      "mode": "100644"
+    },
+    {
+      "path": "consumer/README.md",
+      "sha256": "1d551c6c1293f33973ebfcfb97b4db027830b1d33a2eb99c46a8145e0d2189c7",
+      "size": 1624,
       "mode": "100644"
     },
     {
@@ -263,8 +275,8 @@
     },
     {
       "path": "documentation.json",
-      "sha256": "8f077493468d8b0b083f2504a1181785bdd8e6b486a3b22ccc7c568b0f0b4b7c",
-      "size": 4226,
+      "sha256": "49c0f9eacda8da2fe689cd678cb26f42436346d2aeb03b44670cdf92beab08ad",
+      "size": 4691,
       "mode": "100644"
     },
     {
