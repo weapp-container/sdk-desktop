@@ -38,7 +38,7 @@ jobs:
           const pkg = JSON.parse(execFileSync(process.execPath, ['-e', "process.stdout.write(require('fs').readFileSync('package.json'))"]));
           const version = pkg.version;
           const release = JSON.parse(execFileSync('gh', ['api', `repos/${process.env.GITHUB_REPOSITORY}/releases/tags/v${version}`]));
-          if (release.draft || !release.prerelease || release.tag_name !== `v${version}`) throw Error('The exact public prerelease is unavailable');
+          if (release.draft || release.prerelease !== version.includes('-') || release.tag_name !== `v${version}`) throw Error('The exact public release is unavailable');
           NODE
       - name: Download and verify the published release bytes
         env:

@@ -4,6 +4,11 @@ import { existsSync, lstatSync, realpathSync, readFileSync, readdirSync, writeFi
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
+export function releasePublication(version) {
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/.test(version ?? '')) throw Error('Invalid SDK release version');
+  const preview = version.includes('-');
+  return { preview, prerelease: preview, latest: !preview, channel: preview ? 'preview' : 'stable' };
+}
 export function run(command, args, cwd, options = {}) {
   const result = spawnSync(command, args, { cwd, encoding: 'utf8', maxBuffer: 32 * 1024 ** 2, ...options });
   if (result.error || result.status !== 0) throw Error(`${command} failed (exit ${result.status}): ${result.error?.message ?? ''}\n${result.stdout ?? ''}${result.stderr ?? ''}`);
@@ -49,6 +54,7 @@ export function assetEntry(directory, fileName, extra = {}) {
   return { ...extra, fileName, size: bytes.length, sha256: sha256(bytes) };
 }
 export function validateRelease(value, repository, version) {
+  releasePublication(version);
   if (value.schemaVersion !== 1 || value.repository !== repository || value.sdkVersion !== version || value.tag !== `v${version}`
     || value.sourceDirty !== false || !/^[a-f0-9]{40}$/.test(value.sourceCommit ?? '') || !Array.isArray(value.assets) || !value.assets.length) throw Error('Public release identity does not match the requested SDK');
   const names = new Set();
@@ -83,6 +89,7 @@ export function writeRelease(root, directory, repository, assets) {
 export async function publishRelease(root, path, execute = false, invoke = run) {
   const repository = JSON.parse(readFileSync(path)).repository;
   const release = readRelease(path, repository, versionOf(root), true);
+  const publication = releasePublication(release.sdkVersion);
   if (cleanSource(root) !== release.sourceCommit) throw Error('Release must be published from its exact producer commit');
   const directory = dirname(resolve(path));
   if (!execute) return { status: 'verified', release, published: false };
@@ -94,15 +101,15 @@ export async function publishRelease(root, path, execute = false, invoke = run) 
   catch (error) { if (/HTTP 404/.test(error.message)) absent = true; else throw error; }
   if (!absent) throw Error('Tag exists; refusing publication');
   const created = JSON.parse(invoke('gh', ['api', `repos/${repository}/releases`, '--method', 'POST',
-    '-f', `tag_name=${release.tag}`, '-f', `target_commitish=${release.sourceCommit}`, '-F', 'draft=true', '-F', 'prerelease=true',
-    '-f', `name=SDK ${release.sdkVersion}`, '-f', 'body=Public preview. See the versioned SDK README for installation and platform requirements.'], root));
+    '-f', `tag_name=${release.tag}`, '-f', `target_commitish=${release.sourceCommit}`, '-F', 'draft=true', '-F', `prerelease=${publication.prerelease}`,
+    '-f', `name=SDK ${release.sdkVersion}`, '-f', `body=${publication.channel === 'preview' ? 'Public preview' : 'Stable release'}. See the versioned SDK README for installation and platform requirements.`], root));
   if (!Number.isSafeInteger(created.id) || created.id < 1) throw Error('Draft creation returned no release ID');
   const endpoint = `repos/${repository}/releases/${created.id}`;
   invoke('gh', ['release', 'upload', release.tag, '--repo', repository, ...release.assets.map(entry => join(directory, entry.fileName)), path, join(directory, 'SHA256SUMS')], root);
   // The tag endpoint may return 404 for an unpublished draft. Keep its creation ID.
   const remote = JSON.parse(invoke('gh', ['api', endpoint], root));
   const files = [...release.assets, assetEntry(directory, basename(path)), assetEntry(directory, 'SHA256SUMS')];
-  if (remote.id !== created.id || remote.draft !== true || remote.prerelease !== true || remote.tag_name !== release.tag
+  if (remote.id !== created.id || remote.draft !== true || remote.prerelease !== publication.prerelease || remote.tag_name !== release.tag
     || remote.target_commitish !== release.sourceCommit || remote.assets?.length !== files.length) throw Error('Remote draft identity differs; draft retained');
   for (const entry of files) {
     const matches = remote.assets.filter(asset => asset.name === entry.fileName);
@@ -110,6 +117,6 @@ export async function publishRelease(root, path, execute = false, invoke = run) 
   }
   readRelease(path, repository, versionOf(root), true);
   if (cleanSource(root) !== release.sourceCommit) throw Error('Source changed during publication; draft retained');
-  invoke('gh', ['api', endpoint, '--method', 'PATCH', '-F', 'draft=false', '-F', 'prerelease=true', '-f', 'make_latest=false'], root);
+  invoke('gh', ['api', endpoint, '--method', 'PATCH', '-F', 'draft=false', '-F', `prerelease=${publication.prerelease}`, '-f', `make_latest=${publication.latest}`], root);
   return { status: 'published', release };
 }

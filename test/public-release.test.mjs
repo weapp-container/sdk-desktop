@@ -3,18 +3,23 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assetEntry, readRelease, releaseUrl, run, writeRelease, publishRelease } from '../tools/public-release.mjs';
-function fixture(t) {
+import { assetEntry, readRelease, releasePublication, releaseUrl, run, writeRelease, publishRelease } from '../tools/public-release.mjs';
+function fixture(t, version = '0.1.0-preview.7.0') {
   const root = mkdtempSync(join(tmpdir(), 'weapp-public-release-'));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   writeFileSync(join(root, '.gitignore'), 'artifacts/\n');
-  writeFileSync(join(root, 'package.json'), JSON.stringify({ version: '0.1.0-preview.7.0' }));
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ version }));
   run('git', ['init', '-q'], root); run('git', ['add', '.'], root);
   run('git', ['-c', 'user.name=Publication Test', '-c', 'user.email=publication@example.invalid', 'commit', '-qm', 'Fixture'], root);
   const out = join(root, 'artifacts'); mkdirSync(out);
   writeFileSync(join(out, 'sdk.tar.gz'), 'inert archive fixture');
   return { root, out, manifest: join(out, 'release.json') };
 }
+test('release version selects a stable or preview GitHub channel', () => {
+  assert.deepEqual(releasePublication('0.1.0'), { preview: false, prerelease: false, latest: true, channel: 'stable' });
+  assert.deepEqual(releasePublication('0.1.0-preview.7.1'), { preview: true, prerelease: true, latest: false, channel: 'preview' });
+  assert.throws(() => releasePublication('preview'), /Invalid SDK release version/);
+});
 test('the frozen release verifies offline and rejects changed archive bytes before publication', async t => {
   const f = fixture(t);
   const value = writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [assetEntry(f.out, 'sdk.tar.gz')]);
@@ -52,7 +57,7 @@ test('publication verifies an unpublished draft by ID when tag lookup cannot see
       if (args.includes('POST')) return JSON.stringify({ id: 123 });
       if (args.includes('PATCH') || args[0] === 'release') return '{}';
       assert.equal(args[1], 'repos/weapp-container/sdk-ios/releases/123');
-      return JSON.stringify({ id: 123, tag_name: value.tag, draft: true, prerelease: true, target_commitish: value.sourceCommit,
+      return JSON.stringify({ id: 123, tag_name: value.tag, draft: true, prerelease: value.sdkVersion.includes('-'), target_commitish: value.sourceCommit,
         assets: files.map(file => ({ name: file.fileName, size: file.size, digest: `sha256:${file.sha256}`, state: 'uploaded', ...overrides.asset })), ...overrides.release });
     };
     return { calls, invoke };
@@ -68,4 +73,24 @@ test('publication verifies an unpublished draft by ID when tag lookup cannot see
     assert.ok(!rejected.calls.some(args => args.includes('PATCH')));
     if (overrides.exists) assert.ok(!rejected.calls.some(args => args.includes('POST')));
   }
+});
+test('stable GitHub SDK releases are published as latest releases', async t => {
+  const f = fixture(t, '0.1.0');
+  const value = writeRelease(f.root, f.out, 'weapp-container/sdk-desktop', [assetEntry(f.out, 'sdk.tar.gz')]);
+  const files = readdirSync(f.out).map(name => assetEntry(f.out, name));
+  const calls = [];
+  const invoke = (_command, args) => {
+    calls.push(args);
+    if (args.includes('--slurp')) return JSON.stringify([[]]);
+    if (args[1].includes('/git/ref/')) throw Error('Not Found (HTTP 404)');
+    if (args.includes('POST')) return JSON.stringify({ id: 123 });
+    if (args.includes('PATCH') || args[0] === 'release') return '{}';
+    return JSON.stringify({ id: 123, tag_name: value.tag, draft: true, prerelease: false, target_commitish: value.sourceCommit,
+      assets: files.map(file => ({ name: file.fileName, size: file.size, digest: `sha256:${file.sha256}`, state: 'uploaded' })) });
+  };
+  assert.equal((await publishRelease(f.root, f.manifest, true, invoke)).status, 'published');
+  const post = calls.find(args => args.includes('POST'));
+  const patch = calls.find(args => args.includes('PATCH'));
+  assert.ok(post.includes('prerelease=false'));
+  assert.ok(patch.includes('prerelease=false') && patch.includes('make_latest=true'));
 });
