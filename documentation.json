@@ -55,8 +55,8 @@
         "repository": "weapp-container/sdk-desktop",
         "path": "README.md"
       },
-      "reviewedChineseSummary": "Desktop SDK 与公开发行说明",
-      "reviewedChineseSha256": "fd15b193d6c52d6ee529686f579113cac09f188a5d4f88a183158ae6bdfca1d2",
+      "reviewedChineseSummary": "普通用户下载公开桌面 SDK 归档，历史归档准备仅供维护者使用",
+      "reviewedChineseSha256": "aba8a6383d46db637a48a57a8e581d3dedd53b1f5afbce7409d2424e028c555e",
       "legacyHeadingIds": []
     },
     {
